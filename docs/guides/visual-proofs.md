@@ -36,12 +36,27 @@ These are the reference targets rendered through the baseline XMP with no primit
 
 These entries touch raw-domain darktable modules (`temperature`, `colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, or `diffuse`) — or compose looks that include one. The synthetic chart can't represent the input these modules expect; rendering against it produces structurally-misleading output. Each entry is routed to either the landscape or portrait CC BY-SA 4.0 fixture from `tests/fixtures/raws/` so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage.
 
-> The following real_raw entries have no real-raw render on disk yet. Run `uv run python scripts/generate-visual-proofs.py` (without `--markdown-only`) after fetching the fixtures via `git lfs pull`.
+### `wb_warm_subtle` 📷 landscape raw
 
-| Entry | Routed fixture | Modules touched | What the entry does |
-|-|-|-|-|
-| `wb_warm_subtle` | landscape | `temperature` | Warm white balance, subtle. |
-| `look_neutral` | landscape | `exposure`, `temperature` | Neutral L2 look — exposure + warm-subtle WB baseline. |
+_Warm white balance, subtle._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/starter/wb_warm_subtle-landscape.jpg" alt="wb_warm_subtle landscape raw" width="180"> |
+
+
+### `look_neutral` 📷 landscape raw
+
+_Neutral L2 look — exposure + warm-subtle WB baseline._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/starter/look_neutral-landscape.jpg" alt="look_neutral landscape raw" width="180"> |
+
 
 ---
 
@@ -59,19 +74,45 @@ _Parameterized grain strength (RFC-021). Pass --value V; range [0.0, 100.0]. 8 =
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/grain_strength-colorchecker.jpg" alt="grain_strength ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/grain_strength-grayscale.jpg" alt="grain_strength grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/grain_strength-colorchecker-masked.jpg" alt="grain_strength ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/grain_strength-grayscale-masked.jpg" alt="grain_strength grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): grain texture is hard to see on flat chart patches — see the **clipped-gradient row below** for visible texture, or [mask-applicable-controls](mask-applicable-controls.md#grain))_
+
+_(near-baseline diff in grayscale (global): grain texture is hard to see on flat chart patches — see the **clipped-gradient row below** for visible texture, or [mask-applicable-controls](mask-applicable-controls.md#grain))_
+
+_(near-baseline diff in ColorChecker (masked): grain texture is hard to see on flat chart patches — see the **clipped-gradient row below** for visible texture, or [mask-applicable-controls](mask-applicable-controls.md#grain))_
+
+_(near-baseline diff in grayscale (masked): grain texture is hard to see on flat chart patches — see the **clipped-gradient row below** for visible texture, or [mask-applicable-controls](mask-applicable-controls.md#grain))_
+
 **On the clipped-gradient fixture** (continuous tone + blown highlights — chart designed to show this module's effect; see [`reference-targets/README.md`](https://github.com/chipi/chemigram/blob/main/tests/fixtures/reference-targets/README.md)):
 
 | Clipped gradient (global) | Clipped gradient (centered ellipse mask) |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/grain_strength-clipped.jpg" alt="grain_strength clipped-gradient global" width="180"> | <img src="../visual-proofs/expressive-baseline/grain_strength-clipped-masked.jpg" alt="grain_strength clipped-gradient masked" width="180"> |
 
+**Parameter sweep** (`grain_strength`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+8.00` | `+25.00` | `+50.00` | `+100.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/grain_strength-sweep-grain_strength-0_00.jpg" alt="grain_strength grain_strength=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/grain_strength-sweep-grain_strength-p8_00.jpg" alt="grain_strength grain_strength=+8.00" width="180"> | <img src="../visual-proofs/expressive-baseline/grain_strength-sweep-grain_strength-p25_00.jpg" alt="grain_strength grain_strength=+25.00" width="180"> | <img src="../visual-proofs/expressive-baseline/grain_strength-sweep-grain_strength-p50_00.jpg" alt="grain_strength grain_strength=+50.00" width="180"> | <img src="../visual-proofs/expressive-baseline/grain_strength-sweep-grain_strength-p100_00.jpg" alt="grain_strength grain_strength=+100.00" width="180"> |
+
 ### `vignette`
 
 _Parameterized vignette (RFC-021). Pass --value V (CLI) or value: V (MCP); range [-1.0, +1.0] (negative darkens corners; positive lifts). Replaces the v1.5.x discrete vignette_subtle / vignette_medium / vignette_heavy entries with a single continuous-magnitude primitive._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
+| ColorChecker (global) | Grayscale (global) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/vignette-colorchecker.jpg" alt="vignette ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/vignette-grayscale.jpg" alt="vignette grayscale global" width="180"> |
+
+> 🚫 **Masked variant suppressed**: see [mask-applicable-controls](mask-applicable-controls.md#vignette) for why drawn-mask binding doesn't render usefully for this module.
+
+_(near-baseline diff in ColorChecker (global): subtle vignette is small at the modest gallery render size; effect is concentrated at the very corners of the frame)_
+
+_(near-baseline diff in grayscale (global): subtle vignette is small at the modest gallery render size; effect is concentrated at the very corners of the frame)_
+
+**Parameter sweep** (`brightness`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.80` | `-0.50` | `-0.25` | `0.00` |
 |-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/vignette-colorchecker.jpg" alt="vignette ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/vignette-grayscale.jpg" alt="vignette grayscale global" width="180"> | _(n/a)_ | _(n/a)_ |
+| <img src="../visual-proofs/expressive-baseline/vignette-sweep-brightness-n0_80.jpg" alt="vignette brightness=-0.80" width="180"> | <img src="../visual-proofs/expressive-baseline/vignette-sweep-brightness-n0_50.jpg" alt="vignette brightness=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/vignette-sweep-brightness-n0_25.jpg" alt="vignette brightness=-0.25" width="180"> | <img src="../visual-proofs/expressive-baseline/vignette-sweep-brightness-0_00.jpg" alt="vignette brightness=0.00" width="180"> |
 
 ### `highlights_clip_threshold`
 
@@ -81,11 +122,25 @@ _Parameterized highlight-recovery clip threshold (RFC-021). Pass --value V; rang
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/highlights_clip_threshold-colorchecker.jpg" alt="highlights_clip_threshold ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_clip_threshold-grayscale.jpg" alt="highlights_clip_threshold grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_clip_threshold-colorchecker-masked.jpg" alt="highlights_clip_threshold ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_clip_threshold-grayscale-masked.jpg" alt="highlights_clip_threshold grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): this chart has no blown highlights to recover — see the **clipped-gradient row below** for the visible effect, or [mask-applicable-controls](mask-applicable-controls.md#highlights))_
+
+_(near-baseline diff in grayscale (global): this chart has no blown highlights to recover — see the **clipped-gradient row below** for the visible effect, or [mask-applicable-controls](mask-applicable-controls.md#highlights))_
+
+_(near-baseline diff in ColorChecker (masked): this chart has no blown highlights to recover — see the **clipped-gradient row below** for the visible effect, or [mask-applicable-controls](mask-applicable-controls.md#highlights))_
+
+_(near-baseline diff in grayscale (masked): this chart has no blown highlights to recover — see the **clipped-gradient row below** for the visible effect, or [mask-applicable-controls](mask-applicable-controls.md#highlights))_
+
 **On the clipped-gradient fixture** (continuous tone + blown highlights — chart designed to show this module's effect; see [`reference-targets/README.md`](https://github.com/chipi/chemigram/blob/main/tests/fixtures/reference-targets/README.md)):
 
 | Clipped gradient (global) | Clipped gradient (centered ellipse mask) |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/highlights_clip_threshold-clipped.jpg" alt="highlights_clip_threshold clipped-gradient global" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_clip_threshold-clipped-masked.jpg" alt="highlights_clip_threshold clipped-gradient masked" width="180"> |
+
+**Parameter sweep** (`clip_threshold`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.50` | `+0.85` | `+0.95` | `+1.00` | `+1.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/highlights_clip_threshold-sweep-clip_threshold-p0_50.jpg" alt="highlights_clip_threshold clip_threshold=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_clip_threshold-sweep-clip_threshold-p0_85.jpg" alt="highlights_clip_threshold clip_threshold=+0.85" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_clip_threshold-sweep-clip_threshold-p0_95.jpg" alt="highlights_clip_threshold clip_threshold=+0.95" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_clip_threshold-sweep-clip_threshold-p1_00.jpg" alt="highlights_clip_threshold clip_threshold=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_clip_threshold-sweep-clip_threshold-p1_50.jpg" alt="highlights_clip_threshold clip_threshold=+1.50" width="180"> |
 
 ### `sigmoid_contrast`
 
@@ -94,6 +149,12 @@ _Parameterized sigmoid tone-curve contrast (RFC-021). Pass --value V (CLI) or va
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-colorchecker.jpg" alt="sigmoid_contrast ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-grayscale.jpg" alt="sigmoid_contrast grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-colorchecker-masked.jpg" alt="sigmoid_contrast ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-grayscale-masked.jpg" alt="sigmoid_contrast grayscale masked" width="180"> |
+
+**Parameter sweep** (`contrast`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.50` | `+1.00` | `+1.50` | `+2.00` | `+2.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-sweep-contrast-p0_50.jpg" alt="sigmoid_contrast contrast=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-sweep-contrast-p1_00.jpg" alt="sigmoid_contrast contrast=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-sweep-contrast-p1_50.jpg" alt="sigmoid_contrast contrast=+1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-sweep-contrast-p2_00.jpg" alt="sigmoid_contrast contrast=+2.00" width="180"> | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-sweep-contrast-p2_50.jpg" alt="sigmoid_contrast contrast=+2.50" width="180"> |
 
 ### `blacks_lifted`
 
@@ -127,6 +188,8 @@ _B&W with sky-drama mix (red-emphasis: R 0.5 / G 0.4 / B 0.1). Lightens reds and
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/bw_sky_drama-colorchecker.jpg" alt="bw_sky_drama ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_sky_drama-grayscale.jpg" alt="bw_sky_drama grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_sky_drama-colorchecker-masked.jpg" alt="bw_sky_drama ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_sky_drama-grayscale-masked.jpg" alt="bw_sky_drama grayscale masked" width="180"> |
 
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
 ### `bw_foliage`
 
 _B&W with foliage mix (green-emphasis: R 0.1 / G 0.7 / B 0.2). Lightens greens — separates foliage from neighboring tones; useful for forest / botanical work where green is the dominant subject. normalize_grey=true._
@@ -134,6 +197,10 @@ _B&W with foliage mix (green-emphasis: R 0.1 / G 0.7 / B 0.2). Lightens greens �
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/bw_foliage-colorchecker.jpg" alt="bw_foliage ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_foliage-grayscale.jpg" alt="bw_foliage grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_foliage-colorchecker-masked.jpg" alt="bw_foliage ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_foliage-grayscale-masked.jpg" alt="bw_foliage grayscale masked" width="180"> |
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
 
 ### `toneequalizer`
 
@@ -143,6 +210,66 @@ _Parameterized 9-band tone equalizer (RFC-022 Tier 2; most complex multi-paramet
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/toneequalizer-colorchecker.jpg" alt="toneequalizer ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-grayscale.jpg" alt="toneequalizer grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-colorchecker-masked.jpg" alt="toneequalizer ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-grayscale-masked.jpg" alt="toneequalizer grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`noise`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.50` | `-0.50` | `0.00` | `+0.50` | `+1.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-noise-n1_50.jpg" alt="toneequalizer noise=-1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-noise-n0_50.jpg" alt="toneequalizer noise=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-noise-0_00.jpg" alt="toneequalizer noise=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-noise-p0_50.jpg" alt="toneequalizer noise=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-noise-p1_50.jpg" alt="toneequalizer noise=+1.50" width="180"> |
+
+**Parameter sweep** (`ultra_deep_blacks`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.50` | `-0.50` | `0.00` | `+0.50` | `+1.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-ultra_deep_blacks-n1_50.jpg" alt="toneequalizer ultra_deep_blacks=-1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-ultra_deep_blacks-n0_50.jpg" alt="toneequalizer ultra_deep_blacks=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-ultra_deep_blacks-0_00.jpg" alt="toneequalizer ultra_deep_blacks=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-ultra_deep_blacks-p0_50.jpg" alt="toneequalizer ultra_deep_blacks=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-ultra_deep_blacks-p1_50.jpg" alt="toneequalizer ultra_deep_blacks=+1.50" width="180"> |
+
+**Parameter sweep** (`deep_blacks`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.50` | `-0.50` | `0.00` | `+0.50` | `+1.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-deep_blacks-n1_50.jpg" alt="toneequalizer deep_blacks=-1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-deep_blacks-n0_50.jpg" alt="toneequalizer deep_blacks=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-deep_blacks-0_00.jpg" alt="toneequalizer deep_blacks=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-deep_blacks-p0_50.jpg" alt="toneequalizer deep_blacks=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-deep_blacks-p1_50.jpg" alt="toneequalizer deep_blacks=+1.50" width="180"> |
+
+**Parameter sweep** (`blacks`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.50` | `-0.50` | `0.00` | `+0.50` | `+1.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-blacks-n1_50.jpg" alt="toneequalizer blacks=-1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-blacks-n0_50.jpg" alt="toneequalizer blacks=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-blacks-0_00.jpg" alt="toneequalizer blacks=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-blacks-p0_50.jpg" alt="toneequalizer blacks=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-blacks-p1_50.jpg" alt="toneequalizer blacks=+1.50" width="180"> |
+
+**Parameter sweep** (`shadows`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.50` | `-0.50` | `0.00` | `+0.50` | `+1.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-shadows-n1_50.jpg" alt="toneequalizer shadows=-1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-shadows-n0_50.jpg" alt="toneequalizer shadows=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-shadows-0_00.jpg" alt="toneequalizer shadows=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-shadows-p0_50.jpg" alt="toneequalizer shadows=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-shadows-p1_50.jpg" alt="toneequalizer shadows=+1.50" width="180"> |
+
+**Parameter sweep** (`midtones`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.50` | `-0.50` | `0.00` | `+0.50` | `+1.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-midtones-n1_50.jpg" alt="toneequalizer midtones=-1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-midtones-n0_50.jpg" alt="toneequalizer midtones=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-midtones-0_00.jpg" alt="toneequalizer midtones=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-midtones-p0_50.jpg" alt="toneequalizer midtones=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-midtones-p1_50.jpg" alt="toneequalizer midtones=+1.50" width="180"> |
+
+**Parameter sweep** (`highlights`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.50` | `-0.50` | `0.00` | `+0.50` | `+1.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-highlights-n1_50.jpg" alt="toneequalizer highlights=-1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-highlights-n0_50.jpg" alt="toneequalizer highlights=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-highlights-0_00.jpg" alt="toneequalizer highlights=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-highlights-p0_50.jpg" alt="toneequalizer highlights=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-highlights-p1_50.jpg" alt="toneequalizer highlights=+1.50" width="180"> |
+
+**Parameter sweep** (`whites`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.50` | `-0.50` | `0.00` | `+0.50` | `+1.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-whites-n1_50.jpg" alt="toneequalizer whites=-1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-whites-n0_50.jpg" alt="toneequalizer whites=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-whites-0_00.jpg" alt="toneequalizer whites=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-whites-p0_50.jpg" alt="toneequalizer whites=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-whites-p1_50.jpg" alt="toneequalizer whites=+1.50" width="180"> |
+
+**Parameter sweep** (`speculars`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.50` | `-0.50` | `0.00` | `+0.50` | `+1.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-speculars-n1_50.jpg" alt="toneequalizer speculars=-1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-speculars-n0_50.jpg" alt="toneequalizer speculars=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-speculars-0_00.jpg" alt="toneequalizer speculars=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-speculars-p0_50.jpg" alt="toneequalizer speculars=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/toneequalizer-sweep-speculars-p1_50.jpg" alt="toneequalizer speculars=+1.50" width="180"> |
+
 ### `sharpen`
 
 _Parameterized sharpening (RFC-022 Tier 2). Pass --value V; range [0.0, 2.0] (0.0 = no sharpen, 0.5 = subtle, 1.0 = strong, 2.0 = aggressive). Radius preserved at darktable default 2.0 px, threshold at 0.5._
@@ -151,6 +278,20 @@ _Parameterized sharpening (RFC-022 Tier 2). Pass --value V; range [0.0, 2.0] (0.
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/sharpen-colorchecker.jpg" alt="sharpen ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen-grayscale.jpg" alt="sharpen grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen-colorchecker-masked.jpg" alt="sharpen ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen-grayscale-masked.jpg" alt="sharpen grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`amount`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+0.50` | `+1.00` | `+1.50` | `+2.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/sharpen-sweep-amount-0_00.jpg" alt="sharpen amount=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen-sweep-amount-p0_50.jpg" alt="sharpen amount=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen-sweep-amount-p1_00.jpg" alt="sharpen amount=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen-sweep-amount-p1_50.jpg" alt="sharpen amount=+1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen-sweep-amount-p2_00.jpg" alt="sharpen amount=+2.00" width="180"> |
+
 ### `bilat_clarity_strength`
 
 _Parameterized clarity strength on bilat / local laplacian (RFC-021). Pass --value V; range [-1.0, 4.0]. 1.5 = clarity_strong-equivalent. clarity_painterly stays as a separate discrete entry — different kind, not strength._
@@ -158,6 +299,16 @@ _Parameterized clarity strength on bilat / local laplacian (RFC-021). Pass --val
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/bilat_clarity_strength-colorchecker.jpg" alt="bilat_clarity_strength ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/bilat_clarity_strength-grayscale.jpg" alt="bilat_clarity_strength grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/bilat_clarity_strength-colorchecker-masked.jpg" alt="bilat_clarity_strength ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/bilat_clarity_strength-grayscale-masked.jpg" alt="bilat_clarity_strength grayscale masked" width="180"> |
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+**Parameter sweep** (`clarity_strength`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.50` | `+1.50` | `+2.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/bilat_clarity_strength-sweep-clarity_strength-n0_50.jpg" alt="bilat_clarity_strength clarity_strength=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/bilat_clarity_strength-sweep-clarity_strength-0_00.jpg" alt="bilat_clarity_strength clarity_strength=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/bilat_clarity_strength-sweep-clarity_strength-p0_50.jpg" alt="bilat_clarity_strength clarity_strength=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/bilat_clarity_strength-sweep-clarity_strength-p1_50.jpg" alt="bilat_clarity_strength clarity_strength=+1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/bilat_clarity_strength-sweep-clarity_strength-p2_50.jpg" alt="bilat_clarity_strength clarity_strength=+2.50" width="180"> |
 
 ### `clarity_painterly`
 
@@ -191,6 +342,12 @@ _L3 discrete kind — edge-only sharpening (#110). amount=0.6 with default radiu
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/sharpen_edge_only-colorchecker.jpg" alt="sharpen_edge_only ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen_edge_only-grayscale.jpg" alt="sharpen_edge_only grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen_edge_only-colorchecker-masked.jpg" alt="sharpen_edge_only ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen_edge_only-grayscale-masked.jpg" alt="sharpen_edge_only grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
 ### `sharpen_overall`
 
 _L3 discrete kind — whole-image sharpening with bite (#110). amount=1.2 (strong)._
@@ -199,21 +356,35 @@ _L3 discrete kind — whole-image sharpening with bite (#110). amount=1.2 (stron
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/sharpen_overall-colorchecker.jpg" alt="sharpen_overall ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen_overall-grayscale.jpg" alt="sharpen_overall grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen_overall-colorchecker-masked.jpg" alt="sharpen_overall ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen_overall-grayscale-masked.jpg" alt="sharpen_overall grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
 ### `vignette_subtle`
 
 _L3 discrete kind — gentle peripheral darkening (#110). brightness=-0.15._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
-|-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/vignette_subtle-colorchecker.jpg" alt="vignette_subtle ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/vignette_subtle-grayscale.jpg" alt="vignette_subtle grayscale global" width="180"> | _(n/a)_ | _(n/a)_ |
+| ColorChecker (global) | Grayscale (global) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/vignette_subtle-colorchecker.jpg" alt="vignette_subtle ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/vignette_subtle-grayscale.jpg" alt="vignette_subtle grayscale global" width="180"> |
+
+> 🚫 **Masked variant suppressed**: see [mask-applicable-controls](mask-applicable-controls.md#vignette) for why drawn-mask binding doesn't render usefully for this module.
+
+_(near-baseline diff in ColorChecker (global): subtle vignette is small at the modest gallery render size; effect is concentrated at the very corners of the frame)_
+
+_(near-baseline diff in grayscale (global): subtle vignette is small at the modest gallery render size; effect is concentrated at the very corners of the frame)_
 
 ### `vignette_strong`
 
 _L3 discrete kind — pronounced peripheral darkening (#110). brightness=-0.5._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
-|-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/vignette_strong-colorchecker.jpg" alt="vignette_strong ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/vignette_strong-grayscale.jpg" alt="vignette_strong grayscale global" width="180"> | _(n/a)_ | _(n/a)_ |
+| ColorChecker (global) | Grayscale (global) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/vignette_strong-colorchecker.jpg" alt="vignette_strong ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/vignette_strong-grayscale.jpg" alt="vignette_strong grayscale global" width="180"> |
+
+> 🚫 **Masked variant suppressed**: see [mask-applicable-controls](mask-applicable-controls.md#vignette) for why drawn-mask binding doesn't render usefully for this module.
 
 ### `exposure`
 
@@ -223,29 +394,77 @@ _Parameterized exposure compensation (RFC-021). Pass --value V (CLI) or value: V
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/exposure-colorchecker.jpg" alt="exposure ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/exposure-grayscale.jpg" alt="exposure grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/exposure-colorchecker-masked.jpg" alt="exposure ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/exposure-grayscale-masked.jpg" alt="exposure grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`ev`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.00` | `-0.50` | `0.00` | `+0.50` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/exposure-sweep-ev-n1_00.jpg" alt="exposure ev=-1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/exposure-sweep-ev-n0_50.jpg" alt="exposure ev=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/exposure-sweep-ev-0_00.jpg" alt="exposure ev=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/exposure-sweep-ev-p0_50.jpg" alt="exposure ev=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/exposure-sweep-ev-p1_00.jpg" alt="exposure ev=+1.00" width="180"> |
+
 ### `saturation_global`
 
 _Parameterized global saturation in colorbalancergb (RFC-021). Pass --value V (CLI) or value: V (MCP); range [-1.0, +1.0] (-1.0 = fully desaturated / monochrome; +0.5 = strong boost). Replaces the v1.5.x discrete sat_kill / sat_boost_moderate / sat_boost_strong entries with a single continuous-magnitude primitive._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
-|-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/saturation_global-colorchecker.jpg" alt="saturation_global ColorChecker global" width="180"> | _(n/a)_ | <img src="../visual-proofs/expressive-baseline/saturation_global-colorchecker-masked.jpg" alt="saturation_global ColorChecker masked" width="180"> | _(n/a)_ |
+| ColorChecker (global) | ColorChecker (centered ellipse mask) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/saturation_global-colorchecker.jpg" alt="saturation_global ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_global-colorchecker-masked.jpg" alt="saturation_global ColorChecker masked" width="180"> |
+
+> **Grayscale column omitted**: this primitive moves chroma only; gray patches have no chroma to affect.
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+**Parameter sweep** (`saturation_global`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.00` | `-0.50` | `0.00` | `+0.25` | `+0.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/saturation_global-sweep-saturation_global-n1_00.jpg" alt="saturation_global saturation_global=-1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_global-sweep-saturation_global-n0_50.jpg" alt="saturation_global saturation_global=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_global-sweep-saturation_global-0_00.jpg" alt="saturation_global saturation_global=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_global-sweep-saturation_global-p0_25.jpg" alt="saturation_global saturation_global=+0.25" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_global-sweep-saturation_global-p0_50.jpg" alt="saturation_global saturation_global=+0.50" width="180"> |
 
 ### `vibrance`
 
 _Parameterized vibrance on colorbalancergb (RFC-022 Tier 2). Pass --value V; range [-1.0, +1.0]. 0.3 = vibrance_+0.3-equivalent. Vibrance protects already-saturated pixels — gentler chroma push than saturation_global. Replaces v1.5.x vibrance_+0.3._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
-|-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/vibrance-colorchecker.jpg" alt="vibrance ColorChecker global" width="180"> | _(n/a)_ | <img src="../visual-proofs/expressive-baseline/vibrance-colorchecker-masked.jpg" alt="vibrance ColorChecker masked" width="180"> | _(n/a)_ |
+| ColorChecker (global) | ColorChecker (centered ellipse mask) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/vibrance-colorchecker.jpg" alt="vibrance ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/vibrance-colorchecker-masked.jpg" alt="vibrance ColorChecker masked" width="180"> |
+
+> **Grayscale column omitted**: this primitive moves chroma only; gray patches have no chroma to affect.
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`vibrance`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.30` | `+0.60` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/vibrance-sweep-vibrance-n0_50.jpg" alt="vibrance vibrance=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/vibrance-sweep-vibrance-0_00.jpg" alt="vibrance vibrance=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/vibrance-sweep-vibrance-p0_30.jpg" alt="vibrance vibrance=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/vibrance-sweep-vibrance-p0_60.jpg" alt="vibrance vibrance=+0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/vibrance-sweep-vibrance-p1_00.jpg" alt="vibrance vibrance=+1.00" width="180"> |
 
 ### `chroma_global`
 
 _Parameterized global chroma on colorbalancergb (RFC-022 Tier 2). Pass --value V; range [-1.0, +1.0]. Less saturated-pixel protection than vibrance, more aggressive than saturation_global at equal magnitudes._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
-|-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/chroma_global-colorchecker.jpg" alt="chroma_global ColorChecker global" width="180"> | _(n/a)_ | <img src="../visual-proofs/expressive-baseline/chroma_global-colorchecker-masked.jpg" alt="chroma_global ColorChecker masked" width="180"> | _(n/a)_ |
+| ColorChecker (global) | ColorChecker (centered ellipse mask) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/chroma_global-colorchecker.jpg" alt="chroma_global ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/chroma_global-colorchecker-masked.jpg" alt="chroma_global ColorChecker masked" width="180"> |
+
+> **Grayscale column omitted**: this primitive moves chroma only; gray patches have no chroma to affect.
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`chroma_global`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.30` | `+0.60` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/chroma_global-sweep-chroma_global-n0_50.jpg" alt="chroma_global chroma_global=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/chroma_global-sweep-chroma_global-0_00.jpg" alt="chroma_global chroma_global=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/chroma_global-sweep-chroma_global-p0_30.jpg" alt="chroma_global chroma_global=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/chroma_global-sweep-chroma_global-p0_60.jpg" alt="chroma_global chroma_global=+0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/chroma_global-sweep-chroma_global-p1_00.jpg" alt="chroma_global chroma_global=+1.00" width="180"> |
 
 ### `hue_angle`
 
@@ -255,6 +474,18 @@ _Parameterized global hue rotation on colorbalancergb (RFC-022 Tier 2). Pass --v
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/hue_angle-colorchecker.jpg" alt="hue_angle ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_angle-grayscale.jpg" alt="hue_angle grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_angle-colorchecker-masked.jpg" alt="hue_angle ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_angle-grayscale-masked.jpg" alt="hue_angle grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`hue_angle`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-90.00` | `-30.00` | `0.00` | `+30.00` | `+90.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/hue_angle-sweep-hue_angle-n90_00.jpg" alt="hue_angle hue_angle=-90.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_angle-sweep-hue_angle-n30_00.jpg" alt="hue_angle hue_angle=-30.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_angle-sweep-hue_angle-0_00.jpg" alt="hue_angle hue_angle=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_angle-sweep-hue_angle-p30_00.jpg" alt="hue_angle hue_angle=+30.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_angle-sweep-hue_angle-p90_00.jpg" alt="hue_angle hue_angle=+90.00" width="180"> |
+
 ### `brilliance_global`
 
 _Parameterized global brilliance on colorbalancergb (RFC-022 Tier 2 / #86). Pass --value V; range [-1.0, +1.0]. Brilliance shapes per-zone luminance — the global axis moves all zones together. Per-zone variants (highlights/midtones/shadows) target specific tonal ranges._
@@ -262,6 +493,20 @@ _Parameterized global brilliance on colorbalancergb (RFC-022 Tier 2 / #86). Pass
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/brilliance_global-colorchecker.jpg" alt="brilliance_global ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_global-grayscale.jpg" alt="brilliance_global grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_global-colorchecker-masked.jpg" alt="brilliance_global ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_global-grayscale-masked.jpg" alt="brilliance_global grayscale masked" width="180"> |
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`brilliance_global`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.30` | `+0.60` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/brilliance_global-sweep-brilliance_global-n0_50.jpg" alt="brilliance_global brilliance_global=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_global-sweep-brilliance_global-0_00.jpg" alt="brilliance_global brilliance_global=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_global-sweep-brilliance_global-p0_30.jpg" alt="brilliance_global brilliance_global=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_global-sweep-brilliance_global-p0_60.jpg" alt="brilliance_global brilliance_global=+0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_global-sweep-brilliance_global-p1_00.jpg" alt="brilliance_global brilliance_global=+1.00" width="180"> |
 
 ### `brilliance_highlights`
 
@@ -271,6 +516,20 @@ _Parameterized highlight-zone brilliance on colorbalancergb (RFC-022 Tier 2 / #8
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/brilliance_highlights-colorchecker.jpg" alt="brilliance_highlights ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_highlights-grayscale.jpg" alt="brilliance_highlights grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_highlights-colorchecker-masked.jpg" alt="brilliance_highlights ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_highlights-grayscale-masked.jpg" alt="brilliance_highlights grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`brilliance_highlights`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.30` | `+0.60` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/brilliance_highlights-sweep-brilliance_highlights-n0_50.jpg" alt="brilliance_highlights brilliance_highlights=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_highlights-sweep-brilliance_highlights-0_00.jpg" alt="brilliance_highlights brilliance_highlights=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_highlights-sweep-brilliance_highlights-p0_30.jpg" alt="brilliance_highlights brilliance_highlights=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_highlights-sweep-brilliance_highlights-p0_60.jpg" alt="brilliance_highlights brilliance_highlights=+0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_highlights-sweep-brilliance_highlights-p1_00.jpg" alt="brilliance_highlights brilliance_highlights=+1.00" width="180"> |
+
 ### `brilliance_midtones`
 
 _Parameterized midtone-zone brilliance on colorbalancergb (RFC-022 Tier 2 / #86). Pass --value V; range [-1.0, +1.0]. Targets only the midtone tonal zone — selectively shapes the body of the tonal distribution._
@@ -278,6 +537,20 @@ _Parameterized midtone-zone brilliance on colorbalancergb (RFC-022 Tier 2 / #86)
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/brilliance_midtones-colorchecker.jpg" alt="brilliance_midtones ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_midtones-grayscale.jpg" alt="brilliance_midtones grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_midtones-colorchecker-masked.jpg" alt="brilliance_midtones ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_midtones-grayscale-masked.jpg" alt="brilliance_midtones grayscale masked" width="180"> |
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`brilliance_midtones`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.30` | `+0.60` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/brilliance_midtones-sweep-brilliance_midtones-n0_50.jpg" alt="brilliance_midtones brilliance_midtones=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_midtones-sweep-brilliance_midtones-0_00.jpg" alt="brilliance_midtones brilliance_midtones=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_midtones-sweep-brilliance_midtones-p0_30.jpg" alt="brilliance_midtones brilliance_midtones=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_midtones-sweep-brilliance_midtones-p0_60.jpg" alt="brilliance_midtones brilliance_midtones=+0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_midtones-sweep-brilliance_midtones-p1_00.jpg" alt="brilliance_midtones brilliance_midtones=+1.00" width="180"> |
 
 ### `brilliance_shadows`
 
@@ -287,6 +560,20 @@ _Parameterized shadow-zone brilliance on colorbalancergb (RFC-022 Tier 2 / #86).
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/brilliance_shadows-colorchecker.jpg" alt="brilliance_shadows ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_shadows-grayscale.jpg" alt="brilliance_shadows grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_shadows-colorchecker-masked.jpg" alt="brilliance_shadows ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_shadows-grayscale-masked.jpg" alt="brilliance_shadows grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`brilliance_shadows`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.30` | `+0.60` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/brilliance_shadows-sweep-brilliance_shadows-n0_50.jpg" alt="brilliance_shadows brilliance_shadows=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_shadows-sweep-brilliance_shadows-0_00.jpg" alt="brilliance_shadows brilliance_shadows=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_shadows-sweep-brilliance_shadows-p0_30.jpg" alt="brilliance_shadows brilliance_shadows=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_shadows-sweep-brilliance_shadows-p0_60.jpg" alt="brilliance_shadows brilliance_shadows=+0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/brilliance_shadows-sweep-brilliance_shadows-p1_00.jpg" alt="brilliance_shadows brilliance_shadows=+1.00" width="180"> |
+
 ### `hue_shadows`
 
 _Parameterized per-zone hue rotation for shadows (#91 Bucket A.5; Lightroom Color Grading shadows wheel). Pass --value V; range [0.0, 360.0] degrees. Default 0.0._
@@ -294,6 +581,18 @@ _Parameterized per-zone hue rotation for shadows (#91 Bucket A.5; Lightroom Colo
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/hue_shadows-colorchecker.jpg" alt="hue_shadows ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_shadows-grayscale.jpg" alt="hue_shadows grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_shadows-colorchecker-masked.jpg" alt="hue_shadows ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_shadows-grayscale-masked.jpg" alt="hue_shadows grayscale masked" width="180"> |
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`hue_shadows`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+90.00` | `+180.00` | `+270.00` | `+350.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/hue_shadows-sweep-hue_shadows-0_00.jpg" alt="hue_shadows hue_shadows=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_shadows-sweep-hue_shadows-p90_00.jpg" alt="hue_shadows hue_shadows=+90.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_shadows-sweep-hue_shadows-p180_00.jpg" alt="hue_shadows hue_shadows=+180.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_shadows-sweep-hue_shadows-p270_00.jpg" alt="hue_shadows hue_shadows=+270.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_shadows-sweep-hue_shadows-p350_00.jpg" alt="hue_shadows hue_shadows=+350.00" width="180"> |
 
 ### `hue_midtones`
 
@@ -303,6 +602,18 @@ _Parameterized per-zone hue rotation for midtones (#91 Bucket A.5; Lightroom Col
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/hue_midtones-colorchecker.jpg" alt="hue_midtones ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_midtones-grayscale.jpg" alt="hue_midtones grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_midtones-colorchecker-masked.jpg" alt="hue_midtones ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_midtones-grayscale-masked.jpg" alt="hue_midtones grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`hue_midtones`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+90.00` | `+180.00` | `+270.00` | `+350.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/hue_midtones-sweep-hue_midtones-0_00.jpg" alt="hue_midtones hue_midtones=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_midtones-sweep-hue_midtones-p90_00.jpg" alt="hue_midtones hue_midtones=+90.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_midtones-sweep-hue_midtones-p180_00.jpg" alt="hue_midtones hue_midtones=+180.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_midtones-sweep-hue_midtones-p270_00.jpg" alt="hue_midtones hue_midtones=+270.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_midtones-sweep-hue_midtones-p350_00.jpg" alt="hue_midtones hue_midtones=+350.00" width="180"> |
+
 ### `hue_highlights`
 
 _Parameterized per-zone hue rotation for highlights (#91 Bucket A.5; Lightroom Color Grading highlights wheel). Pass --value V; range [0.0, 360.0] degrees. Default 0.0._
@@ -311,29 +622,75 @@ _Parameterized per-zone hue rotation for highlights (#91 Bucket A.5; Lightroom C
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/hue_highlights-colorchecker.jpg" alt="hue_highlights ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_highlights-grayscale.jpg" alt="hue_highlights grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_highlights-colorchecker-masked.jpg" alt="hue_highlights ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_highlights-grayscale-masked.jpg" alt="hue_highlights grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`hue_highlights`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+90.00` | `+180.00` | `+270.00` | `+350.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/hue_highlights-sweep-hue_highlights-0_00.jpg" alt="hue_highlights hue_highlights=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_highlights-sweep-hue_highlights-p90_00.jpg" alt="hue_highlights hue_highlights=+90.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_highlights-sweep-hue_highlights-p180_00.jpg" alt="hue_highlights hue_highlights=+180.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_highlights-sweep-hue_highlights-p270_00.jpg" alt="hue_highlights hue_highlights=+270.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hue_highlights-sweep-hue_highlights-p350_00.jpg" alt="hue_highlights hue_highlights=+350.00" width="180"> |
+
 ### `saturation_shadows`
 
 _Parameterized per-zone saturation for shadows (#91 Bucket A.5; pairs with hue_shadows for full Lightroom shadow-zone color-grading control). Pass --value V; range [-1.0, +1.0]._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
-|-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/saturation_shadows-colorchecker.jpg" alt="saturation_shadows ColorChecker global" width="180"> | _(n/a)_ | <img src="../visual-proofs/expressive-baseline/saturation_shadows-colorchecker-masked.jpg" alt="saturation_shadows ColorChecker masked" width="180"> | _(n/a)_ |
+| ColorChecker (global) | ColorChecker (centered ellipse mask) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/saturation_shadows-colorchecker.jpg" alt="saturation_shadows ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_shadows-colorchecker-masked.jpg" alt="saturation_shadows ColorChecker masked" width="180"> |
+
+> **Grayscale column omitted**: this primitive moves chroma only; gray patches have no chroma to affect.
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`saturation_shadows`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.30` | `+0.50` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/saturation_shadows-sweep-saturation_shadows-n0_50.jpg" alt="saturation_shadows saturation_shadows=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_shadows-sweep-saturation_shadows-0_00.jpg" alt="saturation_shadows saturation_shadows=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_shadows-sweep-saturation_shadows-p0_30.jpg" alt="saturation_shadows saturation_shadows=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_shadows-sweep-saturation_shadows-p0_50.jpg" alt="saturation_shadows saturation_shadows=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_shadows-sweep-saturation_shadows-p1_00.jpg" alt="saturation_shadows saturation_shadows=+1.00" width="180"> |
 
 ### `saturation_midtones`
 
 _Parameterized per-zone saturation for midtones (#91 Bucket A.5). Pass --value V; range [-1.0, +1.0]._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
-|-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/saturation_midtones-colorchecker.jpg" alt="saturation_midtones ColorChecker global" width="180"> | _(n/a)_ | <img src="../visual-proofs/expressive-baseline/saturation_midtones-colorchecker-masked.jpg" alt="saturation_midtones ColorChecker masked" width="180"> | _(n/a)_ |
+| ColorChecker (global) | ColorChecker (centered ellipse mask) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/saturation_midtones-colorchecker.jpg" alt="saturation_midtones ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_midtones-colorchecker-masked.jpg" alt="saturation_midtones ColorChecker masked" width="180"> |
+
+> **Grayscale column omitted**: this primitive moves chroma only; gray patches have no chroma to affect.
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+**Parameter sweep** (`saturation_midtones`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.30` | `+0.50` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/saturation_midtones-sweep-saturation_midtones-n0_50.jpg" alt="saturation_midtones saturation_midtones=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_midtones-sweep-saturation_midtones-0_00.jpg" alt="saturation_midtones saturation_midtones=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_midtones-sweep-saturation_midtones-p0_30.jpg" alt="saturation_midtones saturation_midtones=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_midtones-sweep-saturation_midtones-p0_50.jpg" alt="saturation_midtones saturation_midtones=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_midtones-sweep-saturation_midtones-p1_00.jpg" alt="saturation_midtones saturation_midtones=+1.00" width="180"> |
 
 ### `saturation_highlights`
 
 _Parameterized per-zone saturation for highlights (#91 Bucket A.5). Pass --value V; range [-1.0, +1.0]._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
-|-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/saturation_highlights-colorchecker.jpg" alt="saturation_highlights ColorChecker global" width="180"> | _(n/a)_ | <img src="../visual-proofs/expressive-baseline/saturation_highlights-colorchecker-masked.jpg" alt="saturation_highlights ColorChecker masked" width="180"> | _(n/a)_ |
+| ColorChecker (global) | ColorChecker (centered ellipse mask) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/saturation_highlights-colorchecker.jpg" alt="saturation_highlights ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_highlights-colorchecker-masked.jpg" alt="saturation_highlights ColorChecker masked" width="180"> |
+
+> **Grayscale column omitted**: this primitive moves chroma only; gray patches have no chroma to affect.
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`saturation_highlights`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.30` | `+0.50` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/saturation_highlights-sweep-saturation_highlights-n0_50.jpg" alt="saturation_highlights saturation_highlights=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_highlights-sweep-saturation_highlights-0_00.jpg" alt="saturation_highlights saturation_highlights=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_highlights-sweep-saturation_highlights-p0_30.jpg" alt="saturation_highlights saturation_highlights=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_highlights-sweep-saturation_highlights-p0_50.jpg" alt="saturation_highlights saturation_highlights=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/saturation_highlights-sweep-saturation_highlights-p1_00.jpg" alt="saturation_highlights saturation_highlights=+1.00" width="180"> |
 
 ### `shadows_weight`
 
@@ -343,6 +700,18 @@ _Parameterized shadow-zone falloff weight (#91 Bucket A.5; Lightroom Color Gradi
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/shadows_weight-colorchecker.jpg" alt="shadows_weight ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/shadows_weight-grayscale.jpg" alt="shadows_weight grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/shadows_weight-colorchecker-masked.jpg" alt="shadows_weight ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/shadows_weight-grayscale-masked.jpg" alt="shadows_weight grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`shadows_weight`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+0.50` | `+1.00` | `+2.00` | `+4.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/shadows_weight-sweep-shadows_weight-0_00.jpg" alt="shadows_weight shadows_weight=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/shadows_weight-sweep-shadows_weight-p0_50.jpg" alt="shadows_weight shadows_weight=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/shadows_weight-sweep-shadows_weight-p1_00.jpg" alt="shadows_weight shadows_weight=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/shadows_weight-sweep-shadows_weight-p2_00.jpg" alt="shadows_weight shadows_weight=+2.00" width="180"> | <img src="../visual-proofs/expressive-baseline/shadows_weight-sweep-shadows_weight-p4_00.jpg" alt="shadows_weight shadows_weight=+4.00" width="180"> |
+
 ### `highlights_weight`
 
 _Parameterized highlights-zone falloff weight (#91 Bucket A.5; Lightroom Color Grading 'Blending' top). Pass --value V; range [0.0, 4.0]; default 1.0._
@@ -351,6 +720,20 @@ _Parameterized highlights-zone falloff weight (#91 Bucket A.5; Lightroom Color G
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/highlights_weight-colorchecker.jpg" alt="highlights_weight ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_weight-grayscale.jpg" alt="highlights_weight grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_weight-colorchecker-masked.jpg" alt="highlights_weight ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_weight-grayscale-masked.jpg" alt="highlights_weight grayscale masked" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`highlights_weight`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+0.50` | `+1.00` | `+2.00` | `+4.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/highlights_weight-sweep-highlights_weight-0_00.jpg" alt="highlights_weight highlights_weight=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_weight-sweep-highlights_weight-p0_50.jpg" alt="highlights_weight highlights_weight=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_weight-sweep-highlights_weight-p1_00.jpg" alt="highlights_weight highlights_weight=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_weight-sweep-highlights_weight-p2_00.jpg" alt="highlights_weight highlights_weight=+2.00" width="180"> | <img src="../visual-proofs/expressive-baseline/highlights_weight-sweep-highlights_weight-p4_00.jpg" alt="highlights_weight highlights_weight=+4.00" width="180"> |
+
 ### `white_fulcrum`
 
 _Parameterized shadow/highlight balance point (#91 Bucket A.5; Lightroom Color Grading 'Balance' slider). Pass --value V; range [-2.0, 2.0]; default 0.0 (neutral midpoint). Negative shifts the split toward shadows; positive toward highlights._
@@ -358,6 +741,20 @@ _Parameterized shadow/highlight balance point (#91 Bucket A.5; Lightroom Color G
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/white_fulcrum-colorchecker.jpg" alt="white_fulcrum ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/white_fulcrum-grayscale.jpg" alt="white_fulcrum grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/white_fulcrum-colorchecker-masked.jpg" alt="white_fulcrum ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/white_fulcrum-grayscale-masked.jpg" alt="white_fulcrum grayscale masked" width="180"> |
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in ColorChecker (masked): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (masked): below visible threshold on this chart input)_
+
+**Parameter sweep** (`white_fulcrum`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.00` | `-0.50` | `0.00` | `+0.50` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/white_fulcrum-sweep-white_fulcrum-n1_00.jpg" alt="white_fulcrum white_fulcrum=-1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/white_fulcrum-sweep-white_fulcrum-n0_50.jpg" alt="white_fulcrum white_fulcrum=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/white_fulcrum-sweep-white_fulcrum-0_00.jpg" alt="white_fulcrum white_fulcrum=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/white_fulcrum-sweep-white_fulcrum-p0_50.jpg" alt="white_fulcrum white_fulcrum=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/white_fulcrum-sweep-white_fulcrum-p1_00.jpg" alt="white_fulcrum white_fulcrum=+1.00" width="180"> |
 
 ### `grade_shadows_warm`
 
@@ -419,25 +816,31 @@ _L3 discrete kind — classic split-toning composite (#110). Combines grade_shad
 
 _Boost shadow chroma +0.3._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
-|-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/chroma_boost_shadows-colorchecker.jpg" alt="chroma_boost_shadows ColorChecker global" width="180"> | _(n/a)_ | <img src="../visual-proofs/expressive-baseline/chroma_boost_shadows-colorchecker-masked.jpg" alt="chroma_boost_shadows ColorChecker masked" width="180"> | _(n/a)_ |
+| ColorChecker (global) | ColorChecker (centered ellipse mask) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/chroma_boost_shadows-colorchecker.jpg" alt="chroma_boost_shadows ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/chroma_boost_shadows-colorchecker-masked.jpg" alt="chroma_boost_shadows ColorChecker masked" width="180"> |
+
+> **Grayscale column omitted**: this primitive moves chroma only; gray patches have no chroma to affect.
 
 ### `chroma_boost_midtones`
 
 _Boost mid-tone chroma +0.3._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
-|-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/chroma_boost_midtones-colorchecker.jpg" alt="chroma_boost_midtones ColorChecker global" width="180"> | _(n/a)_ | <img src="../visual-proofs/expressive-baseline/chroma_boost_midtones-colorchecker-masked.jpg" alt="chroma_boost_midtones ColorChecker masked" width="180"> | _(n/a)_ |
+| ColorChecker (global) | ColorChecker (centered ellipse mask) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/chroma_boost_midtones-colorchecker.jpg" alt="chroma_boost_midtones ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/chroma_boost_midtones-colorchecker-masked.jpg" alt="chroma_boost_midtones ColorChecker masked" width="180"> |
+
+> **Grayscale column omitted**: this primitive moves chroma only; gray patches have no chroma to affect.
 
 ### `chroma_boost_highlights`
 
 _Boost highlight chroma +0.3._
 
-| ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
-|-|-|-|-|
-| <img src="../visual-proofs/expressive-baseline/chroma_boost_highlights-colorchecker.jpg" alt="chroma_boost_highlights ColorChecker global" width="180"> | _(n/a)_ | <img src="../visual-proofs/expressive-baseline/chroma_boost_highlights-colorchecker-masked.jpg" alt="chroma_boost_highlights ColorChecker masked" width="180"> | _(n/a)_ |
+| ColorChecker (global) | ColorChecker (centered ellipse mask) |
+|-|-|
+| <img src="../visual-proofs/expressive-baseline/chroma_boost_highlights-colorchecker.jpg" alt="chroma_boost_highlights ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/chroma_boost_highlights-colorchecker-masked.jpg" alt="chroma_boost_highlights ColorChecker masked" width="180"> |
+
+> **Grayscale column omitted**: this primitive moves chroma only; gray patches have no chroma to affect.
 
 ### `gradient_top_dampen_highlights` 🟦 mask-bound
 
@@ -535,6 +938,8 @@ _L2 look — deepen sky blues in the upper half. Drawn gradient (top half) + col
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_sky_blue_deepen-colorchecker.jpg" alt="look_sky_blue_deepen ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_sky_blue_deepen-grayscale.jpg" alt="look_sky_blue_deepen grayscale" width="180"> |
 
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
 ### `look_horizon_warm_glow` 🟦 mask-bound
 
 _L2 look — lift warm tones near the horizon. Horizontal gradient anchored at midline + color_h filter on warm tones (orange/red). Sunset / golden-hour enhancement without affecting cool tones._
@@ -551,6 +956,8 @@ _L2 look — brighten only the bright pixels in the subject region. Drawn ellips
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_subject_brighten_highlights-colorchecker.jpg" alt="look_subject_brighten_highlights ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_subject_brighten_highlights-grayscale.jpg" alt="look_subject_brighten_highlights grayscale" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
 ### `look_dark_pixels_global_lift` 🟦 mask-bound
 
 _L2 look — lift dark pixels globally (no spatial mask). Pure parametric range_filter — luminance shadows. Useful when the intent is purely tonal: 'open up all the dark areas in the image, regardless of where they are.' Demonstrates the parametric-only path of RFC-024 / ADR-085._
@@ -566,6 +973,16 @@ _Approximate frequency separation for skin smoothing (Portrait Gap #4, cheap var
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/skin_smooth_painterly-colorchecker.jpg" alt="skin_smooth_painterly ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/skin_smooth_painterly-grayscale.jpg" alt="skin_smooth_painterly grayscale" width="180"> |
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
+**Parameter sweep** (`clarity_strength`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.50` | `+1.50` | `+2.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/skin_smooth_painterly-sweep-clarity_strength-n0_50.jpg" alt="skin_smooth_painterly clarity_strength=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/skin_smooth_painterly-sweep-clarity_strength-0_00.jpg" alt="skin_smooth_painterly clarity_strength=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/skin_smooth_painterly-sweep-clarity_strength-p0_50.jpg" alt="skin_smooth_painterly clarity_strength=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/skin_smooth_painterly-sweep-clarity_strength-p1_50.jpg" alt="skin_smooth_painterly clarity_strength=+1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/skin_smooth_painterly-sweep-clarity_strength-p2_50.jpg" alt="skin_smooth_painterly clarity_strength=+2.50" width="180"> |
 
 ### `look_portrait_editorial`
 
@@ -623,6 +1040,10 @@ _Sky-targeted enhancement (Heaton 'adaptive sky' shape). Cool-tone highlights sh
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_landscape_sky_enhance-colorchecker.jpg" alt="look_landscape_sky_enhance ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_sky_enhance-grayscale.jpg" alt="look_landscape_sky_enhance grayscale" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
+
 ### `look_landscape_water_silk` 🟦 mask-bound
 
 _Water surfaces — silky water in long-exposure work, glassy lakes. Bilat clarity_strength -0.4 (smooths the texture, OPPOSITE of clarity), cool-tone shadows (hue 200, sat 0.10), vibrance +0.05. Pre-baked with mask_water_blue_cyan so the smoothing scopes to water without affecting rocks, foliage, or sky. Reduces clarity selectively to enhance the smoothness photographers spent shutter-time creating._
@@ -638,6 +1059,8 @@ _Subject-isolated wildlife sharpening — feather / fur / scale detail lifted ON
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_wildlife_subject_sharpen-colorchecker.jpg" alt="look_wildlife_subject_sharpen ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_wildlife_subject_sharpen-grayscale.jpg" alt="look_wildlife_subject_sharpen grayscale" width="180"> |
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
 
 ### `look_wildlife_background_blur` 🟦 mask-bound
 
@@ -655,6 +1078,8 @@ _Catchlight emphasis on the wildlife subject's eye — exposure +0.3 EV + sharpe
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_wildlife_eye_lift-colorchecker.jpg" alt="look_wildlife_eye_lift ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_wildlife_eye_lift-grayscale.jpg" alt="look_wildlife_eye_lift grayscale" width="180"> |
 
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
 ### `look_food_texture_subtle` 🟦 mask-bound
 
 _Subtle texture lift for food — bread crust, pastry layers, meat fibers, fruit skin texture. Bilat clarity_strength +0.20 — explicit ceiling matching the food-photography-academy 'never overdone' discipline (Kopcok: 'overdoing clarity makes food look dry and unappealing'). Pre-baked with mask_subject so the texture lift scopes to the food, not the table / plate. Compose with look_food_appetizing_warm._
@@ -662,6 +1087,10 @@ _Subtle texture lift for food — bread crust, pastry layers, meat fibers, fruit
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_food_texture_subtle-colorchecker.jpg" alt="look_food_texture_subtle ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_food_texture_subtle-grayscale.jpg" alt="look_food_texture_subtle grayscale" width="180"> |
+
+_(near-baseline diff in ColorChecker (global): below visible threshold on this chart input)_
+
+_(near-baseline diff in grayscale (global): below visible threshold on this chart input)_
 
 ### `look_product_packshot_clean`
 
@@ -675,46 +1104,671 @@ _Commercial packshot baseline — gentle sigmoid 1.10 (avoids the punch-the-prod
 
 These entries touch raw-domain darktable modules (`temperature`, `colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, or `diffuse`) — or compose looks that include one. The synthetic chart can't represent the input these modules expect; rendering against it produces structurally-misleading output. Each entry is routed to either the landscape or portrait CC BY-SA 4.0 fixture from `tests/fixtures/raws/` so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage.
 
-> The following real_raw entries have no real-raw render on disk yet. Run `uv run python scripts/generate-visual-proofs.py` (without `--markdown-only`) after fetching the fixtures via `git lfs pull`.
+### `crop` 📷 landscape raw
 
-| Entry | Routed fixture | Modules touched | What the entry does |
+_Parameterized crop (RFC-022 Tier 2). Pass --param cx=V cy=V cw=V ch=V — each in [0.0, 1.0]. Default 0,0,1,1 (no crop). cx/cy = top-left margin, cw/ch = bottom-right margin (so crop region is [cx..cw] x [cy..ch] in normalized coords). First workflow-primitive parameterized entry; aspect-ratio constraint preserved at -1/-1 (free)._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/crop-landscape.jpg" alt="crop landscape raw" width="180"> |
+
+
+**Parameter sweep** (`cx`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+0.10` | `+0.20` | `+0.30` |
 |-|-|-|-|
-| `crop` | landscape | `crop` | Parameterized crop (RFC-022 Tier 2). |
-| `transform` | landscape | `ashift` | Parameterized perspective / transform (#101). |
-| `lens_correction` | landscape | `lens` | Parameterized lens correction (#95). |
-| `denoise` | landscape | `denoiseprofile` | Parameterized denoising via darktable's denoiseprofile module (#96). |
-| `filmic` | landscape | `filmicrgb` | Parameterized filmic v6 tone mapping (#97). |
-| `texture` | landscape | `diffuse` | Parameterized texture (#92 Bucket A. |
-| `hsl_saturation` | landscape | `colorequal` | Parameterized HSL Saturation row (RFC-023). |
-| `hsl_hue` | landscape | `colorequal` | Parameterized HSL Hue row (RFC-023). |
-| `hsl_luminance` | landscape | `colorequal` | Parameterized HSL Luminance row (RFC-023). |
-| `dehaze` | landscape | `hazeremoval` | Parameterized dehaze (#90 Bucket A. |
-| `wb_kelvin_delta` | landscape | `temperature` | WB Kelvin / tint UX wrapper (#102). |
-| `temperature` | landscape | `temperature` | Parameterized white balance (RFC-021; first multi-parameter ship). |
-| `look_vintage_film` | landscape | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — nostalgia / faded film aesthetic. |
-| `look_film_kodachrome` | landscape | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — Kodachrome film simulation (#104). |
-| `look_film_portra` | landscape | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — Kodak Portra 400 portrait film (#104). |
-| `look_70s_film` | landscape | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — 1970s film aesthetic (#104). |
-| `look_90s_grain` | landscape | `grain`, `sigmoid`, `temperature` | L2 look — 1990s film aesthetic (#104). |
-| `look_2000s_digital` | landscape | `colorbalancergb`, `sigmoid`, `temperature` | L2 look — early-2000s digital camera aesthetic (#104). |
-| `skin_uniformity` | portrait | `colorequal` | Skin-tone uniformity (RFC-033). |
-| `look_portrait_natural_skin` | portrait | `colorbalancergb`, `exposure`, `sigmoid`, `temperature` | Restraint-first portrait foundation — Tucker/Marino-aligned. |
-| `look_portrait_skin_warm_lift` | portrait | `exposure`, `temperature` | Subject-region warm + brighten. |
-| `look_landscape_golden_hour` | landscape | `colorbalancergb`, `sigmoid`, `temperature` | Sunset / sunrise mood. |
-| `look_landscape_blue_hour_cool` | landscape | `colorbalancergb`, `sigmoid`, `temperature` | Twilight / pre-dawn / blue-hour mood. |
-| `look_landscape_atmospheric_haze` | landscape | `bilat`, `colorbalancergb`, `hazeremoval` | Misty / hazy / fog-as-subject mood. |
-| `look_landscape_autumn_pop` | landscape | `bilat`, `colorequal`, `temperature` | Autumn foliage / fall color. |
-| `bw_convert` | landscape | `colorequal` | B&W conversion (RFC-033 follow-up; survey Gap #1). |
-| `look_bw_classic_neutral` | landscape | `bilat`, `colorequal`, `sigmoid` | Classic B&W foundation — neutral channel weighting (no filter), mid contrast (sigmoid 1. |
-| `look_bw_high_contrast_chiaroscuro` | landscape | `colorbalancergb`, `colorequal`, `sigmoid` | Tucker/Thompson-style chiaroscuro B&W — strong sigmoid contrast (1. |
-| `look_bw_landscape_dramatic` | landscape | `bilat`, `colorequal`, `sigmoid` | Page/Adamus dramatic B&W landscape — red-filter-emulated conversion (bright_red +0. |
-| `look_bw_split_tone_warm_shadows` | landscape | `colorbalancergb`, `colorequal`, `sigmoid` | Subtle warm-shadows toned B&W — sepia / selenium print evocation. |
-| `look_bw_silver_efex_zone_balanced` | landscape | `bilat`, `colorequal`, `sigmoid` | Whalley/Boutwell zone-system-aware balanced B&W — the restraint discipline applied to monochrome. |
-| `look_wildlife_high_iso_recovery` | landscape | `bilat`, `denoiseprofile`, `sigmoid` | High-ISO wildlife recovery (low-light dance-floor, late dusk owl, early-dawn bird-burst). |
-| `look_wildlife_natural_warm` | landscape | `colorbalancergb`, `sigmoid`, `temperature` | Warm golden-hour wildlife default — temperature +0. |
-| `look_food_appetizing_warm` | landscape | `colorbalancergb`, `sigmoid`, `temperature` | Default food editorial — warm WB (+0. |
-| `look_food_orange_pop` | landscape | `colorequal` | Lift the orange / red food band — tomato, carrot, salmon, paprika, peach. |
-| `look_food_green_natural` | landscape | `colorequal` | Lift greens — fresh herbs, salad, parsley, basil — without crossing into the cartoonish lime-green that over-edited food photography shows. |
+| <img src="../visual-proofs/expressive-baseline/crop-sweep-cx-0_00.jpg" alt="crop cx=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-cx-p0_10.jpg" alt="crop cx=+0.10" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-cx-p0_20.jpg" alt="crop cx=+0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-cx-p0_30.jpg" alt="crop cx=+0.30" width="180"> |
+
+**Parameter sweep** (`cy`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+0.10` | `+0.20` | `+0.30` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/crop-sweep-cy-0_00.jpg" alt="crop cy=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-cy-p0_10.jpg" alt="crop cy=+0.10" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-cy-p0_20.jpg" alt="crop cy=+0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-cy-p0_30.jpg" alt="crop cy=+0.30" width="180"> |
+
+**Parameter sweep** (`cw`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.70` | `+0.80` | `+0.90` | `+1.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/crop-sweep-cw-p0_70.jpg" alt="crop cw=+0.70" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-cw-p0_80.jpg" alt="crop cw=+0.80" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-cw-p0_90.jpg" alt="crop cw=+0.90" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-cw-p1_00.jpg" alt="crop cw=+1.00" width="180"> |
+
+**Parameter sweep** (`ch`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.70` | `+0.80` | `+0.90` | `+1.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/crop-sweep-ch-p0_70.jpg" alt="crop ch=+0.70" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-ch-p0_80.jpg" alt="crop ch=+0.80" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-ch-p0_90.jpg" alt="crop ch=+0.90" width="180"> | <img src="../visual-proofs/expressive-baseline/crop-sweep-ch-p1_00.jpg" alt="crop ch=+1.00" width="180"> |
+
+### `transform` 📷 landscape raw
+
+_Parameterized perspective / transform (#101). Closes the Lightroom Transform panel parity gap via darktable's ashift module. 5 magnitude axes: --param transform_rotation=V (image rotation in degrees), --param transform_lensshift_v=V (vertical perspective / keystone), --param transform_lensshift_h=V (horizontal perspective), --param transform_shear=V, --param transform_aspect=V (post-transform aspect adjust; default 1.0). Axis names use transform_ prefix. Lens-tuning floats (focal length, crop factor, ortho-correction) and the user-drawn-lines storage are preserved verbatim — those are darktable-GUI-authored when needed._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/transform-landscape.jpg" alt="transform landscape raw" width="180"> |
+
+
+**Parameter sweep** (`transform_rotation`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-15.00` | `-5.00` | `0.00` | `+5.00` | `+15.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_rotation-n15_00.jpg" alt="transform transform_rotation=-15.00" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_rotation-n5_00.jpg" alt="transform transform_rotation=-5.00" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_rotation-0_00.jpg" alt="transform transform_rotation=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_rotation-p5_00.jpg" alt="transform transform_rotation=+5.00" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_rotation-p15_00.jpg" alt="transform transform_rotation=+15.00" width="180"> |
+
+**Parameter sweep** (`transform_lensshift_v`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `-0.20` | `0.00` | `+0.20` | `+0.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_lensshift_v-n0_50.jpg" alt="transform transform_lensshift_v=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_lensshift_v-n0_20.jpg" alt="transform transform_lensshift_v=-0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_lensshift_v-0_00.jpg" alt="transform transform_lensshift_v=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_lensshift_v-p0_20.jpg" alt="transform transform_lensshift_v=+0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_lensshift_v-p0_50.jpg" alt="transform transform_lensshift_v=+0.50" width="180"> |
+
+**Parameter sweep** (`transform_lensshift_h`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `-0.20` | `0.00` | `+0.20` | `+0.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_lensshift_h-n0_50.jpg" alt="transform transform_lensshift_h=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_lensshift_h-n0_20.jpg" alt="transform transform_lensshift_h=-0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_lensshift_h-0_00.jpg" alt="transform transform_lensshift_h=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_lensshift_h-p0_20.jpg" alt="transform transform_lensshift_h=+0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_lensshift_h-p0_50.jpg" alt="transform transform_lensshift_h=+0.50" width="180"> |
+
+**Parameter sweep** (`transform_shear`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.30` | `0.00` | `+0.30` |
+|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_shear-n0_30.jpg" alt="transform transform_shear=-0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_shear-0_00.jpg" alt="transform transform_shear=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_shear-p0_30.jpg" alt="transform transform_shear=+0.30" width="180"> |
+
+**Parameter sweep** (`transform_aspect`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.70` | `+0.90` | `+1.00` | `+1.20` | `+1.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_aspect-p0_70.jpg" alt="transform transform_aspect=+0.70" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_aspect-p0_90.jpg" alt="transform transform_aspect=+0.90" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_aspect-p1_00.jpg" alt="transform transform_aspect=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_aspect-p1_20.jpg" alt="transform transform_aspect=+1.20" width="180"> | <img src="../visual-proofs/expressive-baseline/transform-sweep-transform_aspect-p1_50.jpg" alt="transform transform_aspect=+1.50" width="180"> |
+
+### `lens_correction` 📷 landscape raw
+
+_Parameterized lens correction (#95). 10 manual-override magnitude axes via darktable's lens module: --param lens_scale=V (output scaling), --param lens_tca_r=V / lens_tca_b=V (manual TCA shifts; 1.0 = no shift), --param lens_cor_distortion=V / lens_cor_vignette=V / lens_cor_ca_r=V / lens_cor_ca_b=V (per-correction-type strengths for embedded-metadata method), --param lens_v_strength=V / lens_v_radius=V / lens_v_steepness=V (manual vignette correction). NOTE: this entry's photographic effect requires lensfun identifier strings (camera/lens) and shooting metadata (focal/aperture/distance) to be populated. EXIF auto-binding for these is a follow-up; until then, the entry is most useful for overriding strength sliders on a darktable-GUI-authored baseline._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/lens_correction-landscape.jpg" alt="lens_correction landscape raw" width="180"> |
+
+
+**Parameter sweep** (`lens_scale`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+1.00` | `+1.50` | `+2.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_scale-0_00.jpg" alt="lens_correction lens_scale=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_scale-p1_00.jpg" alt="lens_correction lens_scale=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_scale-p1_50.jpg" alt="lens_correction lens_scale=+1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_scale-p2_00.jpg" alt="lens_correction lens_scale=+2.00" width="180"> |
+
+**Parameter sweep** (`lens_tca_r`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.98` | `+0.99` | `+1.00` | `+1.01` | `+1.02` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_tca_r-p0_98.jpg" alt="lens_correction lens_tca_r=+0.98" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_tca_r-p0_99.jpg" alt="lens_correction lens_tca_r=+0.99" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_tca_r-p1_00.jpg" alt="lens_correction lens_tca_r=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_tca_r-p1_01.jpg" alt="lens_correction lens_tca_r=+1.01" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_tca_r-p1_02.jpg" alt="lens_correction lens_tca_r=+1.02" width="180"> |
+
+**Parameter sweep** (`lens_tca_b`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.98` | `+0.99` | `+1.00` | `+1.01` | `+1.02` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_tca_b-p0_98.jpg" alt="lens_correction lens_tca_b=+0.98" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_tca_b-p0_99.jpg" alt="lens_correction lens_tca_b=+0.99" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_tca_b-p1_00.jpg" alt="lens_correction lens_tca_b=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_tca_b-p1_01.jpg" alt="lens_correction lens_tca_b=+1.01" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_tca_b-p1_02.jpg" alt="lens_correction lens_tca_b=+1.02" width="180"> |
+
+**Parameter sweep** (`lens_cor_distortion`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+0.30` | `+0.60` | `+1.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_distortion-0_00.jpg" alt="lens_correction lens_cor_distortion=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_distortion-p0_30.jpg" alt="lens_correction lens_cor_distortion=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_distortion-p0_60.jpg" alt="lens_correction lens_cor_distortion=+0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_distortion-p1_00.jpg" alt="lens_correction lens_cor_distortion=+1.00" width="180"> |
+
+**Parameter sweep** (`lens_cor_vignette`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+0.30` | `+0.60` | `+1.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_vignette-0_00.jpg" alt="lens_correction lens_cor_vignette=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_vignette-p0_30.jpg" alt="lens_correction lens_cor_vignette=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_vignette-p0_60.jpg" alt="lens_correction lens_cor_vignette=+0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_vignette-p1_00.jpg" alt="lens_correction lens_cor_vignette=+1.00" width="180"> |
+
+**Parameter sweep** (`lens_cor_ca_r`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.00` | `0.00` | `+1.00` |
+|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_ca_r-n1_00.jpg" alt="lens_correction lens_cor_ca_r=-1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_ca_r-0_00.jpg" alt="lens_correction lens_cor_ca_r=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_ca_r-p1_00.jpg" alt="lens_correction lens_cor_ca_r=+1.00" width="180"> |
+
+**Parameter sweep** (`lens_cor_ca_b`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-1.00` | `0.00` | `+1.00` |
+|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_ca_b-n1_00.jpg" alt="lens_correction lens_cor_ca_b=-1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_ca_b-0_00.jpg" alt="lens_correction lens_cor_ca_b=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_cor_ca_b-p1_00.jpg" alt="lens_correction lens_cor_ca_b=+1.00" width="180"> |
+
+**Parameter sweep** (`lens_v_strength`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.50` | `+1.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_v_strength-n0_50.jpg" alt="lens_correction lens_v_strength=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_v_strength-0_00.jpg" alt="lens_correction lens_v_strength=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_v_strength-p0_50.jpg" alt="lens_correction lens_v_strength=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_v_strength-p1_00.jpg" alt="lens_correction lens_v_strength=+1.00" width="180"> |
+
+**Parameter sweep** (`lens_v_radius`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.50` | `+1.00` | `+2.00` |
+|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_v_radius-p0_50.jpg" alt="lens_correction lens_v_radius=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_v_radius-p1_00.jpg" alt="lens_correction lens_v_radius=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_v_radius-p2_00.jpg" alt="lens_correction lens_v_radius=+2.00" width="180"> |
+
+**Parameter sweep** (`lens_v_steepness`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.50` | `+1.00` | `+2.50` | `+5.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_v_steepness-p0_50.jpg" alt="lens_correction lens_v_steepness=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_v_steepness-p1_00.jpg" alt="lens_correction lens_v_steepness=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_v_steepness-p2_50.jpg" alt="lens_correction lens_v_steepness=+2.50" width="180"> | <img src="../visual-proofs/expressive-baseline/lens_correction-sweep-lens_v_steepness-p5_00.jpg" alt="lens_correction lens_v_steepness=+5.00" width="180"> |
+
+### `denoise` 📷 landscape raw
+
+_Parameterized denoising via darktable's denoiseprofile module (#96). NLMEANS (non-local-means) mode with 4 magnitude axes: --param denoise_strength=V (primary noise slider; range [0.001, 1000.0]), --param denoise_shadows=V (preserve shadow noise vs detail; range [0.0, 1.8]), --param denoise_radius=V (patch size; range [0.0, 12.0]), --param denoise_scattering=V (search-zone spread; range [0.0, 20.0]). Axis names carry the denoise_ prefix to disambiguate from same-named axes on other modules (e.g. dehaze.strength). Per-channel noise calibration a[3]/b[3] auto-populated by darktable from camera+ISO database. WAVELETS mode would need an empirically-captured wavelet-curve baseline (tracked under #100 / task C); for now NLMEANS ships clean and lines up with Lightroom's patch-similarity Noise Reduction._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/denoise-landscape.jpg" alt="denoise landscape raw" width="180"> |
+
+
+**Parameter sweep** (`denoise_strength`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.50` | `+1.00` | `+2.00` | `+5.00` | `+20.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_strength-p0_50.jpg" alt="denoise denoise_strength=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_strength-p1_00.jpg" alt="denoise denoise_strength=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_strength-p2_00.jpg" alt="denoise denoise_strength=+2.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_strength-p5_00.jpg" alt="denoise denoise_strength=+5.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_strength-p20_00.jpg" alt="denoise denoise_strength=+20.00" width="180"> |
+
+**Parameter sweep** (`denoise_shadows`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+0.50` | `+1.00` | `+1.40` | `+1.80` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_shadows-0_00.jpg" alt="denoise denoise_shadows=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_shadows-p0_50.jpg" alt="denoise denoise_shadows=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_shadows-p1_00.jpg" alt="denoise denoise_shadows=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_shadows-p1_40.jpg" alt="denoise denoise_shadows=+1.40" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_shadows-p1_80.jpg" alt="denoise denoise_shadows=+1.80" width="180"> |
+
+**Parameter sweep** (`denoise_radius`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+1.00` | `+3.00` | `+6.00` | `+10.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_radius-0_00.jpg" alt="denoise denoise_radius=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_radius-p1_00.jpg" alt="denoise denoise_radius=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_radius-p3_00.jpg" alt="denoise denoise_radius=+3.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_radius-p6_00.jpg" alt="denoise denoise_radius=+6.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_radius-p10_00.jpg" alt="denoise denoise_radius=+10.00" width="180"> |
+
+**Parameter sweep** (`denoise_scattering`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+1.00` | `+5.00` | `+10.00` | `+20.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_scattering-0_00.jpg" alt="denoise denoise_scattering=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_scattering-p1_00.jpg" alt="denoise denoise_scattering=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_scattering-p5_00.jpg" alt="denoise denoise_scattering=+5.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_scattering-p10_00.jpg" alt="denoise denoise_scattering=+10.00" width="180"> | <img src="../visual-proofs/expressive-baseline/denoise-sweep-denoise_scattering-p20_00.jpg" alt="denoise denoise_scattering=+20.00" width="180"> |
+
+### `filmic` 📷 landscape raw
+
+_Parameterized filmic v6 tone mapping (#97). Modern darktable tone-mapping; ships parallel to sigmoid (~80% of tone-mapping use cases). 8 magnitude axes: grey_point_source (default 18.45%), black_point_source (default -8.0 EV), white_point_source (default 4.0 EV), output_power (default 4.0 gamma), latitude (default 0.01), contrast (default 1.0), saturation (default 0.0), balance (default 0.0). Curve mode enums (shadows/highlights/preserve_color/version/spline_version) are pinned at darktable defaults; author discrete entries for non-default modes._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/filmic-landscape.jpg" alt="filmic landscape raw" width="180"> |
+
+
+**Parameter sweep** (`grey_point_source`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+10.00` | `+18.45` | `+25.00` | `+35.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/filmic-sweep-grey_point_source-p10_00.jpg" alt="filmic grey_point_source=+10.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-grey_point_source-p18_45.jpg" alt="filmic grey_point_source=+18.45" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-grey_point_source-p25_00.jpg" alt="filmic grey_point_source=+25.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-grey_point_source-p35_00.jpg" alt="filmic grey_point_source=+35.00" width="180"> |
+
+**Parameter sweep** (`black_point_source`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-12.00` | `-10.00` | `-8.00` | `-5.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/filmic-sweep-black_point_source-n12_00.jpg" alt="filmic black_point_source=-12.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-black_point_source-n10_00.jpg" alt="filmic black_point_source=-10.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-black_point_source-n8_00.jpg" alt="filmic black_point_source=-8.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-black_point_source-n5_00.jpg" alt="filmic black_point_source=-5.00" width="180"> |
+
+**Parameter sweep** (`white_point_source`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+2.00` | `+4.00` | `+6.00` | `+8.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/filmic-sweep-white_point_source-p2_00.jpg" alt="filmic white_point_source=+2.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-white_point_source-p4_00.jpg" alt="filmic white_point_source=+4.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-white_point_source-p6_00.jpg" alt="filmic white_point_source=+6.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-white_point_source-p8_00.jpg" alt="filmic white_point_source=+8.00" width="180"> |
+
+**Parameter sweep** (`output_power`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+1.00` | `+2.00` | `+4.00` | `+6.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/filmic-sweep-output_power-p1_00.jpg" alt="filmic output_power=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-output_power-p2_00.jpg" alt="filmic output_power=+2.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-output_power-p4_00.jpg" alt="filmic output_power=+4.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-output_power-p6_00.jpg" alt="filmic output_power=+6.00" width="180"> |
+
+**Parameter sweep** (`latitude`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+10.00` | `+25.00` | `+50.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/filmic-sweep-latitude-0_00.jpg" alt="filmic latitude=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-latitude-p10_00.jpg" alt="filmic latitude=+10.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-latitude-p25_00.jpg" alt="filmic latitude=+25.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-latitude-p50_00.jpg" alt="filmic latitude=+50.00" width="180"> |
+
+**Parameter sweep** (`contrast`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.50` | `+1.00` | `+1.50` | `+2.00` | `+2.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/filmic-sweep-contrast-p0_50.jpg" alt="filmic contrast=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-contrast-p1_00.jpg" alt="filmic contrast=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-contrast-p1_50.jpg" alt="filmic contrast=+1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-contrast-p2_00.jpg" alt="filmic contrast=+2.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-contrast-p2_50.jpg" alt="filmic contrast=+2.50" width="180"> |
+
+**Parameter sweep** (`saturation`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-50.00` | `0.00` | `+25.00` | `+50.00` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/filmic-sweep-saturation-n50_00.jpg" alt="filmic saturation=-50.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-saturation-0_00.jpg" alt="filmic saturation=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-saturation-p25_00.jpg" alt="filmic saturation=+25.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-saturation-p50_00.jpg" alt="filmic saturation=+50.00" width="180"> |
+
+**Parameter sweep** (`balance`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-25.00` | `-10.00` | `0.00` | `+10.00` | `+25.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/filmic-sweep-balance-n25_00.jpg" alt="filmic balance=-25.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-balance-n10_00.jpg" alt="filmic balance=-10.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-balance-0_00.jpg" alt="filmic balance=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-balance-p10_00.jpg" alt="filmic balance=+10.00" width="180"> | <img src="../visual-proofs/expressive-baseline/filmic-sweep-balance-p25_00.jpg" alt="filmic balance=+25.00" width="180"> |
+
+### `texture` 📷 landscape raw
+
+_Parameterized texture (#92 Bucket A.6). Lightroom-style Texture via darktable's diffuse-or-sharpen module. Three axes: --param first=V (finest detail scale, primary Texture axis; range [-1.0, 1.0]), --param second=V (next-up scale; range [-1.0, 1.0]), --param sharpness=V (global sharpening; range [-1.0, 1.0]). Negative values smooth, positive enhance. All default 0.0. Closes the Lightroom Texture parity gap._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/texture-landscape.jpg" alt="texture landscape raw" width="180"> |
+
+
+**Parameter sweep** (`first`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `-0.20` | `0.00` | `+0.30` | `+0.70` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/texture-sweep-first-n0_50.jpg" alt="texture first=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-first-n0_20.jpg" alt="texture first=-0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-first-0_00.jpg" alt="texture first=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-first-p0_30.jpg" alt="texture first=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-first-p0_70.jpg" alt="texture first=+0.70" width="180"> |
+
+**Parameter sweep** (`second`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.30` | `0.00` | `+0.30` | `+0.60` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/texture-sweep-second-n0_30.jpg" alt="texture second=-0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-second-0_00.jpg" alt="texture second=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-second-p0_30.jpg" alt="texture second=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-second-p0_60.jpg" alt="texture second=+0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-second-p1_00.jpg" alt="texture second=+1.00" width="180"> |
+
+**Parameter sweep** (`sharpness`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `0.00` | `+0.30` | `+0.60` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/texture-sweep-sharpness-n0_50.jpg" alt="texture sharpness=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-sharpness-0_00.jpg" alt="texture sharpness=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-sharpness-p0_30.jpg" alt="texture sharpness=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-sharpness-p0_60.jpg" alt="texture sharpness=+0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/texture-sweep-sharpness-p1_00.jpg" alt="texture sharpness=+1.00" width="180"> |
+
+### `hsl_saturation` 📷 landscape raw
+
+_Parameterized HSL Saturation row (RFC-023). Lightroom HSL Color Mixer Saturation parity via darktable's colorequal module. 8 per-color axes (sat_red, sat_orange, sat_yellow, sat_green, sat_cyan, sat_blue, sat_lavender, sat_magenta); each range [-1.0, 1.0]; default 0.0. Negative desaturates that color zone (e.g. sat_orange=-0.3 → mute skin tones); positive boosts. Compose with hsl_hue and hsl_luminance for the full HSL Color Mixer._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/hsl_saturation-landscape.jpg" alt="hsl_saturation landscape raw" width="180"> |
+
+
+**Parameter sweep** (`sat_blue`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.50` | `-0.20` | `0.00` | `+0.30` | `+0.60` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/hsl_saturation-sweep-sat_blue-n0_50.jpg" alt="hsl_saturation sat_blue=-0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_saturation-sweep-sat_blue-n0_20.jpg" alt="hsl_saturation sat_blue=-0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_saturation-sweep-sat_blue-0_00.jpg" alt="hsl_saturation sat_blue=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_saturation-sweep-sat_blue-p0_30.jpg" alt="hsl_saturation sat_blue=+0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_saturation-sweep-sat_blue-p0_60.jpg" alt="hsl_saturation sat_blue=+0.60" width="180"> |
+
+### `hsl_hue` 📷 landscape raw
+
+_Parameterized HSL Hue row (RFC-023). Lightroom HSL Color Mixer Hue parity via colorequal. 8 per-color hue-shift axes (hue_red, hue_orange, hue_yellow, hue_green, hue_cyan, hue_blue, hue_lavender, hue_magenta); each range [-180.0, 180.0] degrees; default 0.0. Shifts that color zone toward an adjacent hue (e.g. hue_green=15.0 → foliage warmer toward yellow)._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/hsl_hue-landscape.jpg" alt="hsl_hue landscape raw" width="180"> |
+
+
+**Parameter sweep** (`hue_green`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-30.00` | `-10.00` | `0.00` | `+15.00` | `+30.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/hsl_hue-sweep-hue_green-n30_00.jpg" alt="hsl_hue hue_green=-30.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_hue-sweep-hue_green-n10_00.jpg" alt="hsl_hue hue_green=-10.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_hue-sweep-hue_green-0_00.jpg" alt="hsl_hue hue_green=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_hue-sweep-hue_green-p15_00.jpg" alt="hsl_hue hue_green=+15.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_hue-sweep-hue_green-p30_00.jpg" alt="hsl_hue hue_green=+30.00" width="180"> |
+
+### `hsl_luminance` 📷 landscape raw
+
+_Parameterized HSL Luminance row (RFC-023). Lightroom HSL Color Mixer Luminance parity via colorequal. 8 per-color brightness axes (bright_red, bright_orange, bright_yellow, bright_green, bright_cyan, bright_blue, bright_lavender, bright_magenta); each range [-1.0, 1.0]; default 0.0. Negative darkens that color zone (e.g. bright_blue=-0.3 → deeper sky); positive lightens._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/hsl_luminance-landscape.jpg" alt="hsl_luminance landscape raw" width="180"> |
+
+
+**Parameter sweep** (`bright_blue`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.60` | `-0.30` | `0.00` | `+0.20` | `+0.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/hsl_luminance-sweep-bright_blue-n0_60.jpg" alt="hsl_luminance bright_blue=-0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_luminance-sweep-bright_blue-n0_30.jpg" alt="hsl_luminance bright_blue=-0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_luminance-sweep-bright_blue-0_00.jpg" alt="hsl_luminance bright_blue=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_luminance-sweep-bright_blue-p0_20.jpg" alt="hsl_luminance bright_blue=+0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/hsl_luminance-sweep-bright_blue-p0_50.jpg" alt="hsl_luminance bright_blue=+0.50" width="180"> |
+
+### `dehaze` 📷 landscape raw
+
+_Parameterized dehaze (#90 Bucket A.2). Lightroom-style Dehaze via darktable's hazeremoval module. Two axes: --param strength=V (range [-1.0, 1.0]; positive removes haze, negative adds atmospheric fog) and --param distance=V (range [0.0, 1.0]; depth-falloff). Closes the Lightroom Dehaze parity gap._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/dehaze-landscape.jpg" alt="dehaze landscape raw" width="180"> |
+
+
+**Parameter sweep** (`strength`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.40` | `0.00` | `+0.20` | `+0.60` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/dehaze-sweep-strength-n0_40.jpg" alt="dehaze strength=-0.40" width="180"> | <img src="../visual-proofs/expressive-baseline/dehaze-sweep-strength-0_00.jpg" alt="dehaze strength=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/dehaze-sweep-strength-p0_20.jpg" alt="dehaze strength=+0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/dehaze-sweep-strength-p0_60.jpg" alt="dehaze strength=+0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/dehaze-sweep-strength-p1_00.jpg" alt="dehaze strength=+1.00" width="180"> |
+
+**Parameter sweep** (`distance`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `0.00` | `+0.20` | `+0.50` | `+0.80` | `+1.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/dehaze-sweep-distance-0_00.jpg" alt="dehaze distance=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/dehaze-sweep-distance-p0_20.jpg" alt="dehaze distance=+0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/dehaze-sweep-distance-p0_50.jpg" alt="dehaze distance=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/dehaze-sweep-distance-p0_80.jpg" alt="dehaze distance=+0.80" width="180"> | <img src="../visual-proofs/expressive-baseline/dehaze-sweep-distance-p1_00.jpg" alt="dehaze distance=+1.00" width="180"> |
+
+### `wb_kelvin_delta` 📷 landscape raw
+
+_WB Kelvin / tint UX wrapper (#102). Same temperature module as the temperature entry, but exposes photographic units instead of raw RGB coefficients. 2 axes: --param kelvin_delta=V (range [-3000, 3000]; positive = warmer) and --param tint_delta=V (range [-200, 200]; positive = magenta-shifted). Linear approximation: red_coeff *= 1 + kelvin_delta * 0.0001, blue_coeff inverse, green_coeff *= 1 + tint_delta * 0.0001. Daily-use accurate; not chromatic-adaptation-perfect. The temperature entry is preserved for users who want raw coefficient control. Note: kelvin_delta affects bytes 0 (red) AND 8 (blue); the manifest's field offset 0 is the primary-effect documentation; the decoder applies the inverse to blue automatically._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-landscape.jpg" alt="wb_kelvin_delta landscape raw" width="180"> |
+
+
+**Parameter sweep** (`kelvin_delta`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-3000.00` | `-1500.00` | `0.00` | `+1500.00` | `+3000.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-sweep-kelvin_delta-n3000_00.jpg" alt="wb_kelvin_delta kelvin_delta=-3000.00" width="180"> | <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-sweep-kelvin_delta-n1500_00.jpg" alt="wb_kelvin_delta kelvin_delta=-1500.00" width="180"> | <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-sweep-kelvin_delta-0_00.jpg" alt="wb_kelvin_delta kelvin_delta=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-sweep-kelvin_delta-p1500_00.jpg" alt="wb_kelvin_delta kelvin_delta=+1500.00" width="180"> | <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-sweep-kelvin_delta-p3000_00.jpg" alt="wb_kelvin_delta kelvin_delta=+3000.00" width="180"> |
+
+**Parameter sweep** (`tint_delta`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-200.00` | `-100.00` | `0.00` | `+100.00` | `+200.00` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-sweep-tint_delta-n200_00.jpg" alt="wb_kelvin_delta tint_delta=-200.00" width="180"> | <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-sweep-tint_delta-n100_00.jpg" alt="wb_kelvin_delta tint_delta=-100.00" width="180"> | <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-sweep-tint_delta-0_00.jpg" alt="wb_kelvin_delta tint_delta=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-sweep-tint_delta-p100_00.jpg" alt="wb_kelvin_delta tint_delta=+100.00" width="180"> | <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-sweep-tint_delta-p200_00.jpg" alt="wb_kelvin_delta tint_delta=+200.00" width="180"> |
+
+### `temperature` 📷 landscape raw
+
+_Parameterized white balance (RFC-021; first multi-parameter ship). Three axes: --param red_coeff=V (warmer image: red↑), --param green_coeff=V (Lightroom Tint axis: green↑ → magenta-shifted, green↓ → green-shifted), --param blue_coeff=V (cooler image: blue↑). Range [0.5, 4.0] each; all default 1.0 (no shift). Replaces the v1.5.x discrete wb_cool_subtle entry. green_coeff added in #90 Bucket A.3 to close the Lightroom Tint parity gap. Starter's wb_warm_subtle remains as a discrete teaching artifact; production use of WB shifts should prefer this parameterized entry._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/temperature-landscape.jpg" alt="temperature landscape raw" width="180"> |
+
+
+**Parameter sweep** (`red_coeff`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.50` | `+1.00` | `+1.50` | `+2.15` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/temperature-sweep-red_coeff-p0_50.jpg" alt="temperature red_coeff=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/temperature-sweep-red_coeff-p1_00.jpg" alt="temperature red_coeff=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/temperature-sweep-red_coeff-p1_50.jpg" alt="temperature red_coeff=+1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/temperature-sweep-red_coeff-p2_15.jpg" alt="temperature red_coeff=+2.15" width="180"> |
+
+**Parameter sweep** (`green_coeff`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.85` | `+0.95` | `+1.00` | `+1.15` | `+1.30` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/temperature-sweep-green_coeff-p0_85.jpg" alt="temperature green_coeff=+0.85" width="180"> | <img src="../visual-proofs/expressive-baseline/temperature-sweep-green_coeff-p0_95.jpg" alt="temperature green_coeff=+0.95" width="180"> | <img src="../visual-proofs/expressive-baseline/temperature-sweep-green_coeff-p1_00.jpg" alt="temperature green_coeff=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/temperature-sweep-green_coeff-p1_15.jpg" alt="temperature green_coeff=+1.15" width="180"> | <img src="../visual-proofs/expressive-baseline/temperature-sweep-green_coeff-p1_30.jpg" alt="temperature green_coeff=+1.30" width="180"> |
+
+**Parameter sweep** (`blue_coeff`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `+0.50` | `+1.00` | `+1.50` | `+2.14` |
+|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/temperature-sweep-blue_coeff-p0_50.jpg" alt="temperature blue_coeff=+0.50" width="180"> | <img src="../visual-proofs/expressive-baseline/temperature-sweep-blue_coeff-p1_00.jpg" alt="temperature blue_coeff=+1.00" width="180"> | <img src="../visual-proofs/expressive-baseline/temperature-sweep-blue_coeff-p1_50.jpg" alt="temperature blue_coeff=+1.50" width="180"> | <img src="../visual-proofs/expressive-baseline/temperature-sweep-blue_coeff-p2_14.jpg" alt="temperature blue_coeff=+2.14" width="180"> |
+
+### `look_vintage_film` 📷 landscape raw
+
+_L2 look — nostalgia / faded film aesthetic. sigmoid_contrast 1.2 (gentle s-curve), colorbalancergb saturation_global=-0.2 (slight desaturation), grain_strength 25 (medium film grain), temperature warm shift (red 2.148 / blue 1.209). Pairs well with grade_shadows_warm._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_vintage_film-landscape.jpg" alt="look_vintage_film landscape raw" width="180"> |
+
+
+### `look_film_kodachrome` 📷 landscape raw
+
+_L2 look — Kodachrome film simulation (#104). sigmoid_contrast 1.4 + temperature warm (red 2.148 / blue 1.209 = wb_warm_subtle) + saturation_global=+0.2 + grain_strength=8._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_film_kodachrome-landscape.jpg" alt="look_film_kodachrome landscape raw" width="180"> |
+
+
+### `look_film_portra` 📷 landscape raw
+
+_L2 look — Kodak Portra 400 portrait film (#104). sigmoid_contrast 0.9 (soft s-curve) + temperature subtle warm (red 1.5 / blue 1.3) + saturation_global=-0.1 + grain_strength=15. Compose with hsl_saturation --param sat_orange=+0.05 if you want the canonical Portra skin-warmth boost on real raws._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_film_portra-landscape.jpg" alt="look_film_portra landscape raw" width="180"> |
+
+
+### `look_70s_film` 📷 landscape raw
+
+_L2 look — 1970s film aesthetic (#104). temperature warm (red 2.0 / blue 1.4) + sigmoid_contrast 1.1 (gentle s-curve) + saturation_global=-0.1 + grain_strength=35 (medium grain)._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_70s_film-landscape.jpg" alt="look_70s_film landscape raw" width="180"> |
+
+
+### `look_90s_grain` 📷 landscape raw
+
+_L2 look — 1990s film aesthetic (#104). sigmoid_contrast 1.6 + temperature subtle cool (red 1.2 / blue 2.0) + grain_strength=50 (heavy grain)._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_90s_grain-landscape.jpg" alt="look_90s_grain landscape raw" width="180"> |
+
+
+### `look_2000s_digital` 📷 landscape raw
+
+_L2 look — early-2000s digital camera aesthetic (#104). sigmoid_contrast 1.3 + temperature subtle cool (red 1.1 / blue 1.6) + saturation_global=+0.4 (oversaturated digital signature)._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_2000s_digital-landscape.jpg" alt="look_2000s_digital landscape raw" width="180"> |
+
+
+### `skin_uniformity` 📷 portrait raw
+
+_Skin-tone uniformity (RFC-033). Compresses skin-band saturation variance toward uniform appearance — Capture One's Skin Tone Uniformity equivalent for chemigram. Pre-baked with mask_skin_region so the move is scoped automatically. Pass --value V or --param sat_orange=V; range [-1.0, 0.0]. -0.3 is moderate uniformity; -0.6 is strong (typical Woloszynowicz/Adler/Nordqvist range); -1.0 fully desaturates the skin band; 0.0 is no-op. Override mask_spec for per-image manual mask if mask_skin_region's hue-range fallback leaks (Phase-1 LLM-vision fallback per RFC-032). Frequency-separation texture work composes orthogonally; this primitive is color-band uniformity only._
+
+> 📷 **Real-raw rendering** (fixture: `portrait.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the portrait fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Portrait raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/skin_uniformity-portrait.jpg" alt="skin_uniformity portrait raw" width="180"> |
+
+
+### `look_portrait_natural_skin` 📷 portrait raw
+
+_Restraint-first portrait foundation — Tucker/Marino-aligned. Slight warm temperature (+0.03 red), exposure +0.1 EV, sigmoid contrast 1.2 (gentle s-curve), saturation_global -0.05 + vibrance +0.1 (mild chroma shaping that protects skin tones). The starting point for portrait work that doesn't push contrast or saturation as a stylistic choice._
+
+> 📷 **Real-raw rendering** (fixture: `portrait.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the portrait fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Portrait raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_portrait_natural_skin-portrait.jpg" alt="look_portrait_natural_skin portrait raw" width="180"> |
+
+
+### `look_portrait_skin_warm_lift` 📷 portrait raw
+
+_Subject-region warm + brighten. Slight warm temperature (+0.04 red) + exposure +0.2 EV. Pre-baked with mask_skin_region so the lift scopes to skin without affecting clothing or background. Pairs with skin_uniformity for a complete portrait skin pass._
+
+> 📷 **Real-raw rendering** (fixture: `portrait.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the portrait fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Portrait raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_portrait_skin_warm_lift-portrait.jpg" alt="look_portrait_skin_warm_lift portrait raw" width="180"> |
+
+
+### `look_landscape_golden_hour` 📷 landscape raw
+
+_Sunset / sunrise mood. Warm temperature shift (+0.07 red), sigmoid contrast 1.3, warm shadows (hue 30, sat 0.20) + amber highlights (hue 50, sat 0.15), vibrance +0.10. Pushes the warmth that golden-hour light almost has and amplifies it without breaking color credibility. For scenes already on the warm side, apply at lower strength via opacity — not authored as parametric (look-not-primitive)._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_landscape_golden_hour-landscape.jpg" alt="look_landscape_golden_hour landscape raw" width="180"> |
+
+
+### `look_landscape_blue_hour_cool` 📷 landscape raw
+
+_Twilight / pre-dawn / blue-hour mood. Cool temperature shift (+0.07 blue), sigmoid contrast 1.3, cool shadows (hue 210, sat 0.20) + neutral-cool highlights (hue 200, sat 0.10), saturation_global -0.05. Opposite mood from golden_hour; equally valid genre signature. Composes with sigmoid_contrast for stronger drama if needed._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_landscape_blue_hour_cool-landscape.jpg" alt="look_landscape_blue_hour_cool landscape raw" width="180"> |
+
+
+### `look_landscape_atmospheric_haze` 📷 landscape raw
+
+_Misty / hazy / fog-as-subject mood. Hazeremoval strength 0.5 (lift visibility while preserving the moody atmosphere), bilat clarity 0.3, warm shadows (hue 30, sat 0.10) + vibrance +0.05. The trick: lift JUST enough to read details, not enough to flatten the atmosphere. Strong hazeremoval values (>1.0) produce 'no atmosphere' results that defeat the intent — keep restrained._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_landscape_atmospheric_haze-landscape.jpg" alt="look_landscape_atmospheric_haze landscape raw" width="180"> |
+
+
+### `look_landscape_autumn_pop` 📷 landscape raw
+
+_Autumn foliage / fall color. Slight warm temperature (+0.04 red), colorequal sat_orange +0.30 + sat_red +0.20 (lift autumn colors) + sat_blue -0.10 (compensating to keep skies natural — without this, skies turn cartoonish). Bilat clarity_strength 0.4 for foliage definition. A targeted seasonal grade; not for non-foliage scenes._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_landscape_autumn_pop-landscape.jpg" alt="look_landscape_autumn_pop landscape raw" width="180"> |
+
+
+### `bw_convert` 📷 landscape raw
+
+_B&W conversion (RFC-033 follow-up; survey Gap #1). Single colorequal plugin with all 8 sat axes set to -1.0 (full saturation kill = grayscale). Exposes 8 bright_X parameters emulating Adams-school color-filter strength: bright_red +0.3 lightens skin / red flowers / darkens skies in B&W; bright_blue -0.2 darkens skies; bright_green +0.3 lightens foliage; etc. The chemigram analog of Photoshop Channel Mixer (Monochrome) and Silver Efex Color Filters. Universal Step 1 of any B&W workflow per the photographer survey (6/6 photographers reach for color-filter-driven conversion as their foundational B&W move)._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/bw_convert-landscape.jpg" alt="bw_convert landscape raw" width="180"> |
+
+
+**Parameter sweep** (`bright_blue`): rendered at multiple values via the parameterized apply path (`--value V` / `--param NAME=V`); other parameterized axes (if any) held at their dtstyle defaults.
+
+| `-0.60` | `-0.30` | `0.00` | `+0.20` | `+0.50` |
+|-|-|-|-|-|
+| <img src="../visual-proofs/expressive-baseline/bw_convert-sweep-bright_blue-n0_60.jpg" alt="bw_convert bright_blue=-0.60" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_convert-sweep-bright_blue-n0_30.jpg" alt="bw_convert bright_blue=-0.30" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_convert-sweep-bright_blue-0_00.jpg" alt="bw_convert bright_blue=0.00" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_convert-sweep-bright_blue-p0_20.jpg" alt="bw_convert bright_blue=+0.20" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_convert-sweep-bright_blue-p0_50.jpg" alt="bw_convert bright_blue=+0.50" width="180"> |
+
+### `look_bw_classic_neutral` 📷 landscape raw
+
+_Classic B&W foundation — neutral channel weighting (no filter), mid contrast (sigmoid 1.3), mild structure (clarity 0.3). The starting point for any B&W work; compose with split-tone or chiaroscuro variants for stylistic direction. Per RFC-033 / survey Gap #1._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_bw_classic_neutral-landscape.jpg" alt="look_bw_classic_neutral landscape raw" width="180"> |
+
+
+### `look_bw_high_contrast_chiaroscuro` 📷 landscape raw
+
+_Tucker/Thompson-style chiaroscuro B&W — strong sigmoid contrast (1.7), deep shadow brilliance (-0.20), lifted highlight brilliance (+0.10). For street/portrait B&W where dramatic light-shadow interplay defines the image. Compose with mask_subject for directional facial sculpting (Tucker portrait discipline)._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_bw_high_contrast_chiaroscuro-landscape.jpg" alt="look_bw_high_contrast_chiaroscuro landscape raw" width="180"> |
+
+
+### `look_bw_landscape_dramatic` 📷 landscape raw
+
+_Page/Adamus dramatic B&W landscape — red-filter-emulated conversion (bright_red +0.20 lightens land; bright_blue -0.30 darkens skies — the classic Adams-school red filter for storm-cloud drama). Sigmoid contrast 1.6 + clarity 0.5. For stormy skies, rugged terrain, weather drama. The B&W counterpart of look_landscape_dramatic_moody._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_bw_landscape_dramatic-landscape.jpg" alt="look_bw_landscape_dramatic landscape raw" width="180"> |
+
+
+### `look_bw_split_tone_warm_shadows` 📷 landscape raw
+
+_Subtle warm-shadows toned B&W — sepia / selenium print evocation. Neutral B&W conversion + mid-strong sigmoid contrast (1.35) + warm-tone shadows (hue 30, sat 0.05) + cool-tone highlights (hue 210, sat 0.03). The split-tone tinting reads as 'toned print' rather than pure neutral B&W._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_bw_split_tone_warm_shadows-landscape.jpg" alt="look_bw_split_tone_warm_shadows landscape raw" width="180"> |
+
+
+### `look_bw_silver_efex_zone_balanced` 📷 landscape raw
+
+_Whalley/Boutwell zone-system-aware balanced B&W — the restraint discipline applied to monochrome. Neutral conversion + gentle sigmoid contrast (1.15) + subtle clarity (0.15). The defining stylistic position for B&W work that doesn't push contrast or structure as a dramatic move; reads as 'measured tonal development' (Adams-school)._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_bw_silver_efex_zone_balanced-landscape.jpg" alt="look_bw_silver_efex_zone_balanced landscape raw" width="180"> |
+
+
+### `look_wildlife_high_iso_recovery` 📷 landscape raw
+
+_High-ISO wildlife recovery (low-light dance-floor, late dusk owl, early-dawn bird-burst). Manual denoiseprofile (nbhood 7, strength 1.2, scattering 2.0) + gentle sigmoid 1.25 + subtle clarity 0.2. **Note:** for ISO ≥ 1600 most surveyed wildlife photographers ROUTE THROUGH a sibling AI-NR tool (Topaz DeNoise / DxO PureRAW / LR AI Denoise) BEFORE this look applies; document the BYOA pattern in vocabulary-patterns.md. This look is the chemigram-only manual fallback when sibling tooling isn't configured._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_wildlife_high_iso_recovery-landscape.jpg" alt="look_wildlife_high_iso_recovery landscape raw" width="180"> |
+
+
+### `look_wildlife_natural_warm` 📷 landscape raw
+
+_Warm golden-hour wildlife default — temperature +0.05 red shift + sigmoid 1.25 + vibrance +0.10 with slight saturation_global pull (-0.03 to keep the warmth credible, not cartoonish). The starting point for early-morning / late-afternoon wildlife where natural warmth IS the subject. Compose with look_wildlife_subject_sharpen for full effect._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_wildlife_natural_warm-landscape.jpg" alt="look_wildlife_natural_warm landscape raw" width="180"> |
+
+
+### `look_food_appetizing_warm` 📷 landscape raw
+
+_Default food editorial — warm WB (+0.04 red), gentle sigmoid 1.25, vibrance +0.15 + lifted midtone brilliance +0.08. Lauren C. Short / Darina Kopcok / Joanie Simon's foundational starting point for food blog and editorial work. Pre-WB-foundation (gray card recommended); downstream HSL color shaping per look_food_orange_pop / look_food_green_natural compose orthogonally._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_food_appetizing_warm-landscape.jpg" alt="look_food_appetizing_warm landscape raw" width="180"> |
+
+
+### `look_food_orange_pop` 📷 landscape raw
+
+_Lift the orange / red food band — tomato, carrot, salmon, paprika, peach. Colorequal sat_orange +0.30 + sat_red +0.20 (saturation lift on warm food colors) + slight brightness lifts. The HSL-per-color discipline that food photographers use INSTEAD of global saturation (which would destroy whites and greens). Compose on top of look_food_appetizing_warm._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_food_orange_pop-landscape.jpg" alt="look_food_orange_pop landscape raw" width="180"> |
+
+
+### `look_food_green_natural` 📷 landscape raw
+
+_Lift greens — fresh herbs, salad, parsley, basil — without crossing into the cartoonish lime-green that over-edited food photography shows. Colorequal sat_green +0.20 + sat_yellow +0.10 + bright_green +0.05. The restraint discipline applied to color shaping (Tucker / Marino voice in food work). Compose on top of look_food_appetizing_warm._
+
+> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_food_green_natural-landscape.jpg" alt="look_food_green_natural landscape raw" width="180"> |
+
 
 ---
 

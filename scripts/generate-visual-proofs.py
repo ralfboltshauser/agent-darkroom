@@ -425,7 +425,18 @@ def _resolve_configdir() -> Path:
 
 
 def _render_one(input_path: Path, xmp_path: Path, output_path: Path, configdir: Path) -> bool:
-    """Render one input through one xmp; True on success."""
+    """Render one input through one xmp; True on success.
+
+    Pre-deletes ``output_path`` if present — ``darktable-cli`` versions
+    the output filename (``foo_02.jpg``, ``foo_03.jpg``, …) when the
+    target already exists, which silently produces a stale canonical
+    file while writing the fresh render under a versioned suffix. The
+    chemigram ``render()`` helper checks existence + non-empty, both of
+    which are still true of the stale file, so the bug doesn't surface.
+    Deleting up-front forces the canonical path to receive the fresh
+    bytes.
+    """
+    output_path.unlink(missing_ok=True)
     result = render(
         raw_path=input_path,
         xmp_path=xmp_path,
@@ -480,28 +491,54 @@ def render_all(configdir: Path) -> dict[str, dict[str, Path]]:
     ``"baseline"`` key for the unmodified-baseline renders.
     """
     PROOFS_DIR.mkdir(parents=True, exist_ok=True)
-    # Empty-history baseline — see _BASELINE_TEMPLATE_XMP comment above
+    # Two baselines:
+    # - `chart_baseline` — empty history. The chart is already in sRGB,
+    #   so it bypasses the input-profile / filmic / output-profile chain
+    #   cleanly. Empty history isolates per-primitive effect on the chart.
+    # - `raw_baseline` — full _baseline_v1.xmp history (colorin, colorout,
+    #   sigmoid, …). A raw sensor file NEEDS this chain — without it the
+    #   green channel (2x photosites in the Bayer pattern) dominates and
+    #   the rendered output looks structurally broken. Real-raw entries
+    #   compose on top of this developed baseline.
     template = parse_xmp(_BASELINE_TEMPLATE_XMP)
-    baseline = dataclasses.replace(template, history=())
+    chart_baseline = dataclasses.replace(template, history=())
+    raw_baseline = template
 
     rendered: dict[str, dict[str, Path]] = {"baseline": {}}
 
     # 1) Baseline (no primitive applied) — the "before" reference for all rows
     print("rendering baseline (no primitive applied)…")
-    baseline_xmp_path = PROOFS_DIR / "_baseline.xmp"
-    write_xmp(baseline, baseline_xmp_path)
+    chart_xmp_path = PROOFS_DIR / "_baseline.xmp"
+    write_xmp(chart_baseline, chart_xmp_path)
     for target in TARGETS:
         out = PROOFS_DIR / f"baseline-{target.slug}.jpg"
-        if not _render_one(target.path, baseline_xmp_path, out, configdir):
+        if not _render_one(target.path, chart_xmp_path, out, configdir):
             raise RuntimeError(f"baseline render failed for {target.slug}")
         rendered["baseline"][target.slug] = out
-    baseline_xmp_path.unlink()
+    chart_xmp_path.unlink()
+
+    # Real-raw baselines: rendered with the FULL baseline history (the
+    # raw needs the input-profile chain). Parameter-sweep diffs for
+    # real_raw entries need this "before" render as the comparison point.
+    raw_xmp_path = PROOFS_DIR / "_baseline_raw.xmp"
+    write_xmp(raw_baseline, raw_xmp_path)
+    for raw_target in (LANDSCAPE_TARGET, PORTRAIT_TARGET):
+        if not raw_target.path.exists():
+            continue
+        out = PROOFS_DIR / f"baseline-{raw_target.slug}.jpg"
+        if _render_one(raw_target.path, raw_xmp_path, out, configdir):
+            rendered["baseline"][raw_target.slug] = out
+    raw_xmp_path.unlink(missing_ok=True)
     print("  ✓ baseline done")
 
-    # 2) Every vocabulary entry against both targets
+    # 2) Every vocabulary entry. Chart-verifiable entries compose on
+    # `chart_baseline`; real_raw entries compose on `raw_baseline`.
     vocab = load_packs(["starter", "expressive-baseline"])
     for entry in vocab.list_all():
-        _render_entry(entry, vocab, baseline, configdir, rendered)
+        baseline_for_entry = (
+            raw_baseline if entry.name in _SKIP_VISUAL_PROOF_ENTRIES else chart_baseline
+        )
+        _render_entry(entry, vocab, baseline_for_entry, configdir, rendered)
 
     return rendered
 
@@ -547,7 +584,12 @@ def _render_entry(entry, vocab, baseline, configdir, rendered: dict) -> None:
             # Also produce parameter sweeps against the same real raw if
             # the entry is parameterized — the sweep emit will pick up
             # the __real_raw_fixture slug and render against that target.
-            _render_parameter_sweep(entry, baseline, entry_dir, configdir, rendered, {})
+            # Pass rendered["baseline"] so the sweep can find the matching
+            # real-raw baseline ("baseline-landscape.jpg" / "baseline-portrait.jpg")
+            # for the diff computation.
+            _render_parameter_sweep(
+                entry, baseline, entry_dir, configdir, rendered, rendered["baseline"]
+            )
             return
         # Fixture missing for this entry's genre: documented placeholder.
         rendered.setdefault(entry.name, {})
