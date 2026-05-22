@@ -125,6 +125,7 @@ _SUPPRESS_MASKED_SUBTYPES: dict[str, str] = {
 # these tags.
 _SKIP_GRAYSCALE_TAGS: set[str] = {"saturation", "chroma", "vibrance"}
 
+
 # Entries whose photographic effect requires real-raw input (working-
 # profile RGB after a real input profile + EXIF + camera-aware color
 # management). On the synthetic ColorChecker / grayscale fixtures, the
@@ -134,24 +135,25 @@ _SKIP_GRAYSCALE_TAGS: set[str] = {"saturation", "chroma", "vibrance"}
 # darktable module's algorithm is incompatible with the chart's
 # already-baked-sRGB-as-input shape.
 #
-# These entries DO work on real raw photographs; their visual proofs
-# need to be captured on real fixtures (a v1.9.0+ work item — possibly
-# an extension to the visual-proofs script that swaps in a real raw
-# fixture for these). Until then, the entries are skipped from the
-# synthetic-chart gallery to avoid publishing broken output as if it
-# were correct.
-_SKIP_VISUAL_PROOF_ENTRIES: set[str] = {
-    # HSL Color Mixer — colorequal mv4 needs the full input-profile +
-    # working-profile chain that the synthetic chart doesn't provide.
-    # The pipeline produces degenerate dark output on flat patches
-    # regardless of axis values or global tuning. Verified by
-    # experimenting with use_filter / param_size / chroma_size
-    # adjustments — none recover the chart pipeline. (RFC-023 / ADR-083
-    # entries; commit 1b5db21 ship.)
-    "hsl_saturation",
-    "hsl_hue",
-    "hsl_luminance",
-}
+# This routing now lives in chemigram.core.visual_verification — the
+# module-level discriminator categorizes every entry by its touched
+# darktable modules. See _SKIP_VISUAL_PROOF_ENTRIES below for the
+# v1.10.0 derived set (computed at generator-startup; do not edit
+# manually — modify the module categorization in visual_verification.py
+# instead). Closes #129 (v1.10.0 visual-proofs trust gap).
+def _compute_skip_set_from_verification_module() -> set[str]:
+    """Derive the skip-list from the principled module-level
+    discriminator in chemigram.core.visual_verification."""
+    from chemigram.core.visual_verification import verification_mode_for_entry
+    from chemigram.core.vocab import load_packs
+
+    vocab = load_packs(["starter", "expressive-baseline"])
+    return {
+        entry.name for entry in vocab.list_all() if verification_mode_for_entry(entry) != "chart"
+    }
+
+
+_SKIP_VISUAL_PROOF_ENTRIES: set[str] = _compute_skip_set_from_verification_module()
 
 # Subtypes that render against the **clipped-gradient** fixture in
 # addition to the default cc + grayscale targets. The colorchecker24
@@ -1004,14 +1006,24 @@ def _render_sweep_rows_md(entry, sweeps: list[dict]) -> list[str]:
     return out
 
 
-def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:
+def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:  # noqa: C901
     """Build the markdown gallery page from rendered outputs."""
+    from chemigram.core.visual_verification import verification_mode_for_entry as _vmode_check
+
     vocab = load_packs(["starter", "expressive-baseline"])
 
-    # Group entries by pack for the gallery
+    # Group entries by pack for the gallery. Include real_raw-needed entries
+    # even when they have no rendered output — they still appear in the
+    # "Needs real-raw fixture" table so the gallery is complete (closes the
+    # silent-drop bug class where unrendered entries vanished entirely).
     by_pack: dict[str, list] = {}
     for entry in vocab.list_all():
-        if entry.name not in rendered:
+        if entry.layer == "L1":
+            # L1 camera baselines aren't standalone-renderable; skip.
+            continue
+        is_chart = _vmode_check(entry) == "chart"
+        if is_chart and entry.name not in rendered:
+            # A chart-verifiable entry with no render = silent drop. Surface it.
             continue
         pack_root = vocab.pack_for(entry.name)
         pack_name = pack_root.name if pack_root else "unknown"
@@ -1067,6 +1079,28 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:
         f"[`tests/fixtures/reference-targets/`]"
         f"(https://github.com/chipi/chemigram/blob/main/tests/fixtures/reference-targets/README.md).\n"
     )
+    lines.append(
+        "> **🎯 Trust basis — what the chart can and can't verify.** "
+        "The synthetic chart is a legitimate fixture for entries whose "
+        "touched darktable modules operate on already-developed sRGB / "
+        "working-profile pixels (`exposure`, `sigmoid`, `bilat`, `vignette`, "
+        "`grain`, `sharpen`, single-axis `colorbalancergb` shifts, "
+        "`channelmixerrgb` in destination=grey mode, `highlights`, "
+        "`toneequal`). For these — listed in the **Chart-verifiable** "
+        "sections below — the after-image shows exactly what the entry does. "
+        "Trust it.\n"
+    )
+    lines.append(
+        "> Entries that touch raw-domain modules (`temperature`, "
+        "`colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, "
+        "`crop`, `retouch`, `filmicrgb`, `diffuse`) can't be honestly "
+        "verified against a synthetic sRGB chart — those modules need "
+        "the full raw → input-profile → working-profile pipeline. Such "
+        "entries are listed in the **Needs real-raw fixture** section at "
+        "the bottom, awaiting [issue #130](https://github.com/chipi/chemigram/issues/130). "
+        "The principled module-level discriminator lives at "
+        "`src/chemigram/core/visual_verification.py`.\n"
+    )
     if _real_raw_fixture_available():
         lines.append(
             "> **🦎 Real-raw fixture path (#103).** A small set of entries "
@@ -1107,15 +1141,59 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:
     lines.append("")
     lines.append("---\n")
 
-    # One section per pack, then per entry
+    # One section per pack, split into "Chart-verifiable" + "Needs real-raw fixture"
+    from chemigram.core.visual_verification import verification_mode_for_entry as _vmode
+
     for pack_name in ("starter", "expressive-baseline"):
         if pack_name not in by_pack:
             continue
         entries = by_pack[pack_name]
-        lines.append(f"## `{pack_name}` pack ({len(entries)} entries)\n")
+        chart_entries = [e for e in entries if _vmode(e) == "chart"]
+        raw_entries = [e for e in entries if _vmode(e) != "chart"]
 
-        for entry in entries:
-            lines.extend(_render_entry_md(entry, rendered))
+        lines.append(
+            f"## `{pack_name}` pack — {len(entries)} entries "
+            f"({len(chart_entries)} chart-verifiable, "
+            f"{len(raw_entries)} needs real-raw)\n"
+        )
+
+        if chart_entries:
+            lines.append("### Chart-verifiable entries\n")
+            lines.append(
+                "These entries' touched darktable modules operate on "
+                "already-developed sRGB / working-profile pixels. The chart "
+                "is an honest fixture; the after-image shows exactly what "
+                "the entry does in that pixel domain. Trust the result.\n"
+            )
+            for entry in chart_entries:
+                lines.extend(_render_entry_md(entry, rendered))
+
+        if raw_entries:
+            lines.append("### Needs real-raw fixture\n")
+            lines.append(
+                "These entries touch raw-domain darktable modules "
+                "(`temperature`, `colorequal`, `denoiseprofile`, `lens`, "
+                "`hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, "
+                "or `diffuse`) — or compose looks that include one. The "
+                "synthetic chart can't represent the input these modules "
+                "expect; rendering against it produces structurally-"
+                "misleading output (extreme color casts / blown highlights "
+                "/ all-black patches). These entries await the real-raw "
+                "fixture set ([issue #130](https://github.com/chipi/chemigram/issues/130)). "
+                "Until that ships, the entries are listed here without "
+                "synthetic-chart proofs — verification falls to unit-level "
+                "byte tests + darkroom-session photographer review.\n"
+            )
+            lines.append("| Entry | Modules touched | What the entry does |")
+            lines.append("|-|-|-|")
+            for entry in raw_entries:
+                touches = ", ".join(f"`{m}`" for m in sorted(set(entry.touches)))
+                desc = (entry.description or "").replace("|", "\\|")
+                # Trim description to one sentence for table compactness
+                if "." in desc:
+                    desc = desc.split(".")[0] + "."
+                lines.append(f"| `{entry.name}` | {touches} | {desc} |")
+            lines.append("")
 
         lines.append("---\n")
 
@@ -1146,6 +1224,56 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _reconstruct_rendered_from_disk() -> dict[str, dict[str, Path]]:
+    """Walk the existing PROOFS_DIR and reconstruct the ``rendered`` dict
+    so ``render_gallery_md`` can be called without re-rendering. Used by
+    ``--markdown-only`` mode for fast iteration on the gallery layout
+    without burning 8 minutes of darktable subprocess time."""
+    rendered: dict[str, dict[str, Path]] = {}
+
+    # Baseline
+    base_cc = PROOFS_DIR / "baseline-colorchecker.jpg"
+    base_gs = PROOFS_DIR / "baseline-grayscale.jpg"
+    base_cl = PROOFS_DIR / "baseline-clipped.jpg"
+    rendered["baseline"] = {}
+    if base_cc.exists():
+        rendered["baseline"]["colorchecker"] = base_cc
+    if base_gs.exists():
+        rendered["baseline"]["grayscale"] = base_gs
+    if base_cl.exists():
+        rendered["baseline"]["clipped"] = base_cl
+
+    # Per-pack renders
+    for pack_dir in [PROOFS_DIR / "starter", PROOFS_DIR / "expressive-baseline"]:
+        if not pack_dir.is_dir():
+            continue
+        for jpg in pack_dir.glob("*.jpg"):
+            stem = jpg.stem
+            # Match patterns: <entry>-<target> or <entry>-<target>-masked or <entry>-sweep-...
+            parts = stem.split("-")
+            if "sweep" in parts:
+                sweep_idx = parts.index("sweep")
+                entry_name = "-".join(parts[:sweep_idx])
+                # Sweep slug joins target + axis + value
+                slug = "-".join(parts[sweep_idx:])
+            elif parts[-1] == "masked" and len(parts) >= 3:
+                # <entry>-<target>-masked
+                target = parts[-2]
+                entry_name = "-".join(parts[:-2])
+                slug = f"{target}_masked"
+            else:
+                # <entry>-<target>
+                if len(parts) < 2:
+                    continue
+                target = parts[-1]
+                entry_name = "-".join(parts[:-1])
+                slug = target
+
+            rendered.setdefault(entry_name, {})[slug] = jpg
+
+    return rendered
+
+
 def main() -> int:
     print("Generating visual proofs gallery…")
     print("Inputs:")
@@ -1154,6 +1282,16 @@ def main() -> int:
     print(f"Output dir:   {PROOFS_DIR}")
     print(f"Gallery page: {GALLERY_PAGE}")
     print()
+
+    markdown_only = "--markdown-only" in sys.argv
+
+    if markdown_only:
+        print("(--markdown-only — reconstructing rendered dict from disk; not re-rendering)\n")
+        rendered = _reconstruct_rendered_from_disk()
+        page = render_gallery_md(rendered)
+        GALLERY_PAGE.write_text(page, encoding="utf-8")
+        print(f"Gallery page rewritten: {GALLERY_PAGE.relative_to(REPO)}")
+        return 0
 
     if not COLORCHECKER.exists() or not GRAYSCALE.exists():
         print("ERROR: reference-target inputs missing.", file=sys.stderr)
