@@ -802,11 +802,42 @@ def _img_md(p, alt: str) -> str:
     return f'<img src="../{rel}" alt="{alt}" width="180">'
 
 
+def _is_parametric_identity_default(entry) -> bool:
+    """True when the entry is parameterized and every parameter's
+    default is 0.0 (identity). These entries render the main row at
+    their default value — which is no-op by design — and rely on the
+    parameter sweep below to show the effect. Annotating the main row
+    as "identity by default" avoids the false-positive impression that
+    the entry does nothing (closes the v1.11.0 sweep finding for the
+    22 parametric-default-identity entries flagged in issue #132).
+    """
+    if not entry.parameters:
+        return False
+    for spec in entry.parameters:
+        # 1.0 is also identity for multiplicative parameters
+        # (clip_threshold etc.); the existing dtstyle encodes the
+        # default so the visible signal at default is what matters.
+        default = getattr(spec, "default", 0.0)
+        if abs(default) > 1e-6 and abs(default - 1.0) > 1e-6:
+            return False
+    return True
+
+
+_PARAMETRIC_IDENTITY_NOTE = (
+    "parameterized entry at default = identity (no visible change is "
+    "expected on the main row); **see parameter sweep below** for the "
+    "effect at non-default values"
+)
+
+
 def _near_baseline_reason(entry, *, masked: bool) -> str:
     """Pick the most-specific near-baseline reason for an entry+context.
 
-    Priority: subtype-keyed reason -> masked-sigmoid generic -> default.
+    Priority: parametric-identity-default -> subtype-keyed reason ->
+    masked-sigmoid generic -> default.
     """
+    if _is_parametric_identity_default(entry):
+        return _PARAMETRIC_IDENTITY_NOTE
     if entry.subtype in _NEAR_BASELINE_NOTES:
         return _NEAR_BASELINE_NOTES[entry.subtype]
     if masked and entry.subtype == "sigmoid":
@@ -859,7 +890,7 @@ def _diff_annotations(entry, outs: dict) -> list[str]:
     return notes
 
 
-def _render_entry_md(entry, rendered: dict[str, dict[str, Path]]) -> list[str]:
+def _render_entry_md(entry, rendered: dict[str, dict[str, Path]]) -> list[str]:  # noqa: C901
     """Markdown lines for one entry's row in the gallery.
 
     Layout selection priority:
@@ -898,6 +929,19 @@ def _render_entry_md(entry, rendered: dict[str, dict[str, Path]]) -> list[str]:
     mask_marker = " 🟦 mask-bound" if is_mask_bound else ""
     out.append(f"### `{entry.name}`{mask_marker}\n")
     out.append(f"_{entry.description}_\n")
+
+    # Parametric-identity-default entries: main row renders at default
+    # (0.0 / identity) which is no-op by design. Annotate explicitly so
+    # readers know to look at the parameter sweep below for the effect.
+    # Without this, the main row reads as "broken / does nothing." (#132)
+    if _is_parametric_identity_default(entry):
+        out.append(
+            "> ⚙️ **Main row = parametric default (identity).** This "
+            "entry's default parameter value is the identity (no-op); "
+            "the main row below shows the unchanged input by design. "
+            "See the **parameter sweep** lower down for what the entry "
+            "does at non-default values.\n"
+        )
 
     if is_mask_bound:
         # Layout 1: mask-bound — 2-col global; demo-masked column omitted.
