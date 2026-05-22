@@ -68,12 +68,15 @@ _BASELINE_TEMPLATE_XMP = REPO / "src/chemigram/core/_baseline_v1.xmp"
 COLORCHECKER = REPO / "tests/fixtures/reference-targets/colorchecker_synthetic_srgb.png"
 GRAYSCALE = REPO / "tests/fixtures/reference-targets/grayscale_synthetic_linear.png"
 CLIPPED_GRADIENT = REPO / "tests/fixtures/reference-targets/clipped_gradient_synthetic.png"
-# Real-raw fixture for entries that need a working color-management
-# chain (e.g. HSL via colorequal). When the file is missing, those
-# entries fall back to the documented placeholder row in the gallery
-# md (#103 mechanism). See tests/fixtures/raws/README.md for fixture
-# conventions + license expectations.
-REAL_RAW_FIXTURE = REPO / "tests/fixtures/raws/iguana_galapagos.jpg"
+# Real-raw fixtures for entries that need a working color-management
+# chain (raw-domain modules — see chemigram.core.visual_verification).
+# Two fixtures so genre-specific terrain (sky/foliage vs skin/eyes) is
+# honestly represented per entry. When a fixture file is missing, the
+# affected entries fall back to the documented placeholder row in the
+# gallery md. See tests/fixtures/raws/README.md for provenance, license,
+# and attribution.
+LANDSCAPE_FIXTURE = REPO / "tests/fixtures/raws/landscape.ARW"
+PORTRAIT_FIXTURE = REPO / "tests/fixtures/raws/portrait.ARW"
 PROOFS_DIR = REPO / "docs/visual-proofs"
 GALLERY_PAGE = REPO / "docs/guides/visual-proofs.md"
 
@@ -360,18 +363,51 @@ TARGETS = (
     RenderTarget(GRAYSCALE, "Grayscale ramp", "grayscale"),
 )
 
-# Real-raw target for entries that fail on the synthetic chart pipeline
-# (e.g. HSL via colorequal — see _SKIP_VISUAL_PROOF_ENTRIES). Used as a
-# replacement for TARGETS, not in addition: skip-listed entries render
-# against the real raw INSTEAD of the synthetic chart.
-REAL_RAW_TARGET = RenderTarget(REAL_RAW_FIXTURE, "Real raw", "realraw")
+# Real-raw targets for entries that fail on the synthetic chart pipeline
+# (raw-domain modules — see chemigram.core.visual_verification). Used as
+# a replacement for TARGETS, not in addition: real_raw entries render
+# against one of these INSTEAD of the synthetic chart. Routing per
+# entry by :func:`_fixture_target_for_entry`.
+LANDSCAPE_TARGET = RenderTarget(LANDSCAPE_FIXTURE, "Landscape raw", "landscape")
+PORTRAIT_TARGET = RenderTarget(PORTRAIT_FIXTURE, "Portrait raw", "portrait")
+
+# Substrings that imply a portrait fixture is the honest target. Match
+# is applied to the entry name (lowercased). Anything not matching falls
+# through to the landscape default — landscape covers ~2/3 of the
+# real_raw entries (sky/foliage/horizon/lens/WB/filmic).
+_PORTRAIT_NAME_HINTS: tuple[str, ...] = (
+    "skin",
+    "face",
+    "eye",
+    "portrait",
+    "subject",
+    "hair",
+)
 
 
-def _real_raw_fixture_available() -> bool:
-    """True when the real-raw fixture file exists on disk; the script
-    falls back to the placeholder text when it's missing so the gallery
-    still builds without the fixture committed."""
-    return REAL_RAW_FIXTURE.exists()
+def _fixture_target_for_entry(entry) -> RenderTarget:
+    """Pick the landscape or portrait fixture for one real_raw entry.
+
+    Heuristic: name-substring match against :data:`_PORTRAIT_NAME_HINTS`.
+    The vocabulary's naming convention reliably puts the genre signal
+    in the name (`look_portrait_*`, `skin_*`, `mask_skin_region`,
+    `mask_subject`, `mask_eye_region`, etc.). Default landscape.
+    """
+    n = entry.name.lower()
+    if any(hint in n for hint in _PORTRAIT_NAME_HINTS):
+        return PORTRAIT_TARGET
+    return LANDSCAPE_TARGET
+
+
+def _real_raw_fixture_available(entry=None) -> bool:
+    """True when the relevant real-raw fixture exists on disk. With no
+    entry passed, returns True iff at least one of the two fixtures is
+    present (used by header text). With an entry passed, returns True
+    iff *that entry's* routed fixture is present.
+    """
+    if entry is None:
+        return LANDSCAPE_FIXTURE.exists() or PORTRAIT_FIXTURE.exists()
+    return _fixture_target_for_entry(entry).path.exists()
 
 
 def _resolve_configdir() -> Path:
@@ -488,11 +524,12 @@ def _render_entry(entry, vocab, baseline, configdir, rendered: dict) -> None:
     entry_dir.mkdir(parents=True, exist_ok=True)
 
     if entry.name in _SKIP_VISUAL_PROOF_ENTRIES:
-        if _real_raw_fixture_available():
-            # Render this entry against the real raw fixture instead of
-            # the synthetic chart targets. The byte-level apply path is
-            # the same; only the input differs.
-            print(f"rendering {pack_name}/{entry.name} against real raw…")
+        target = _fixture_target_for_entry(entry)
+        if target.path.exists():
+            # Render against the routed real-raw fixture (landscape or
+            # portrait — see _fixture_target_for_entry). The byte-level
+            # apply path is the same; only the input differs.
+            print(f"rendering {pack_name}/{entry.name} against {target.slug} raw…")
             try:
                 applied_xmp = _synthesize_for_entry(baseline, entry, vocab)
             except Exception as exc:
@@ -501,22 +538,24 @@ def _render_entry(entry, vocab, baseline, configdir, rendered: dict) -> None:
             xmp_path = entry_dir / f"_{entry.name}.xmp"
             write_xmp(applied_xmp, xmp_path)
             rendered.setdefault(entry.name, {})
-            out = entry_dir / f"{entry.name}-{REAL_RAW_TARGET.slug}.jpg"
-            if _render_one(REAL_RAW_TARGET.path, xmp_path, out, configdir):
-                rendered[entry.name][REAL_RAW_TARGET.slug] = out
+            out = entry_dir / f"{entry.name}-{target.slug}.jpg"
+            if _render_one(target.path, xmp_path, out, configdir):
+                rendered[entry.name][target.slug] = out
                 rendered[entry.name]["__real_raw_only"] = True
+                rendered[entry.name]["__real_raw_fixture"] = target.slug
             xmp_path.unlink(missing_ok=True)
-            # Also produce parameter sweeps against the real raw if the
-            # entry is parameterized — the sweep emit will pick up the
-            # __real_raw_only flag and render against REAL_RAW_TARGET.
+            # Also produce parameter sweeps against the same real raw if
+            # the entry is parameterized — the sweep emit will pick up
+            # the __real_raw_fixture slug and render against that target.
             _render_parameter_sweep(entry, baseline, entry_dir, configdir, rendered, {})
             return
-        # No fixture: documented placeholder row instead of broken render.
+        # Fixture missing for this entry's genre: documented placeholder.
         rendered.setdefault(entry.name, {})
         rendered[entry.name]["__visual_proof_skip"] = True
         print(
             f"skipping {pack_name}/{entry.name} "
-            f"(real-raw fixture missing; see tests/fixtures/raws/README.md)"
+            f"({target.slug} fixture missing at {target.path}; "
+            "see tests/fixtures/raws/README.md)"
         )
         return
 
@@ -573,12 +612,14 @@ def _render_parameter_sweep(
     if entry.parameters is None:
         return
 
-    # Real-raw-only entries (skip-listed; #103) sweep against the real
-    # raw target instead of the synthetic colorchecker — colorequal etc.
-    # need a working color-management chain.
+    # Real-raw-only entries sweep against the same real-raw target the
+    # main row used (landscape or portrait — routing in
+    # _fixture_target_for_entry). colorequal etc. need a working
+    # color-management chain.
     if rendered.get(entry.name, {}).get("__real_raw_only"):
-        target_slug = REAL_RAW_TARGET.slug
-        target_path = REAL_RAW_TARGET.path
+        target = _fixture_target_for_entry(entry)
+        target_slug = target.slug
+        target_path = target.path
     else:
         # Render against colorchecker only — tone deltas read cleanly there.
         target_slug = "colorchecker"
@@ -924,47 +965,47 @@ def _maybe_render_skip_listed_md(entry, outs: dict) -> list[str] | None:
 
 
 def _render_skip_placeholder_md(entry) -> list[str]:
-    """Markdown for an entry skipped from visual proofs (#103) when the
+    """Markdown for an entry skipped from visual proofs when the relevant
     real-raw fixture isn't available."""
-    skip_url = "https://github.com/chipi/chemigram/blob/main/scripts/generate-visual-proofs.py#L120"
+    target = _fixture_target_for_entry(entry)
     return [
         f"### `{entry.name}`\n",
         f"_{entry.description}_\n",
-        "> 🚫 **Visual-proof rendering skipped.** This entry's "
-        "photographic effect requires real-raw input — its underlying "
-        "darktable module produces degenerate output on the synthetic "
-        "ColorChecker / grayscale fixtures (verified experimentally by "
-        "varying the module's global tuning; chart pipeline doesn't "
-        "recover). The byte-level apply path is verified by the 5-layer "
-        "test coverage (per ADR-080). Visual proof on real raws is a "
-        "v1.9.0+ work item — see "
-        f"[`_SKIP_VISUAL_PROOF_ENTRIES`]({skip_url}) in the gallery "
-        "script for the list and reasoning. To enable real-raw "
-        "rendering, drop a fixture file at the path defined by "
-        "`REAL_RAW_FIXTURE` (see `tests/fixtures/raws/README.md`).\n",
+        f"> 🚫 **Visual-proof rendering skipped — {target.slug} fixture "
+        "missing.** This entry touches a raw-domain darktable module; "
+        "the synthetic ColorChecker / grayscale fixtures can't honestly "
+        "verify it. Apply-path correctness is independently verified by "
+        "the unit + integration + e2e test coverage. To enable real-raw "
+        "rendering, fetch the fixture via `git lfs pull` (see "
+        "`tests/fixtures/raws/README.md`).\n",
         "",
     ]
 
 
 def _render_real_raw_entry_md(entry, outs: dict) -> list[str]:
-    """Markdown for a real-raw-only entry (#103): rendered against the
-    iguana fixture instead of the synthetic chart targets. Emits a
-    1-col global view followed by parameter-sweep rows if applicable."""
+    """Markdown for a real-raw-only entry: rendered against either
+    `landscape.ARW` or `portrait.ARW` per :func:`_fixture_target_for_entry`,
+    instead of the synthetic chart targets. Emits a 1-col global view
+    followed by parameter-sweep rows if applicable."""
+    fixture_slug = outs.get("__real_raw_fixture", _fixture_target_for_entry(entry).slug)
+    fixture_label = "Landscape raw" if fixture_slug == "landscape" else "Portrait raw"
     out: list[str] = []
-    out.append(f"### `{entry.name}` 🦎 real-raw\n")
+    out.append(f"### `{entry.name}` 📷 {fixture_slug} raw\n")
     out.append(f"_{entry.description}_\n")
     out.append(
-        "> 🦎 **Real-raw rendering.** This entry's photographic effect "
-        "needs a working color-management chain that the synthetic "
-        "chart pipeline doesn't provide; rendered against the iguana "
-        "fixture instead. Apply-path correctness is independently "
-        "verified by the 5-layer test coverage (per ADR-080).\n"
+        f"> 📷 **Real-raw rendering** (fixture: `{fixture_slug}.ARW`, "
+        "CC BY-SA 4.0). This entry touches a raw-domain darktable module "
+        "that needs the full input-profile chain. Rendered against the "
+        f"{fixture_slug} fixture so the after-image is honest. Apply-path "
+        "correctness is independently verified by the unit + integration "
+        "+ e2e test coverage. See `tests/fixtures/raws/README.md` for "
+        "provenance and attribution.\n"
     )
-    realraw = outs.get(REAL_RAW_TARGET.slug)
-    if realraw not in (None, "skipped"):
-        out.append("| Real raw |")
+    img = outs.get(fixture_slug)
+    if img not in (None, "skipped"):
+        out.append(f"| {fixture_label} |")
         out.append("|-|")
-        out.append(f"| {_img_md(realraw, f'{entry.name} real raw')} |")
+        out.append(f"| {_img_md(img, f'{entry.name} {fixture_slug} raw')} |")
         out.append("")
     out.extend(_render_sweep_rows_md(entry, outs.get("_sweeps") or []))
     out.append("")
@@ -1101,28 +1142,39 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:  # noqa: C90
         "The principled module-level discriminator lives at "
         "`src/chemigram/core/visual_verification.py`.\n"
     )
-    if _real_raw_fixture_available():
+    landscape_present = LANDSCAPE_FIXTURE.exists()
+    portrait_present = PORTRAIT_FIXTURE.exists()
+    if landscape_present and portrait_present:
         lines.append(
-            "> **🦎 Real-raw fixture path (#103).** A small set of entries "
-            "(currently the HSL row via `colorequal`) need a working "
-            "color-management chain that the synthetic chart pipeline "
-            "doesn't provide. Those entries render against the real-raw "
-            "fixture at "
-            "[`tests/fixtures/raws/`]"
+            "> **📷 Real-raw fixtures (#130).** Entries that touch "
+            "raw-domain modules render against one of two CC BY-SA 4.0 "
+            "fixtures from [discuss.pixls.us]"
+            "(https://discuss.pixls.us): `landscape.ARW` (Sony DSC-RX10M4 "
+            "— sky, foliage, water, horizon) or `portrait.ARW` (Sony "
+            "ZV-E10 — indoor single subject). Routing per entry by "
+            "name heuristic — skin/face/eye/portrait/subject/hair → "
+            "portrait; everything else → landscape. See "
+            "[`tests/fixtures/raws/README.md`]"
             "(https://github.com/chipi/chemigram/blob/main/tests/fixtures/raws/README.md) "
-            "instead. Look for the 🦎 marker in the entry header.\n"
+            "for provenance, license, and attribution.\n"
+        )
+    elif landscape_present or portrait_present:
+        present_name = "landscape" if landscape_present else "portrait"
+        missing_name = "portrait" if landscape_present else "landscape"
+        lines.append(
+            f"> **📷 Real-raw fixtures (#130, partial).** `{present_name}.ARW` "
+            f"is present; `{missing_name}.ARW` is missing — entries routed "
+            "to it show a placeholder row instead. Run `git lfs pull` to "
+            "fetch missing fixtures (see "
+            "[`tests/fixtures/raws/README.md`]"
+            "(https://github.com/chipi/chemigram/blob/main/tests/fixtures/raws/README.md)).\n"
         )
     else:
         lines.append(
-            "> **🚫 Real-raw fixture missing (#103).** A small set of "
-            "entries (currently HSL via `colorequal`) need a real raw "
-            "for visual proof — the synthetic chart pipeline produces "
-            "degenerate output. Those entries currently show a documented "
-            "placeholder row; drop a fixture file at the path defined by "
-            "`REAL_RAW_FIXTURE` in this script (see "
-            "[`tests/fixtures/raws/README.md`]"
-            "(https://github.com/chipi/chemigram/blob/main/tests/fixtures/raws/README.md)) "
-            "to enable real-raw rendering.\n"
+            "> **🚫 Real-raw fixtures missing (#130).** Both `landscape.ARW` "
+            "and `portrait.ARW` are absent from `tests/fixtures/raws/`. "
+            "All ~38 real_raw entries currently show a placeholder row. "
+            "Run `git lfs pull` to fetch them, then regenerate the gallery.\n"
         )
 
     lines.append("---\n")
@@ -1169,7 +1221,7 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:  # noqa: C90
                 lines.extend(_render_entry_md(entry, rendered))
 
         if raw_entries:
-            lines.append("### Needs real-raw fixture\n")
+            lines.append("### Real-raw entries\n")
             lines.append(
                 "These entries touch raw-domain darktable modules "
                 "(`temperature`, `colorequal`, `denoiseprofile`, `lens`, "
@@ -1177,23 +1229,39 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:  # noqa: C90
                 "or `diffuse`) — or compose looks that include one. The "
                 "synthetic chart can't represent the input these modules "
                 "expect; rendering against it produces structurally-"
-                "misleading output (extreme color casts / blown highlights "
-                "/ all-black patches). These entries await the real-raw "
-                "fixture set ([issue #130](https://github.com/chipi/chemigram/issues/130)). "
-                "Until that ships, the entries are listed here without "
-                "synthetic-chart proofs — verification falls to unit-level "
-                "byte tests + darkroom-session photographer review.\n"
+                "misleading output. Each entry is routed to either the "
+                "landscape or portrait CC BY-SA 4.0 fixture from "
+                "`tests/fixtures/raws/` so the after-image is honest. "
+                "Apply-path correctness is independently verified by the "
+                "unit + integration + e2e test coverage.\n"
             )
-            lines.append("| Entry | Modules touched | What the entry does |")
-            lines.append("|-|-|-|")
+            # Per-entry: emit a rendered block if a real-raw render is on
+            # disk, otherwise a summary table row for the unrendered set.
+            unrendered = []
             for entry in raw_entries:
-                touches = ", ".join(f"`{m}`" for m in sorted(set(entry.touches)))
-                desc = (entry.description or "").replace("|", "\\|")
-                # Trim description to one sentence for table compactness
-                if "." in desc:
-                    desc = desc.split(".")[0] + "."
-                lines.append(f"| `{entry.name}` | {touches} | {desc} |")
-            lines.append("")
+                outs = rendered.get(entry.name) or {}
+                if outs.get("__real_raw_only"):
+                    lines.extend(_render_entry_md(entry, rendered))
+                else:
+                    unrendered.append(entry)
+            if unrendered:
+                lines.append(
+                    "> The following real_raw entries have no real-raw "
+                    "render on disk yet. Run "
+                    "`uv run python scripts/generate-visual-proofs.py` "
+                    "(without `--markdown-only`) after fetching the "
+                    "fixtures via `git lfs pull`.\n"
+                )
+                lines.append("| Entry | Routed fixture | Modules touched | What the entry does |")
+                lines.append("|-|-|-|-|")
+                for entry in unrendered:
+                    fixture = _fixture_target_for_entry(entry).slug
+                    touches = ", ".join(f"`{m}`" for m in sorted(set(entry.touches)))
+                    desc = (entry.description or "").replace("|", "\\|")
+                    if "." in desc:
+                        desc = desc.split(".")[0] + "."
+                    lines.append(f"| `{entry.name}` | {fixture} | {touches} | {desc} |")
+                lines.append("")
 
         lines.append("---\n")
 
@@ -1224,7 +1292,7 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:  # noqa: C90
     return "\n".join(lines) + "\n"
 
 
-def _reconstruct_rendered_from_disk() -> dict[str, dict[str, Path]]:
+def _reconstruct_rendered_from_disk() -> dict[str, dict[str, Path]]:  # noqa: C901
     """Walk the existing PROOFS_DIR and reconstruct the ``rendered`` dict
     so ``render_gallery_md`` can be called without re-rendering. Used by
     ``--markdown-only`` mode for fast iteration on the gallery layout
@@ -1270,6 +1338,11 @@ def _reconstruct_rendered_from_disk() -> dict[str, dict[str, Path]]:
                 slug = target
 
             rendered.setdefault(entry_name, {})[slug] = jpg
+            # Mark real-raw routing so the markdown emit uses the
+            # real-raw block instead of the chart block.
+            if slug in ("landscape", "portrait"):
+                rendered[entry_name]["__real_raw_only"] = True
+                rendered[entry_name]["__real_raw_fixture"] = slug
 
     return rendered
 

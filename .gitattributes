@@ -1,0 +1,9 @@
+tests/fixtures/raws/*.ARW filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/raws/*.CR3 filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/raws/*.CR2 filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/raws/*.RAF filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/raws/*.ORF filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/raws/*.PEF filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/raws/*.DNG filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/raws/*.NEF filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/raws/*.RW2 filter=lfs diff=lfs merge=lfs -text

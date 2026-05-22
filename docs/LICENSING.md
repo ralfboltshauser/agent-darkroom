@@ -13,6 +13,8 @@ Chemigram is a permissive open-source project: engine, MCP server, documentation
 | Documentation (`docs/`) | MIT | this monorepo |
 | Starter vocabulary (`vocabulary/starter/`) | MIT | this monorepo |
 | Borrowed / community vocabulary packs (`vocabulary/packs/`) | Per-pack (typically MIT/CC) | this monorepo with attribution |
+| Real-raw test fixtures (`tests/fixtures/raws/*.ARW`) | CC BY-SA 4.0 (per-file attribution) | this monorepo via Git LFS |
+| Derivative renders in `docs/visual-proofs/` | CC BY-SA 4.0 (inherited from source raws) | this monorepo |
 | Personal vocabularies | Photographer's choice | separate, non-public repos |
 | User session data | Local-only, never uploaded | the user's machine |
 
@@ -43,6 +45,17 @@ Some vocabulary content in `vocabulary/packs/` is borrowed from existing communi
 - Is version-pinned to a specific upstream commit so changes are auditable.
 
 If you contribute a new pack derived from existing community work, follow the same pattern. Don't relicense someone else's content; redistribute under their terms with proper credit.
+
+## Real-raw test fixtures and derivative renders
+
+The visual-proof gallery (`docs/visual-proofs/`) renders ~38 vocabulary entries against two real photographic raws committed to `tests/fixtures/raws/`. Both raws are sourced from the discuss.pixls.us play-raw community under **CC BY-SA 4.0**:
+
+- `landscape.ARW` — Sony DSC-RX10M4, from the "Moody Landscape" thread.
+- `portrait.ARW` — Sony ZV-E10, from the "Home Portrait" thread.
+
+Full provenance, source URLs, attribution lines, and caveats are in `tests/fixtures/raws/README.md`.
+
+CC BY-SA 4.0 is **share-alike** — any rendered output derived from these raws inherits the same license. The chart-rendered visual proofs (from the synthetic ColorChecker fixture) remain MIT; only the real-raw-rendered proofs are CC BY-SA. The gallery markdown labels them accordingly. The project's GPLv3 dependency boundary (darktable subprocess) and MIT codebase are unaffected — only the *content* of the share-alike derivative images is bound.
 
 ## What's deliberately not in this repository
 

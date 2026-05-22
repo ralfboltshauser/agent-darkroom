@@ -16,7 +16,7 @@
 
 > Entries that touch raw-domain modules (`temperature`, `colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, `diffuse`) can't be honestly verified against a synthetic sRGB chart — those modules need the full raw → input-profile → working-profile pipeline. Such entries are listed in the **Needs real-raw fixture** section at the bottom, awaiting [issue #130](https://github.com/chipi/chemigram/issues/130). The principled module-level discriminator lives at `src/chemigram/core/visual_verification.py`.
 
-> **🚫 Real-raw fixture missing (#103).** A small set of entries (currently HSL via `colorequal`) need a real raw for visual proof — the synthetic chart pipeline produces degenerate output. Those entries currently show a documented placeholder row; drop a fixture file at the path defined by `REAL_RAW_FIXTURE` in this script (see [`tests/fixtures/raws/README.md`](https://github.com/chipi/chemigram/blob/main/tests/fixtures/raws/README.md)) to enable real-raw rendering.
+> **📷 Real-raw fixtures (#130).** Entries that touch raw-domain modules render against one of two CC BY-SA 4.0 fixtures from [discuss.pixls.us](https://discuss.pixls.us): `landscape.ARW` (Sony DSC-RX10M4 — sky, foliage, water, horizon) or `portrait.ARW` (Sony ZV-E10 — indoor single subject). Routing per entry by name heuristic — skin/face/eye/portrait/subject/hair → portrait; everything else → landscape. See [`tests/fixtures/raws/README.md`](https://github.com/chipi/chemigram/blob/main/tests/fixtures/raws/README.md) for provenance, license, and attribution.
 
 ---
 
@@ -32,14 +32,16 @@ These are the reference targets rendered through the baseline XMP with no primit
 
 ## `starter` pack — 2 entries (0 chart-verifiable, 2 needs real-raw)
 
-### Needs real-raw fixture
+### Real-raw entries
 
-These entries touch raw-domain darktable modules (`temperature`, `colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, or `diffuse`) — or compose looks that include one. The synthetic chart can't represent the input these modules expect; rendering against it produces structurally-misleading output (extreme color casts / blown highlights / all-black patches). These entries await the real-raw fixture set ([issue #130](https://github.com/chipi/chemigram/issues/130)). Until that ships, the entries are listed here without synthetic-chart proofs — verification falls to unit-level byte tests + darkroom-session photographer review.
+These entries touch raw-domain darktable modules (`temperature`, `colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, or `diffuse`) — or compose looks that include one. The synthetic chart can't represent the input these modules expect; rendering against it produces structurally-misleading output. Each entry is routed to either the landscape or portrait CC BY-SA 4.0 fixture from `tests/fixtures/raws/` so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage.
 
-| Entry | Modules touched | What the entry does |
-|-|-|-|
-| `wb_warm_subtle` | `temperature` | Warm white balance, subtle. |
-| `look_neutral` | `exposure`, `temperature` | Neutral L2 look — exposure + warm-subtle WB baseline. |
+> The following real_raw entries have no real-raw render on disk yet. Run `uv run python scripts/generate-visual-proofs.py` (without `--markdown-only`) after fetching the fixtures via `git lfs pull`.
+
+| Entry | Routed fixture | Modules touched | What the entry does |
+|-|-|-|-|
+| `wb_warm_subtle` | landscape | `temperature` | Warm white balance, subtle. |
+| `look_neutral` | landscape | `exposure`, `temperature` | Neutral L2 look — exposure + warm-subtle WB baseline. |
 
 ---
 
@@ -669,48 +671,50 @@ _Commercial packshot baseline — gentle sigmoid 1.10 (avoids the punch-the-prod
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/look_product_packshot_clean-colorchecker.jpg" alt="look_product_packshot_clean ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_product_packshot_clean-grayscale.jpg" alt="look_product_packshot_clean grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_product_packshot_clean-colorchecker-masked.jpg" alt="look_product_packshot_clean ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/look_product_packshot_clean-grayscale-masked.jpg" alt="look_product_packshot_clean grayscale masked" width="180"> |
 
-### Needs real-raw fixture
+### Real-raw entries
 
-These entries touch raw-domain darktable modules (`temperature`, `colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, or `diffuse`) — or compose looks that include one. The synthetic chart can't represent the input these modules expect; rendering against it produces structurally-misleading output (extreme color casts / blown highlights / all-black patches). These entries await the real-raw fixture set ([issue #130](https://github.com/chipi/chemigram/issues/130)). Until that ships, the entries are listed here without synthetic-chart proofs — verification falls to unit-level byte tests + darkroom-session photographer review.
+These entries touch raw-domain darktable modules (`temperature`, `colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, or `diffuse`) — or compose looks that include one. The synthetic chart can't represent the input these modules expect; rendering against it produces structurally-misleading output. Each entry is routed to either the landscape or portrait CC BY-SA 4.0 fixture from `tests/fixtures/raws/` so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage.
 
-| Entry | Modules touched | What the entry does |
-|-|-|-|
-| `crop` | `crop` | Parameterized crop (RFC-022 Tier 2). |
-| `transform` | `ashift` | Parameterized perspective / transform (#101). |
-| `lens_correction` | `lens` | Parameterized lens correction (#95). |
-| `denoise` | `denoiseprofile` | Parameterized denoising via darktable's denoiseprofile module (#96). |
-| `filmic` | `filmicrgb` | Parameterized filmic v6 tone mapping (#97). |
-| `texture` | `diffuse` | Parameterized texture (#92 Bucket A. |
-| `hsl_saturation` | `colorequal` | Parameterized HSL Saturation row (RFC-023). |
-| `hsl_hue` | `colorequal` | Parameterized HSL Hue row (RFC-023). |
-| `hsl_luminance` | `colorequal` | Parameterized HSL Luminance row (RFC-023). |
-| `dehaze` | `hazeremoval` | Parameterized dehaze (#90 Bucket A. |
-| `wb_kelvin_delta` | `temperature` | WB Kelvin / tint UX wrapper (#102). |
-| `temperature` | `temperature` | Parameterized white balance (RFC-021; first multi-parameter ship). |
-| `look_vintage_film` | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — nostalgia / faded film aesthetic. |
-| `look_film_kodachrome` | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — Kodachrome film simulation (#104). |
-| `look_film_portra` | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — Kodak Portra 400 portrait film (#104). |
-| `look_70s_film` | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — 1970s film aesthetic (#104). |
-| `look_90s_grain` | `grain`, `sigmoid`, `temperature` | L2 look — 1990s film aesthetic (#104). |
-| `look_2000s_digital` | `colorbalancergb`, `sigmoid`, `temperature` | L2 look — early-2000s digital camera aesthetic (#104). |
-| `skin_uniformity` | `colorequal` | Skin-tone uniformity (RFC-033). |
-| `look_portrait_natural_skin` | `colorbalancergb`, `exposure`, `sigmoid`, `temperature` | Restraint-first portrait foundation — Tucker/Marino-aligned. |
-| `look_portrait_skin_warm_lift` | `exposure`, `temperature` | Subject-region warm + brighten. |
-| `look_landscape_golden_hour` | `colorbalancergb`, `sigmoid`, `temperature` | Sunset / sunrise mood. |
-| `look_landscape_blue_hour_cool` | `colorbalancergb`, `sigmoid`, `temperature` | Twilight / pre-dawn / blue-hour mood. |
-| `look_landscape_atmospheric_haze` | `bilat`, `colorbalancergb`, `hazeremoval` | Misty / hazy / fog-as-subject mood. |
-| `look_landscape_autumn_pop` | `bilat`, `colorequal`, `temperature` | Autumn foliage / fall color. |
-| `bw_convert` | `colorequal` | B&W conversion (RFC-033 follow-up; survey Gap #1). |
-| `look_bw_classic_neutral` | `bilat`, `colorequal`, `sigmoid` | Classic B&W foundation — neutral channel weighting (no filter), mid contrast (sigmoid 1. |
-| `look_bw_high_contrast_chiaroscuro` | `colorbalancergb`, `colorequal`, `sigmoid` | Tucker/Thompson-style chiaroscuro B&W — strong sigmoid contrast (1. |
-| `look_bw_landscape_dramatic` | `bilat`, `colorequal`, `sigmoid` | Page/Adamus dramatic B&W landscape — red-filter-emulated conversion (bright_red +0. |
-| `look_bw_split_tone_warm_shadows` | `colorbalancergb`, `colorequal`, `sigmoid` | Subtle warm-shadows toned B&W — sepia / selenium print evocation. |
-| `look_bw_silver_efex_zone_balanced` | `bilat`, `colorequal`, `sigmoid` | Whalley/Boutwell zone-system-aware balanced B&W — the restraint discipline applied to monochrome. |
-| `look_wildlife_high_iso_recovery` | `bilat`, `denoiseprofile`, `sigmoid` | High-ISO wildlife recovery (low-light dance-floor, late dusk owl, early-dawn bird-burst). |
-| `look_wildlife_natural_warm` | `colorbalancergb`, `sigmoid`, `temperature` | Warm golden-hour wildlife default — temperature +0. |
-| `look_food_appetizing_warm` | `colorbalancergb`, `sigmoid`, `temperature` | Default food editorial — warm WB (+0. |
-| `look_food_orange_pop` | `colorequal` | Lift the orange / red food band — tomato, carrot, salmon, paprika, peach. |
-| `look_food_green_natural` | `colorequal` | Lift greens — fresh herbs, salad, parsley, basil — without crossing into the cartoonish lime-green that over-edited food photography shows. |
+> The following real_raw entries have no real-raw render on disk yet. Run `uv run python scripts/generate-visual-proofs.py` (without `--markdown-only`) after fetching the fixtures via `git lfs pull`.
+
+| Entry | Routed fixture | Modules touched | What the entry does |
+|-|-|-|-|
+| `crop` | landscape | `crop` | Parameterized crop (RFC-022 Tier 2). |
+| `transform` | landscape | `ashift` | Parameterized perspective / transform (#101). |
+| `lens_correction` | landscape | `lens` | Parameterized lens correction (#95). |
+| `denoise` | landscape | `denoiseprofile` | Parameterized denoising via darktable's denoiseprofile module (#96). |
+| `filmic` | landscape | `filmicrgb` | Parameterized filmic v6 tone mapping (#97). |
+| `texture` | landscape | `diffuse` | Parameterized texture (#92 Bucket A. |
+| `hsl_saturation` | landscape | `colorequal` | Parameterized HSL Saturation row (RFC-023). |
+| `hsl_hue` | landscape | `colorequal` | Parameterized HSL Hue row (RFC-023). |
+| `hsl_luminance` | landscape | `colorequal` | Parameterized HSL Luminance row (RFC-023). |
+| `dehaze` | landscape | `hazeremoval` | Parameterized dehaze (#90 Bucket A. |
+| `wb_kelvin_delta` | landscape | `temperature` | WB Kelvin / tint UX wrapper (#102). |
+| `temperature` | landscape | `temperature` | Parameterized white balance (RFC-021; first multi-parameter ship). |
+| `look_vintage_film` | landscape | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — nostalgia / faded film aesthetic. |
+| `look_film_kodachrome` | landscape | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — Kodachrome film simulation (#104). |
+| `look_film_portra` | landscape | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — Kodak Portra 400 portrait film (#104). |
+| `look_70s_film` | landscape | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — 1970s film aesthetic (#104). |
+| `look_90s_grain` | landscape | `grain`, `sigmoid`, `temperature` | L2 look — 1990s film aesthetic (#104). |
+| `look_2000s_digital` | landscape | `colorbalancergb`, `sigmoid`, `temperature` | L2 look — early-2000s digital camera aesthetic (#104). |
+| `skin_uniformity` | portrait | `colorequal` | Skin-tone uniformity (RFC-033). |
+| `look_portrait_natural_skin` | portrait | `colorbalancergb`, `exposure`, `sigmoid`, `temperature` | Restraint-first portrait foundation — Tucker/Marino-aligned. |
+| `look_portrait_skin_warm_lift` | portrait | `exposure`, `temperature` | Subject-region warm + brighten. |
+| `look_landscape_golden_hour` | landscape | `colorbalancergb`, `sigmoid`, `temperature` | Sunset / sunrise mood. |
+| `look_landscape_blue_hour_cool` | landscape | `colorbalancergb`, `sigmoid`, `temperature` | Twilight / pre-dawn / blue-hour mood. |
+| `look_landscape_atmospheric_haze` | landscape | `bilat`, `colorbalancergb`, `hazeremoval` | Misty / hazy / fog-as-subject mood. |
+| `look_landscape_autumn_pop` | landscape | `bilat`, `colorequal`, `temperature` | Autumn foliage / fall color. |
+| `bw_convert` | landscape | `colorequal` | B&W conversion (RFC-033 follow-up; survey Gap #1). |
+| `look_bw_classic_neutral` | landscape | `bilat`, `colorequal`, `sigmoid` | Classic B&W foundation — neutral channel weighting (no filter), mid contrast (sigmoid 1. |
+| `look_bw_high_contrast_chiaroscuro` | landscape | `colorbalancergb`, `colorequal`, `sigmoid` | Tucker/Thompson-style chiaroscuro B&W — strong sigmoid contrast (1. |
+| `look_bw_landscape_dramatic` | landscape | `bilat`, `colorequal`, `sigmoid` | Page/Adamus dramatic B&W landscape — red-filter-emulated conversion (bright_red +0. |
+| `look_bw_split_tone_warm_shadows` | landscape | `colorbalancergb`, `colorequal`, `sigmoid` | Subtle warm-shadows toned B&W — sepia / selenium print evocation. |
+| `look_bw_silver_efex_zone_balanced` | landscape | `bilat`, `colorequal`, `sigmoid` | Whalley/Boutwell zone-system-aware balanced B&W — the restraint discipline applied to monochrome. |
+| `look_wildlife_high_iso_recovery` | landscape | `bilat`, `denoiseprofile`, `sigmoid` | High-ISO wildlife recovery (low-light dance-floor, late dusk owl, early-dawn bird-burst). |
+| `look_wildlife_natural_warm` | landscape | `colorbalancergb`, `sigmoid`, `temperature` | Warm golden-hour wildlife default — temperature +0. |
+| `look_food_appetizing_warm` | landscape | `colorbalancergb`, `sigmoid`, `temperature` | Default food editorial — warm WB (+0. |
+| `look_food_orange_pop` | landscape | `colorequal` | Lift the orange / red food band — tomato, carrot, salmon, paprika, peach. |
+| `look_food_green_natural` | landscape | `colorequal` | Lift greens — fresh herbs, salad, parsley, basil — without crossing into the cartoonish lime-green that over-edited food photography shows. |
 
 ---
 
