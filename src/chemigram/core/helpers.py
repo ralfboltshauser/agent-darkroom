@@ -233,7 +233,7 @@ def _apply_parameter_values_to_dtstyle(
     return dataclasses.replace(dtstyle, plugins=tuple(new_plugins))
 
 
-def apply_entry(
+def apply_entry(  # noqa: C901
     baseline: Xmp,
     entry: Any,  # VocabEntry; unannotated to avoid circular import
     *,
@@ -243,6 +243,7 @@ def apply_entry(
     opacity: float = 100.0,
     strength: float | None = None,
     raw_path: Path | None = None,
+    vocab: Any = None,  # VocabularyIndex; unannotated to avoid circular import
 ) -> Xmp:
     """Apply a vocabulary entry to a baseline XMP, with optional parameter
     overrides, drawn-mask binding, and (RFC-035) strength interpolation.
@@ -291,6 +292,43 @@ def apply_entry(
     if not isinstance(entry, VocabEntry):
         raise TypeError(f"entry must be a VocabEntry, got {type(entry).__name__}")
 
+    # Axis 5 (RFC-039 / #131 Step 2): L2 composition by primitive
+    # reference. When entry.composes is set, resolve each reference to
+    # a DtstyleEntry with parameter_values applied (camera-aware if
+    # raw_path supplied), collect them as additional dtstyles to splice
+    # into the final XMP. Requires the VocabularyIndex (``vocab``) so
+    # we can look up referenced primitives. If composes is set but
+    # vocab is None, raise — the caller forgot to thread the index.
+    composed_dtstyles: list[Any] = []
+    if entry.composes:
+        if vocab is None:
+            raise ValueError(
+                f"entry {entry.name!r} has 'composes' references "
+                f"({[r.primitive for r in entry.composes]}) but vocab "
+                f"argument is None; composition resolution requires the "
+                f"VocabularyIndex to be passed via the 'vocab' kwarg"
+            )
+        for ref in entry.composes:
+            primitive = vocab.lookup_by_name(ref.primitive)
+            if primitive is None:
+                # Should not happen — VocabularyIndex validates composes
+                # references at load time. Raise loudly if it does.
+                raise ValueError(
+                    f"entry {entry.name!r} composes unknown primitive "
+                    f"{ref.primitive!r}; not in loaded vocab"
+                )
+            # Resolve the primitive's parametric dtstyle with the supplied
+            # values + raw_path. Use _apply_parameter_values_to_dtstyle
+            # directly (not apply_entry) to skip mask/strength axes; we
+            # only need the dtstyle patching.
+            resolved = _apply_parameter_values_to_dtstyle(
+                primitive.dtstyle,
+                primitive.parameters,
+                ref.parameter_values,
+                raw_path=raw_path,
+            )
+            composed_dtstyles.append(resolved)
+
     dtstyle = entry.dtstyle
 
     # Axis 1: parameter overrides (RFC-021) + camera-aware identity
@@ -329,8 +367,19 @@ def apply_entry(
         dtstyle = apply_strength_to_dtstyle(dtstyle, strength)
 
     # Axis 2: mask binding (ADR-076 drawn / ADR-085 parametric / both) —
-    # composes with parameter overrides + strength
+    # composes with parameter overrides + strength.
+    # Note: mask binding + L2 composition is not currently supported; the
+    # mask path consumes only the L2's own dtstyle. If a future use case
+    # needs mask-bound composition, the mask apply would need to bind to
+    # the composed dtstyles too. Tracked as a follow-up if it surfaces.
     if mask_spec is not None:
+        if composed_dtstyles:
+            raise ValueError(
+                f"entry {entry.name!r} combines 'composes' with mask_spec; "
+                f"this combination is not yet supported (would require the "
+                f"mask to bind across composed primitives too). File a "
+                f"follow-up if you need it."
+            )
         return apply_with_mask(
             baseline,
             dtstyle,
@@ -339,7 +388,16 @@ def apply_entry(
             opacity=opacity,
         )
 
-    # Plain (or parameter-only / strength-only) apply
+    # Plain (or parameter-only / strength-only) apply.
+    # Composed primitives go BEFORE the L2's own dtstyle in the entries
+    # list. synthesize_xmp uses last-writer-wins for same-(operation,
+    # multi_priority) collisions, so the L2's own dtstyle takes
+    # precedence if it inlines an op that's also composed — which
+    # shouldn't happen by design (L2 looks strip the temperature op
+    # from their dtstyle when composing parametric temperature), but
+    # last-writer-wins is the safe default if it does.
+    if composed_dtstyles:
+        return synthesize_xmp(baseline, [*composed_dtstyles, dtstyle])
     return synthesize_xmp(baseline, [dtstyle])
 
 

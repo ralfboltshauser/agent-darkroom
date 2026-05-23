@@ -747,3 +747,173 @@ def test_expressive_baseline_ships_canonical_maskdefs() -> None:
         resolved = resolve_named_mask_spec({"kind": "named", "name": name}, index)
         assert resolved is not None
         assert "dt_form" in resolved or "range_filter" in resolved
+
+
+# ---------------------------------------------------------------------------
+# composes field (RFC-039 / #131 Step 2)
+# ---------------------------------------------------------------------------
+
+
+def test_compositionref_dataclass_is_importable() -> None:
+    """The CompositionRef shape is part of the public vocab API for
+    callers building manifest entries programmatically."""
+    from chemigram.core.vocab import CompositionRef
+
+    ref = CompositionRef(primitive="temperature", parameter_values={"kelvin_delta": 1500.0})
+    assert ref.primitive == "temperature"
+    assert ref.parameter_values == {"kelvin_delta": 1500.0}
+
+
+def test_loaded_entries_default_composes_to_none() -> None:
+    """Existing manifest entries without a composes field load with
+    composes=None (backward-compat property)."""
+    from chemigram.core.vocab import load_packs
+
+    index = load_packs(["expressive-baseline"])
+    # Pick an arbitrary L2 entry; today none have composes set.
+    entry = index.lookup_by_name("look_landscape_dramatic_moody")
+    assert entry is not None
+    assert entry.composes is None
+
+
+def test_composes_validation_rejects_unknown_primitive(tmp_path: Path) -> None:
+    """Loading a pack with a composes reference to a non-existent
+    primitive raises ManifestError at load time."""
+    import json
+
+    from chemigram.core.vocab import ManifestError, VocabularyIndex
+
+    # Reuse an existing valid dtstyle from the test fixtures
+    src = TEST_PACK_ROOT.parents[1] / "dtstyles" / "expo_plus_0p5.dtstyle"
+
+    pack = tmp_path / "bad-pack"
+    (pack / "layers" / "L3").mkdir(parents=True)
+    shutil.copy(src, pack / "layers" / "L3" / "expo.dtstyle")
+    (pack / "manifest.json").write_text(
+        json.dumps(
+            {
+                "entries": [
+                    {
+                        "name": "test_look",
+                        "layer": "L2",
+                        "subtype": "look",
+                        "path": "layers/L3/expo.dtstyle",
+                        "touches": ["exposure"],
+                        "tags": ["test"],
+                        "description": "test",
+                        "modversions": {"exposure": 6},
+                        "darktable_version": "5.4",
+                        "source": "test",
+                        "license": "MIT",
+                        "composes": [
+                            {
+                                "primitive": "nonexistent_primitive",
+                                "parameter_values": {"kelvin_delta": 0.0},
+                            }
+                        ],
+                    }
+                ]
+            }
+        )
+    )
+    with pytest.raises(ManifestError, match="unknown primitive"):
+        VocabularyIndex(pack)
+
+
+def test_compositionref_in_repr() -> None:
+    """Round-trip CompositionRef object preserves fields."""
+    from chemigram.core.vocab import CompositionRef
+
+    ref = CompositionRef(primitive="temperature", parameter_values={"kelvin_delta": -1200.0})
+    # Frozen dataclasses get auto-repr
+    assert "temperature" in repr(ref)
+    assert "-1200" in repr(ref)
+
+
+# Apply-time composition (RFC-039 / #131 Step 3)
+
+
+def test_apply_entry_composes_resolves_camera_aware_temperature(tmp_path: Path) -> None:
+    """End-to-end smoke test: an L2 entry with composes references the
+    parametric wb_kelvin_delta primitive; apply_entry resolves the
+    reference and produces an XMP with a temperature op whose
+    coefficients reflect (camera daylight * kelvin shift).
+
+    Skipped without the landscape fixture (requires git lfs pull).
+    """
+    import dataclasses
+
+    from chemigram.core.helpers import apply_entry
+    from chemigram.core.parameterize.temperature import decode
+    from chemigram.core.vocab import CompositionRef, load_packs
+    from chemigram.core.xmp import parse_xmp
+
+    raw_path = TEST_PACK_ROOT.parents[3] / "tests/fixtures/raws/landscape.ARW"
+    if not raw_path.exists():
+        pytest.skip("landscape fixture not available (git lfs pull?)")
+    baseline_xmp = TEST_PACK_ROOT.parents[3] / "src/chemigram/core/_baseline_v1.xmp"
+
+    vocab = load_packs(["starter", "expressive-baseline"])
+    baseline = parse_xmp(baseline_xmp)
+    # Take an existing L2 look and graft a composes field onto it.
+    base = vocab.lookup_by_name("look_landscape_dramatic_moody")
+    assert base is not None
+    composed = dataclasses.replace(
+        base,
+        name="look_test_composed",
+        composes=(
+            CompositionRef(
+                primitive="wb_kelvin_delta",
+                parameter_values={"kelvin_delta": 1500.0},
+            ),
+        ),
+    )
+    result = apply_entry(baseline, composed, raw_path=raw_path, vocab=vocab)
+    temp_ops = [h for h in result.history if h.operation == "temperature"]
+    assert len(temp_ops) == 1, "composition should add exactly one temperature op"
+    fields = decode(temp_ops[-1].params)
+    # Camera daylight on Sony landscape: (R=2.391, G=1.0, B=1.711).
+    # +1500K shifts: red *1.15, blue *0.85. Tolerance allows rounding.
+    assert fields[0] == pytest.approx(2.391 * 1.15, abs=0.05)
+    assert fields[1] == pytest.approx(1.0, abs=0.01)
+    assert fields[2] == pytest.approx(1.711 * 0.85, abs=0.05)
+
+
+def test_apply_entry_composes_without_vocab_raises() -> None:
+    """When entry.composes is set, vocab is required; passing None raises."""
+    import dataclasses
+
+    from chemigram.core.helpers import apply_entry
+    from chemigram.core.vocab import CompositionRef, load_packs
+    from chemigram.core.xmp import parse_xmp
+
+    baseline_xmp = TEST_PACK_ROOT.parents[3] / "src/chemigram/core/_baseline_v1.xmp"
+    vocab = load_packs(["expressive-baseline"])
+    baseline = parse_xmp(baseline_xmp)
+    base = vocab.lookup_by_name("look_landscape_dramatic_moody")
+    assert base is not None
+    composed = dataclasses.replace(
+        base,
+        name="look_test_composed",
+        composes=(
+            CompositionRef(primitive="wb_kelvin_delta", parameter_values={"kelvin_delta": 0.0}),
+        ),
+    )
+    with pytest.raises(ValueError, match="vocab"):
+        apply_entry(baseline, composed)  # missing vocab
+
+
+def test_apply_entry_without_composes_unchanged_behavior() -> None:
+    """Existing entries without composes apply identically — no change
+    in behavior (backward-compat property)."""
+    from chemigram.core.helpers import apply_entry
+    from chemigram.core.vocab import load_packs
+    from chemigram.core.xmp import parse_xmp
+
+    baseline_xmp = TEST_PACK_ROOT.parents[3] / "src/chemigram/core/_baseline_v1.xmp"
+    vocab = load_packs(["expressive-baseline"])
+    baseline = parse_xmp(baseline_xmp)
+    entry = vocab.lookup_by_name("look_landscape_dramatic_moody")
+    # Apply with no compose; should not raise even if vocab is None.
+    result = apply_entry(baseline, entry)
+    assert len(result.history) > 0

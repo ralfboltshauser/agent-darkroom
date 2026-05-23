@@ -118,6 +118,27 @@ class ParameterSpec:
 
 
 @dataclass(frozen=True)
+class CompositionRef:
+    """One composition reference on an L2 vocabulary entry (RFC-039).
+
+    Names a parametric primitive (by entry name) plus the parameter
+    values to invoke it with. The engine resolves the reference at
+    apply time: look up the primitive in the :class:`VocabularyIndex`,
+    call its parameterized apply path with the supplied values (and
+    the target raw_path so camera-aware modules can substitute
+    camera-default state), splice the primitive's output history items
+    into this entry's dtstyle history.
+
+    Depth-1 only by design: L2 looks compose L3 primitives; L2-
+    composes-L2 is not supported in v1 (would risk cyclic composition;
+    a future RFC may relax this).
+    """
+
+    primitive: str
+    parameter_values: dict[str, float] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class MaskdefEntry:
     """One named-mask vocabulary entry (RFC-032).
 
@@ -187,6 +208,15 @@ class VocabEntry:
     # (CLI) or the ``value`` argument on the ``apply_primitive`` MCP tool.
     # Multi-parameter from day one (always a tuple, never a scalar).
     parameters: tuple[ParameterSpec, ...] | None = None
+    # composes: presence triggers the L2-composition apply path per
+    # RFC-039 / #133. Each composition reference names a parametric
+    # primitive + parameter values; the engine resolves the reference
+    # at apply time, calls the primitive's parameterized apply (which
+    # may be camera-aware), and splices the primitive's output into
+    # this entry's dtstyle history at the correct iop_order position.
+    # Depth-1 only — L2 looks compose L3 primitives, never other L2
+    # looks. Tuple from day one (always a tuple, never a single ref).
+    composes: tuple[CompositionRef, ...] | None = None
 
 
 class VocabularyIndex:
@@ -245,6 +275,62 @@ class VocabularyIndex:
         from chemigram.core.vocab._dtstyle_modversion_drift import emit_dtstyle_drift_signals
 
         emit_dtstyle_drift_signals(list(self._all_entries))
+
+        # Composes-reference validation (RFC-039). Every L2 entry's
+        # composes references must point to an actually-loaded
+        # parametric primitive in this index, and the supplied
+        # parameter_values must name parameters that exist on the
+        # referenced primitive. Fail loud at load time so authors get a
+        # clear error at the manifest level, not a cryptic apply-time
+        # KeyError.
+        self._validate_composes_references()
+
+    def _validate_composes_references(self) -> None:
+        """Cross-reference check for every entry's ``composes`` field.
+
+        For each composition reference:
+        - The named primitive must exist in this index.
+        - The referenced primitive must declare ``parameters`` (only
+          parametric primitives are composable).
+        - Every ``parameter_value`` key must match a parameter name on
+          the referenced primitive.
+        - Composition is depth-1: the referenced primitive itself must
+          not have a ``composes`` field (no nested composition in v1).
+
+        Raises :class:`ManifestError` on any violation.
+        """
+        for entry in self._all_entries:
+            if entry.composes is None:
+                continue
+            for ref in entry.composes:
+                target = self._by_name.get(ref.primitive)
+                if target is None:
+                    raise ManifestError(
+                        f"entry {entry.name!r} composes references unknown "
+                        f"primitive {ref.primitive!r}; not found in loaded "
+                        f"packs ({sorted(self._by_name.keys())[:10]}...)"
+                    )
+                if target.parameters is None:
+                    raise ManifestError(
+                        f"entry {entry.name!r} composes primitive "
+                        f"{ref.primitive!r}, but that primitive has no "
+                        f"'parameters' declaration (only parameterized "
+                        f"primitives are composable)"
+                    )
+                if target.composes is not None:
+                    raise ManifestError(
+                        f"entry {entry.name!r} composes {ref.primitive!r}, "
+                        f"but {ref.primitive!r} itself composes other "
+                        f"primitives (depth-1 composition only in v1)"
+                    )
+                valid_params = {p.name for p in target.parameters}
+                for k in ref.parameter_values:
+                    if k not in valid_params:
+                        raise ManifestError(
+                            f"entry {entry.name!r} composes {ref.primitive!r} "
+                            f"with unknown parameter {k!r}; valid: "
+                            f"{sorted(valid_params)}"
+                        )
 
     def _load_all_packs(
         self, pack_roots: list[Path]
@@ -424,6 +510,7 @@ class VocabularyIndex:
         touches = self._validate_touches(raw, dtstyle, manifest_path)
         applies_to = self._extract_applies_to(raw, layer, manifest_path)
         parameters = self._extract_parameters(raw, manifest_path)
+        composes = self._extract_composes(raw, manifest_path)
 
         return VocabEntry(
             name=str(raw["name"]),
@@ -442,6 +529,7 @@ class VocabularyIndex:
             applies_to=applies_to,
             mask_spec=raw.get("mask_spec"),
             parameters=parameters,
+            composes=composes,
         )
 
     def _validate_shape(self, raw: Any, manifest_path: Path) -> None:
@@ -507,6 +595,56 @@ class VocabularyIndex:
                 f"with make/model/lens_model"
             )
         return applies_to
+
+    def _extract_composes(
+        self, raw: dict[str, Any], manifest_path: Path
+    ) -> tuple[CompositionRef, ...] | None:
+        """Parse the optional ``composes`` array on a manifest entry (RFC-039).
+
+        Returns ``None`` if the field is absent. Otherwise validates the
+        shape: each entry is an object with required key ``primitive``
+        (string, the name of a parametric L3 entry to invoke) and
+        optional key ``parameter_values`` (object, string -> number).
+        Cross-reference validation (the named primitive actually exists
+        in the index, the parameter values match its parameter spec)
+        happens at index-build time in :class:`VocabularyIndex` —
+        this method only checks shape.
+        """
+        composes_raw = raw.get("composes")
+        if composes_raw is None:
+            return None
+        if not isinstance(composes_raw, list) or not composes_raw:
+            raise ManifestError(
+                f"{manifest_path}: entry {raw['name']!r} 'composes' must be a non-empty list"
+            )
+        out: list[CompositionRef] = []
+        for idx, c in enumerate(composes_raw):
+            if not isinstance(c, dict):
+                raise ManifestError(
+                    f"{manifest_path}: entry {raw['name']!r} composes[{idx}] must be an object"
+                )
+            if "primitive" not in c:
+                raise ManifestError(
+                    f"{manifest_path}: entry {raw['name']!r} composes[{idx}] "
+                    f"missing required key 'primitive'"
+                )
+            primitive = str(c["primitive"])
+            values_raw = c.get("parameter_values", {})
+            if not isinstance(values_raw, dict):
+                raise ManifestError(
+                    f"{manifest_path}: entry {raw['name']!r} composes[{idx}] "
+                    f"'parameter_values' must be an object"
+                )
+            values: dict[str, float] = {}
+            for k, v in values_raw.items():
+                if not isinstance(v, int | float):
+                    raise ManifestError(
+                        f"{manifest_path}: entry {raw['name']!r} composes[{idx}] "
+                        f"parameter_values[{k!r}] must be a number, got {type(v).__name__}"
+                    )
+                values[str(k)] = float(v)
+            out.append(CompositionRef(primitive=primitive, parameter_values=values))
+        return tuple(out)
 
     def _extract_parameters(
         self, raw: dict[str, Any], manifest_path: Path
