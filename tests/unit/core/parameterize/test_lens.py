@@ -187,3 +187,130 @@ def test_axis_offsets_dict_matches_struct_layout() -> None:
         if _AXIS_OFFSETS["lens_tca_r"] <= i < _AXIS_OFFSETS["lens_tca_r"] + 4:
             continue
         assert src_bytes[i] == out_bytes[i], f"byte {i} changed unexpectedly"
+
+
+# Camera-aware EXIF binding (#136 / RFC-039)
+
+
+def test_patch_with_raw_path_populates_camera_lens_from_exif() -> None:
+    """When raw_path is supplied AND camera bytes are empty in the
+    source, patch() reads EXIF and populates camera/lens/focal length
+    on the dtstyle's lens op_params. End-to-end test against the
+    bundled Sony landscape fixture."""
+    raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
+    if not raw_path.exists():
+        pytest.skip("landscape fixture not available (git lfs pull?)")
+    from chemigram.core.parameterize.lens import (
+        _CAMERA_FIELD_INDEX,
+        _FOCAL_FIELD_INDEX,
+        decode,
+    )
+    from chemigram.core.vocab import load_packs
+
+    v = load_packs(["starter", "expressive-baseline"])
+    entry = v.lookup_by_name("lens_correction")
+    assert entry is not None
+    src = entry.dtstyle.plugins[0].op_params
+    src_fields = decode(src)
+    assert src_fields[_CAMERA_FIELD_INDEX].rstrip(b"\x00") == b""
+    out = patch(src, raw_path=raw_path)
+    fields = decode(out)
+    camera = fields[_CAMERA_FIELD_INDEX].rstrip(b"\x00").decode("utf-8")
+    assert "SONY" in camera.upper() or "Sony" in camera
+    # Landscape fixture's EXIF has focal length present (non-zero)
+    assert fields[_FOCAL_FIELD_INDEX] > 0.0
+
+
+def test_patch_preserves_existing_camera_string(tmp_path: Path) -> None:
+    """When the source already has a camera string populated, patch()
+    does NOT overwrite it from EXIF. The photographer's existing
+    binding wins."""
+    import struct as _struct
+
+    from chemigram.core.parameterize.lens import _CAMERA_FIELD_INDEX, _STRUCT_FORMAT, decode
+
+    # Build a source with a pre-populated camera string
+    fields: list[int | float | bytes] = [
+        0,
+        0,
+        0,
+        1.0,
+        0.0,
+        50.0,
+        2.8,
+        1.0,  # 5 floats (scale, crop, focal, aperture, distance)
+        0,
+        b"Canon EOS R5".ljust(128, b"\x00"),  # camera (pre-populated)
+        b"".ljust(128, b"\x00"),  # lens
+        0,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1,
+        0.0,
+        0,
+        0.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+    ]
+    src = _struct.pack(_STRUCT_FORMAT, *fields).hex()
+
+    # Even with a raw_path pointing at a Sony fixture, the pre-bound
+    # camera string should win
+    raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
+    if not raw_path.exists():
+        pytest.skip("landscape fixture not available")
+    out = patch(src, raw_path=raw_path)
+    out_fields = decode(out)
+    assert out_fields[_CAMERA_FIELD_INDEX].rstrip(b"\x00") == b"Canon EOS R5"
+
+
+def test_patch_unreadable_raw_falls_back(tmp_path: Path) -> None:
+    """If EXIF read fails (corrupt file), patch silently preserves
+    the source bytes (camera stays empty)."""
+    import struct as _struct
+
+    from chemigram.core.parameterize.lens import _CAMERA_FIELD_INDEX, _STRUCT_FORMAT, decode
+
+    fields: list[int | float | bytes] = [
+        0,
+        0,
+        0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0,
+        b"".ljust(128, b"\x00"),
+        b"".ljust(128, b"\x00"),
+        0,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1,
+        0.0,
+        0,
+        0.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+    ]
+    src = _struct.pack(_STRUCT_FORMAT, *fields).hex()
+
+    bad_raw = tmp_path / "junk.arw"
+    bad_raw.write_bytes(b"not a raw file")
+    out = patch(src, raw_path=bad_raw)
+    out_fields = decode(out)
+    assert out_fields[_CAMERA_FIELD_INDEX].rstrip(b"\x00") == b""

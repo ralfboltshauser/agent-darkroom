@@ -91,6 +91,13 @@ through patch() unchanged.
 from __future__ import annotations
 
 import struct
+from pathlib import Path
+
+# Field indices for the EXIF-bound (preserved-but-now-populated) fields.
+_CAMERA_FIELD_INDEX = 9
+_LENS_FIELD_INDEX = 10
+_FOCAL_FIELD_INDEX = 5
+_APERTURE_FIELD_INDEX = 6
 
 # Struct: 3 enums + 5 floats + 1 enum + 128-byte camera + 128-byte lens
 # + 1 gbool + 2 floats + 4 floats + 1 float + 1 enum + 1 float + 1 gbool
@@ -156,7 +163,12 @@ def encode(fields: tuple[int | float | bytes, ...]) -> str:
     return struct.pack(_STRUCT_FORMAT, *fields).hex()
 
 
-def patch(op_params: str, **values: float | None) -> str:
+def patch(
+    op_params: str,
+    *,
+    raw_path: Path | None = None,
+    **values: float | None,
+) -> str:
     """Patch any combination of lens's 10 parameterized magnitude axes.
 
     Multi-axis partial-update: caller may supply any subset of the 10
@@ -199,6 +211,34 @@ def patch(op_params: str, **values: float | None) -> str:
             f"valid axes: {sorted(_AXIS_FIELD_INDICES.keys())}"
         )
     fields = list(decode(op_params))
+    # Camera-aware EXIF binding (#136 / RFC-039): when raw_path is supplied
+    # AND the camera/lens identifier bytes are empty (no override),
+    # populate them from the raw's EXIF. darktable's lensfun-method
+    # correction needs these strings to find the correction profile;
+    # without them the dtstyle's manual-override values are the only
+    # correction. Focal length and aperture also populated for the
+    # distance-aware corrections.
+    if raw_path is not None:
+        try:
+            from chemigram.core.exif import read_exif
+
+            camera_bytes = fields[_CAMERA_FIELD_INDEX]
+            assert isinstance(camera_bytes, bytes)
+            # Only populate when the existing camera string is empty (the
+            # dtstyle hasn't been pre-bound to a specific body).
+            if camera_bytes.rstrip(b"\x00") == b"":
+                exif = read_exif(raw_path)
+                # lensfun uses "Make Model" for camera; "LensModel" for lens.
+                camera_str = f"{exif.make} {exif.model}".strip()
+                lens_str = exif.lens_model.strip()
+                # Truncate / null-pad to fit the 128-byte fields.
+                fields[_CAMERA_FIELD_INDEX] = camera_str.encode("utf-8")[:128].ljust(128, b"\x00")
+                fields[_LENS_FIELD_INDEX] = lens_str.encode("utf-8")[:128].ljust(128, b"\x00")
+                if exif.focal_length_mm is not None:
+                    fields[_FOCAL_FIELD_INDEX] = float(exif.focal_length_mm)
+        except Exception:  # noqa: S110
+            # Robust fallback: any EXIF read failure → keep source bytes.
+            pass
     for axis_name, value in values.items():
         if value is not None:
             fields[_AXIS_FIELD_INDICES[axis_name]] = float(value)
