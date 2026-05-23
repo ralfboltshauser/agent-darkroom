@@ -476,6 +476,7 @@ The canonical state board for the tech plane. When an RFC closes into an ADR, bo
 | RFC-036 | Mixed-op `apply_per_region` (un-defer of RFC-031) | Decided; ADR-089 Draft until darkroom validation | ADR-089 (closes) |
 | RFC-037 | `propagate_state` MCP verb (anchor-and-sync workflow) | Decided; ADR-090 Draft until darkroom validation | ADR-090 (closes) |
 | RFC-038 | Mode B autonomous session protocol | Draft v0.1 (v1.11+ pick) | — (pending) |
+| RFC-039 | Raw-derived parameters in L2 composition (camera-aware WB; pattern extends to denoise/filmic/lens) | Draft v0.1 | — (pending; ≥3 ADRs once decided) |
 
 ### ADRs
 
