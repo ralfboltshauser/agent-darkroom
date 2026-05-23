@@ -356,7 +356,9 @@ def _patch_with_values(
         if operation == "denoiseprofile":
             from chemigram.core.parameterize import denoiseprofile
 
-            return denoiseprofile.patch(op_params, **values)
+            # Strength interpolation never passes raw_path; mypy needs the
+            # explicit None to disambiguate from the kw-only raw_path arg.
+            return denoiseprofile.patch(op_params, raw_path=None, **values)
         if operation == "grain":
             from chemigram.core.parameterize import grain
 
