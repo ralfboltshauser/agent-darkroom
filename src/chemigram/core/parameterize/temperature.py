@@ -41,6 +41,7 @@ overrides the delta-derived value).
 from __future__ import annotations
 
 import struct
+from pathlib import Path
 
 # Struct format (little-endian): 4 floats + 1 int32.
 _STRUCT_FORMAT = "<4fi"
@@ -91,6 +92,7 @@ def patch(
     blue_coeff: float | None = None,
     kelvin_delta: float | None = None,
     tint_delta: float | None = None,
+    raw_path: Path | None = None,
 ) -> str:
     """Patch ``red``, ``green`` and/or ``blue`` coefficient fields in a
     20-byte temperature blob.
@@ -133,10 +135,67 @@ def patch(
     Returns:
         New hex-encoded ``op_params`` (20 bytes / 40 hex chars).
 
+    When ``raw_path`` is supplied, the source coefficients are first
+    REPLACED with the raw's as-shot camera WB coefficients (normalized
+    to G=1) read via :func:`chemigram.core.exif.read_camera_daylight_wb`.
+    Non-zero kelvin/tint deltas then shift relative to the raw's
+    camera-default — making the delta path camera-aware (RFC-039 /
+    #131 Step 2). E.g., a composed L2 look saying ``kelvin_delta=+1500``
+    produces a warming shift on top of *that specific camera's*
+    daylight, not the authoring camera's daylight.
+
+    Known limitation (#131 follow-up): at strict identity
+    (no parameters supplied), the emitted op_params encode camera
+    WB but darktable's render still differs slightly from a no-
+    temperature-op render. The reason: once any temperature op is
+    present in the XMP, darktable suppresses its internal
+    auto-insert pathway, and rawpy's camera_whitebalance values are
+    a close-but-not-exact reproduction of what darktable's internal
+    auto-default computes. The DELTA path is unaffected (and is the
+    load-bearing case for L2 composition); identity-render fidelity
+    is tracked as a follow-up for Phase 5 or a sibling RFC.
+
+    When ``raw_path`` is None (synthetic chart fixtures, no raw
+    available), behavior is unchanged (source coefficients passed
+    through).
+
+    If the raw is unreadable (corrupt, missing EXIF, etc.), the
+    substitution silently falls back to the source coefficients — the
+    function never raises on raw-read failure. This keeps the parametric
+    apply path robust for test fixtures.
+
     Raises:
         ValueError: input blob is not 20 bytes after hex-decode.
     """
     fields = list(decode(op_params))
+    # Camera-aware substitution (RFC-039 / #131 Step 2): when raw_path is
+    # supplied, swap the source RGB coefficients with the camera's
+    # daylight WB before applying any deltas. Bypassed if any direct
+    # coefficient override (red/green/blue_coeff) is supplied — those
+    # take precedence over the camera-default since the caller is
+    # explicitly opting into raw-coefficient control.
+    coefficient_overrides_supplied = any(
+        c is not None for c in (red_coeff, green_coeff, blue_coeff)
+    )
+    if raw_path is not None and not coefficient_overrides_supplied:
+        try:
+            from chemigram.core.exif import read_camera_daylight_wb
+
+            r, g, b = read_camera_daylight_wb(raw_path)
+            fields[_RED_FIELD_INDEX] = r
+            fields[_GREEN_FIELD_INDEX] = g
+            fields[_BLUE_FIELD_INDEX] = b
+            # Preserve "various" (offset 12..15) and "preset" (offset
+            # 16..19) — the raw doesn't change those, only the R/G/B
+            # multipliers.
+        except Exception:  # noqa: S110
+            # Robust fallback: if rawpy can't read the file (corrupt,
+            # unsupported format, missing libraw codec for this body),
+            # keep the source coefficients. The caller's explicit-
+            # coefficient or delta path still works. Deliberately broad
+            # except — raw-read failures span many libraw error types
+            # and aren't worth logging individually here.
+            pass
     # Apply photographic-units deltas first (relative to source).
     if kelvin_delta is not None and kelvin_delta != 0:
         factor = 1.0 + (kelvin_delta * _KELVIN_PER_COEFF_UNIT)

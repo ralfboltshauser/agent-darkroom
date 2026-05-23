@@ -145,6 +145,47 @@ def test_read_exif_file_not_found(tmp_path: Path) -> None:
         read_exif(nonexistent)
 
 
+def test_read_camera_daylight_wb_landscape_fixture() -> None:
+    """Sanity check the camera-WB reader on the bundled landscape ARW.
+
+    Verifies (a) the function returns a 3-float tuple, (b) values are
+    normalized to G=1.0, (c) values are physically plausible for a
+    Sony body (R and B both > 1.0, reflecting Bayer green dominance
+    that gets compensated).
+
+    Used by RFC-039 / #131 Step 2 camera-aware parametric apply.
+    """
+    from chemigram.core.exif import read_camera_daylight_wb
+
+    raw_path = Path(__file__).resolve().parents[3] / "tests/fixtures/raws/landscape.ARW"
+    if not raw_path.exists():
+        pytest.skip("landscape fixture not available (git lfs pull?)")
+
+    r, g, b = read_camera_daylight_wb(raw_path)
+    assert g == pytest.approx(1.0, abs=1e-9), "must be normalized to G=1"
+    assert 1.5 < r < 3.5, f"R coefficient out of plausible range: {r}"
+    assert 1.0 < b < 2.5, f"B coefficient out of plausible range: {b}"
+
+
+def test_read_camera_daylight_wb_file_not_found(tmp_path: Path) -> None:
+    """Missing raw raises FileNotFoundError (no ExifReadError wrapping)."""
+    from chemigram.core.exif import read_camera_daylight_wb
+
+    nonexistent = tmp_path / "missing.arw"
+    with pytest.raises(FileNotFoundError):
+        read_camera_daylight_wb(nonexistent)
+
+
+def test_read_camera_daylight_wb_invalid_file(tmp_path: Path) -> None:
+    """Corrupt file raises ExifReadError."""
+    from chemigram.core.exif import read_camera_daylight_wb
+
+    raw = tmp_path / "junk.arw"
+    raw.write_bytes(b"not a raw file")
+    with pytest.raises(ExifReadError, match="failed to read camera daylight WB"):
+        read_camera_daylight_wb(raw)
+
+
 def test_read_exif_focal_length_malformed_returns_none(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

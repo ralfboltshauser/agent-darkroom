@@ -278,3 +278,73 @@ def test_kelvin_delta_works_on_non_unit_baseline() -> None:
     fields = decode(out)
     assert fields[_RED_FIELD_INDEX] == pytest.approx(2.1485 * 1.1, abs=1e-3)
     assert fields[_BLUE_FIELD_INDEX] == pytest.approx(1.2094 * 0.9, abs=1e-3)
+
+
+# ---------------------------------------------------------------------------
+# Camera-aware substitution (RFC-039 / #131 Step 2)
+# ---------------------------------------------------------------------------
+
+
+def test_patch_without_raw_path_unchanged_default_behavior() -> None:
+    """When raw_path is None (the existing call path), patch behavior
+    is identical to pre-RFC-039 — source coefficients pass through."""
+    src = "0000803f0000803f0000803f0000807f02000000"  # (1.0, 1.0, 1.0)
+    out = patch(src)
+    assert out == src
+
+
+def test_patch_with_raw_path_substitutes_camera_wb_at_identity() -> None:
+    """When raw_path is supplied and no overrides are given, the
+    function reads camera WB and replaces source RGB coefficients
+    (RFC-039 / #131 Step 2). Sony landscape fixture has known
+    camera_whitebalance normalized to (R~2.39, G=1.0, B~1.71)."""
+    raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
+    if not raw_path.exists():
+        pytest.skip("landscape fixture not available (git lfs pull?)")
+    src = "0000803f0000803f0000803f0000807f02000000"  # (1.0, 1.0, 1.0)
+    out = patch(src, raw_path=raw_path)
+    fields = decode(out)
+    assert fields[_RED_FIELD_INDEX] == pytest.approx(2.391, abs=0.01)
+    assert fields[_GREEN_FIELD_INDEX] == pytest.approx(1.0, abs=1e-3)
+    assert fields[_BLUE_FIELD_INDEX] == pytest.approx(1.711, abs=0.01)
+
+
+def test_patch_with_raw_path_and_kelvin_delta_shifts_relative_to_camera() -> None:
+    """Non-zero kelvin_delta with raw_path shifts relative to the
+    camera's WB (not the source's). Verifies the delta is applied
+    AFTER camera-aware substitution."""
+    raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
+    if not raw_path.exists():
+        pytest.skip("landscape fixture not available (git lfs pull?)")
+    src = "0000803f0000803f0000803f0000807f02000000"  # source ignored due to raw_path
+    out = patch(src, kelvin_delta=1500.0, raw_path=raw_path)
+    fields = decode(out)
+    # Camera daylight is (2.391, 1.0, 1.711); +1500K should warm by ~15%
+    assert fields[_RED_FIELD_INDEX] == pytest.approx(2.391 * 1.15, abs=0.05)
+    assert fields[_BLUE_FIELD_INDEX] == pytest.approx(1.711 * 0.85, abs=0.05)
+
+
+def test_patch_with_raw_path_explicit_coefficient_overrides_wins() -> None:
+    """When an explicit coefficient is supplied alongside raw_path,
+    the coefficient takes precedence — the camera-aware substitution
+    is bypassed for that axis. The photographer is opting into
+    raw-coefficient control."""
+    raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
+    if not raw_path.exists():
+        pytest.skip("landscape fixture not available (git lfs pull?)")
+    src = "0000803f0000803f0000803f0000807f02000000"
+    out = patch(src, red_coeff=2.5, raw_path=raw_path)
+    fields = decode(out)
+    assert fields[_RED_FIELD_INDEX] == pytest.approx(2.5, abs=1e-3)
+
+
+def test_patch_with_unreadable_raw_falls_back_silently(tmp_path: Path) -> None:
+    """If rawpy can't read the file (corrupt, unsupported format), the
+    substitution falls back to source coefficients and patch() does
+    NOT raise. Robustness property for the parametric apply path."""
+    bad_raw = tmp_path / "junk.arw"
+    bad_raw.write_bytes(b"not a raw file")
+    src = "0000803f0000803f0000803f0000807f02000000"
+    # Should return without raising
+    out = patch(src, raw_path=bad_raw)
+    assert out == src

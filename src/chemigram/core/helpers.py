@@ -169,6 +169,7 @@ def _apply_parameter_values_to_dtstyle(
     dtstyle: Any,  # DtstyleEntry; unannotated to avoid circular import
     parameters: tuple[Any, ...],  # tuple[ParameterSpec, ...]
     values: dict[str, float],
+    raw_path: Path | None = None,
 ) -> Any:
     """Return a new ``DtstyleEntry`` with each parameter's ``op_params``
     field patched per the supplied ``values`` dict.
@@ -195,24 +196,36 @@ def _apply_parameter_values_to_dtstyle(
     values_by_module: dict[str, dict[str, float]] = {}
     spec_by_module: dict[str, Any] = {}
     for spec in parameters:
-        if spec.name not in values:
-            continue
+        # Track every parameter's module + modversion, even ones with no
+        # supplied value — so camera-aware modules (RFC-039 / #131 Step 2)
+        # still get a patch-call when raw_path is supplied at identity.
         mod = spec.field.module
-        values_by_module.setdefault(mod, {})[spec.name] = values[spec.name]
-        spec_by_module[mod] = spec  # any spec for the module is fine for modversion lookup
+        spec_by_module[mod] = spec
+        if spec.name in values:
+            values_by_module.setdefault(mod, {})[spec.name] = values[spec.name]
 
-    if not values_by_module:
+    # When neither explicit values are supplied NOR raw_path triggers a
+    # camera-aware module's identity substitution, return unchanged.
+    if not values_by_module and raw_path is None:
         return dtstyle
 
     new_plugins = []
     for plug in dtstyle.plugins:
-        if plug.operation in values_by_module:
+        # Patch a plugin if (a) it has explicit parameter values OR
+        # (b) raw_path is supplied AND this plugin's module is one we
+        # know how to parameterize (i.e., it's in spec_by_module). The
+        # second case gives camera-aware modules a chance to perform
+        # raw-derived substitution at identity (RFC-039).
+        if plug.operation in values_by_module or (
+            raw_path is not None and plug.operation in spec_by_module
+        ):
             spec = spec_by_module[plug.operation]
             patched_hex = patch_op_params(
                 plug.op_params,
                 module=plug.operation,
                 modversion=spec.field.modversion,
-                values=values_by_module[plug.operation],
+                values=values_by_module.get(plug.operation, {}),
+                raw_path=raw_path,
             )
             new_plugins.append(dataclasses.replace(plug, op_params=patched_hex))
         else:
@@ -229,6 +242,7 @@ def apply_entry(
     mask_id_seed: int | None = None,
     opacity: float = 100.0,
     strength: float | None = None,
+    raw_path: Path | None = None,
 ) -> Xmp:
     """Apply a vocabulary entry to a baseline XMP, with optional parameter
     overrides, drawn-mask binding, and (RFC-035) strength interpolation.
@@ -279,14 +293,30 @@ def apply_entry(
 
     dtstyle = entry.dtstyle
 
-    # Axis 1: parameter overrides (RFC-021)
+    # Axis 1: parameter overrides (RFC-021) + camera-aware identity
+    # substitution (RFC-039 / #131 Step 2).
+    #
+    # The parametric apply path runs when:
+    #   (a) the caller supplied parameter_values (explicit override), OR
+    #   (b) raw_path is supplied AND the entry has declared parameters
+    #       (gives camera-aware modules a chance to substitute camera-
+    #       default coefficients at identity).
     if parameter_values:
         if entry.parameters is None:
             raise TypeError(
                 f"entry {entry.name!r} has no 'parameters' declaration; "
                 f"cannot apply parameter_values={parameter_values!r}"
             )
-        dtstyle = _apply_parameter_values_to_dtstyle(dtstyle, entry.parameters, parameter_values)
+        dtstyle = _apply_parameter_values_to_dtstyle(
+            dtstyle, entry.parameters, parameter_values, raw_path=raw_path
+        )
+    elif raw_path is not None and entry.parameters:
+        # No explicit values but raw_path is in play; let the parametric
+        # path run with an empty values dict so camera-aware modules
+        # (today: temperature) can substitute their identity from the raw.
+        dtstyle = _apply_parameter_values_to_dtstyle(
+            dtstyle, entry.parameters, {}, raw_path=raw_path
+        )
 
     # Axis 4 (RFC-035 Path B): strength interpolation. Applied after
     # parameter overrides and before mask binding so it composes with

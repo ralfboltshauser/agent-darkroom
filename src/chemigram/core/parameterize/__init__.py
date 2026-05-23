@@ -24,6 +24,7 @@ Public surface:
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
 from chemigram.core.parameterize import (
     ashift,
@@ -82,6 +83,7 @@ def patch_op_params(
     module: str,
     modversion: int,
     values: dict[str, float],
+    raw_path: Path | None = None,
 ) -> str:
     """Apply caller-supplied parameter ``values`` to a module's ``op_params``.
 
@@ -92,6 +94,13 @@ def patch_op_params(
             registered version for ``module``; mismatch raises
             :class:`PatchError`.
         values: parameter name → value, scoped to this module.
+        raw_path: optional ``pathlib.Path`` to the source raw. When
+            supplied AND the target module's patch function accepts
+            ``raw_path`` (camera-aware modules — currently
+            ``temperature``), the raw is read for camera-default state
+            (RFC-039 / #131 Step 2). Modules that don't accept
+            ``raw_path`` ignore it. Synthetic-input apply paths (chart
+            fixtures) pass ``None``; behavior is unchanged for those.
 
     Returns:
         New hex-encoded ``op_params`` with the named fields patched.
@@ -107,6 +116,12 @@ def patch_op_params(
             f"known: {sorted(_PATCH_REGISTRY.keys())}"
         )
     fn = _PATCH_REGISTRY[key]
+    # Only pass raw_path to modules whose patch signature accepts it.
+    # Modules that don't (most of the registry today) silently ignore.
+    import inspect
+
+    if raw_path is not None and "raw_path" in inspect.signature(fn).parameters:
+        return fn(op_params, **values, raw_path=raw_path)
     return fn(op_params, **values)
 
 
