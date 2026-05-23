@@ -14,7 +14,9 @@
 
 > **🎯 Trust basis — what the chart can and can't verify.** The synthetic chart is a legitimate fixture for entries whose touched darktable modules operate on already-developed sRGB / working-profile pixels (`exposure`, `sigmoid`, `bilat`, `vignette`, `grain`, `sharpen`, single-axis `colorbalancergb` shifts, `channelmixerrgb` in destination=grey mode, `highlights`, `toneequal`). For these — listed in the **Chart-verifiable** sections below — the after-image shows exactly what the entry does. Trust it.
 
-> Entries that touch raw-domain modules (`temperature`, `colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, `diffuse`) can't be honestly verified against a synthetic sRGB chart — those modules need the full raw → input-profile → working-profile pipeline. Such entries are listed in the **Needs real-raw fixture** section at the bottom, awaiting [issue #130](https://github.com/chipi/chemigram/issues/130). The principled module-level discriminator lives at `src/chemigram/core/visual_verification.py`.
+> Entries that touch raw-domain modules (`colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, `diffuse`) can't be honestly verified against a synthetic sRGB chart — those modules need the full raw → input-profile → working-profile pipeline. Such entries render against a CC BY-SA real-raw fixture in the **Real-raw entries** section below.
+
+> A separate **Not yet honestly verifiable** section lists entries touching `temperature` — the chemigram apply path doesn't yet compute camera-correct WB coefficients per raw at apply time, so those entries' dtstyle blobs carry foreign-camera coefficients that produce a visible cast on any non-matching body. Tracked in [#131](https://github.com/chipi/chemigram/issues/131) Step 2 / RFC-039 (raw-derived parameters in L2 composition). The module-level discriminator lives at `src/chemigram/core/visual_verification.py`.
 
 > **📷 Real-raw fixtures (#130).** Entries that touch raw-domain modules render against one of two CC BY-SA 4.0 fixtures from [discuss.pixls.us](https://discuss.pixls.us): `landscape.ARW` (Sony DSC-RX10M4 — sky, foliage, water, horizon) or `portrait.ARW` (Sony ZV-E10 — indoor single subject). Routing per entry by name heuristic — skin/face/eye/portrait/subject/hair → portrait; everything else → landscape. See [`tests/fixtures/raws/README.md`](https://github.com/chipi/chemigram/blob/main/tests/fixtures/raws/README.md) for provenance, license, and attribution.
 
@@ -30,37 +32,24 @@ These are the reference targets rendered through the baseline XMP with no primit
 
 ---
 
-## `starter` pack — 2 entries (0 chart-verifiable, 2 needs real-raw)
+## `starter` pack — 2 entries (0 chart-verifiable, 0 real-raw, 2 not-yet-portable)
 
-### Real-raw entries
+### Not yet honestly verifiable
 
-These entries touch raw-domain darktable modules (`temperature`, `colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, or `diffuse`) — or compose looks that include one. The synthetic chart can't represent the input these modules expect; rendering against it produces structurally-misleading output. Each entry is routed to either the landscape or portrait CC BY-SA 4.0 fixture from `tests/fixtures/raws/` so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage.
+> ⏳ **Camera-portability gap; tracked in [#131](https://github.com/chipi/chemigram/issues/131) Step 2 / RFC-039.**
 
-### `wb_warm_subtle` 📷 landscape raw
+These entries touch raw-domain modules whose chemigram apply path isn't yet camera-aware (today: `temperature`). Their `.dtstyle` blobs carry hardcoded raw-domain coefficients from the authoring camera; applying to a different body produces a foreign-WB cast that masks the entry's actual photographic effect. **No rendered image is shown** — because every rendering today would be misleading in one of two ways: either as the cast on the Sony fixtures (current state), or as the entry stripped of its intended WB shift (replacement that misleads about the entry's name).
 
-_Warm white balance, subtle._
+RFC-039 introduces raw-derived parameters in L2 composition. When camera-aware parametric WB ships, these entries graduate back to the **Real-raw entries** section above with honest after-images on any camera body. Apply-path correctness today is independently verified by the unit + integration + e2e test coverage; the limitation is verification fidelity on a foreign body, not engine correctness on the authoring body.
 
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/starter/wb_warm_subtle-landscape.jpg" alt="wb_warm_subtle landscape raw" width="180"> |
-
-
-### `look_neutral` 📷 landscape raw
-
-_Neutral L2 look — exposure + warm-subtle WB baseline._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/starter/look_neutral-landscape.jpg" alt="look_neutral landscape raw" width="180"> |
-
+| Entry | Modules touched | What the entry does |
+|-|-|-|
+| `wb_warm_subtle` | `temperature` | Warm white balance, subtle. |
+| `look_neutral` | `exposure`, `temperature` | Neutral L2 look — exposure + warm-subtle WB baseline. |
 
 ---
 
-## `expressive-baseline` pack — 112 entries (76 chart-verifiable, 36 needs real-raw)
+## `expressive-baseline` pack — 112 entries (76 chart-verifiable, 21 real-raw, 15 not-yet-portable)
 
 ### Chart-verifiable entries
 
@@ -734,7 +723,7 @@ _Commercial packshot baseline — gentle sigmoid 1.10 (avoids the punch-the-prod
 
 ### Real-raw entries
 
-These entries touch raw-domain darktable modules (`temperature`, `colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, or `diffuse`) — or compose looks that include one. The synthetic chart can't represent the input these modules expect; rendering against it produces structurally-misleading output. Each entry is routed to either the landscape or portrait CC BY-SA 4.0 fixture from `tests/fixtures/raws/` so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage.
+These entries touch raw-domain darktable modules (`colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, `diffuse`) — or compose looks that include one. The synthetic chart can't represent the input these modules expect; rendering against it produces structurally-misleading output. Each entry is routed to either the landscape or portrait CC BY-SA 4.0 fixture from `tests/fixtures/raws/` so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage.
 
 ### `crop` 📷 landscape raw
 
@@ -846,94 +835,6 @@ _Parameterized dehaze (#90 Bucket A.2). Lightroom-style Dehaze via darktable's h
 | <img src="../visual-proofs/expressive-baseline/dehaze-landscape.jpg" alt="dehaze landscape raw" width="180"> |
 
 
-### `wb_kelvin_delta` 📷 landscape raw
-
-_WB Kelvin / tint UX wrapper (#102). Same temperature module as the temperature entry, but exposes photographic units instead of raw RGB coefficients. 2 axes: --param kelvin_delta=V (range [-3000, 3000]; positive = warmer) and --param tint_delta=V (range [-200, 200]; positive = magenta-shifted). Linear approximation: red_coeff *= 1 + kelvin_delta * 0.0001, blue_coeff inverse, green_coeff *= 1 + tint_delta * 0.0001. Daily-use accurate; not chromatic-adaptation-perfect. The temperature entry is preserved for users who want raw coefficient control. Note: kelvin_delta affects bytes 0 (red) AND 8 (blue); the manifest's field offset 0 is the primary-effect documentation; the decoder applies the inverse to blue automatically._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/wb_kelvin_delta-landscape.jpg" alt="wb_kelvin_delta landscape raw" width="180"> |
-
-
-### `temperature` 📷 landscape raw
-
-_Parameterized white balance (RFC-021; first multi-parameter ship). Three axes: --param red_coeff=V (warmer image: red↑), --param green_coeff=V (Lightroom Tint axis: green↑ → magenta-shifted, green↓ → green-shifted), --param blue_coeff=V (cooler image: blue↑). Range [0.5, 4.0] each; all default 1.0 (no shift). Replaces the v1.5.x discrete wb_cool_subtle entry. green_coeff added in #90 Bucket A.3 to close the Lightroom Tint parity gap. Starter's wb_warm_subtle remains as a discrete teaching artifact; production use of WB shifts should prefer this parameterized entry._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/temperature-landscape.jpg" alt="temperature landscape raw" width="180"> |
-
-
-### `look_vintage_film` 📷 landscape raw
-
-_L2 look — nostalgia / faded film aesthetic. sigmoid_contrast 1.2 (gentle s-curve), colorbalancergb saturation_global=-0.2 (slight desaturation), grain_strength 25 (medium film grain), temperature warm shift (red 2.148 / blue 1.209). Pairs well with grade_shadows_warm._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_vintage_film-landscape.jpg" alt="look_vintage_film landscape raw" width="180"> |
-
-
-### `look_film_kodachrome` 📷 landscape raw
-
-_L2 look — Kodachrome film simulation (#104). sigmoid_contrast 1.4 + temperature warm (red 2.148 / blue 1.209 = wb_warm_subtle) + saturation_global=+0.2 + grain_strength=8._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_film_kodachrome-landscape.jpg" alt="look_film_kodachrome landscape raw" width="180"> |
-
-
-### `look_film_portra` 📷 landscape raw
-
-_L2 look — Kodak Portra 400 portrait film (#104). sigmoid_contrast 0.9 (soft s-curve) + temperature subtle warm (red 1.5 / blue 1.3) + saturation_global=-0.1 + grain_strength=15. Compose with hsl_saturation --param sat_orange=+0.05 if you want the canonical Portra skin-warmth boost on real raws._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_film_portra-landscape.jpg" alt="look_film_portra landscape raw" width="180"> |
-
-
-### `look_70s_film` 📷 landscape raw
-
-_L2 look — 1970s film aesthetic (#104). temperature warm (red 2.0 / blue 1.4) + sigmoid_contrast 1.1 (gentle s-curve) + saturation_global=-0.1 + grain_strength=35 (medium grain)._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_70s_film-landscape.jpg" alt="look_70s_film landscape raw" width="180"> |
-
-
-### `look_90s_grain` 📷 landscape raw
-
-_L2 look — 1990s film aesthetic (#104). sigmoid_contrast 1.6 + temperature subtle cool (red 1.2 / blue 2.0) + grain_strength=50 (heavy grain)._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_90s_grain-landscape.jpg" alt="look_90s_grain landscape raw" width="180"> |
-
-
-### `look_2000s_digital` 📷 landscape raw
-
-_L2 look — early-2000s digital camera aesthetic (#104). sigmoid_contrast 1.3 + temperature subtle cool (red 1.1 / blue 1.6) + saturation_global=+0.4 (oversaturated digital signature)._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_2000s_digital-landscape.jpg" alt="look_2000s_digital landscape raw" width="180"> |
-
-
 ### `skin_uniformity` 📷 portrait raw
 
 _Skin-tone uniformity (RFC-033). Compresses skin-band saturation variance toward uniform appearance — Capture One's Skin Tone Uniformity equivalent for chemigram. Pre-baked with mask_skin_region so the move is scoped automatically. Pass --value V or --param sat_orange=V; range [-1.0, 0.0]. -0.3 is moderate uniformity; -0.6 is strong (typical Woloszynowicz/Adler/Nordqvist range); -1.0 fully desaturates the skin band; 0.0 is no-op. Override mask_spec for per-image manual mask if mask_skin_region's hue-range fallback leaks (Phase-1 LLM-vision fallback per RFC-032). Frequency-separation texture work composes orthogonally; this primitive is color-band uniformity only._
@@ -945,50 +846,6 @@ _Skin-tone uniformity (RFC-033). Compresses skin-band saturation variance toward
 | <img src="../visual-proofs/expressive-baseline/skin_uniformity-portrait.jpg" alt="skin_uniformity portrait raw" width="180"> |
 
 
-### `look_portrait_natural_skin` 📷 portrait raw
-
-_Restraint-first portrait foundation — Tucker/Marino-aligned. Slight warm temperature (+0.03 red), exposure +0.1 EV, sigmoid contrast 1.2 (gentle s-curve), saturation_global -0.05 + vibrance +0.1 (mild chroma shaping that protects skin tones). The starting point for portrait work that doesn't push contrast or saturation as a stylistic choice._
-
-> 📷 **Real-raw rendering** (fixture: `portrait.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the portrait fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Portrait raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_portrait_natural_skin-portrait.jpg" alt="look_portrait_natural_skin portrait raw" width="180"> |
-
-
-### `look_portrait_skin_warm_lift` 📷 portrait raw
-
-_Subject-region warm + brighten. Slight warm temperature (+0.04 red) + exposure +0.2 EV. Pre-baked with mask_skin_region so the lift scopes to skin without affecting clothing or background. Pairs with skin_uniformity for a complete portrait skin pass._
-
-> 📷 **Real-raw rendering** (fixture: `portrait.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the portrait fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Portrait raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_portrait_skin_warm_lift-portrait.jpg" alt="look_portrait_skin_warm_lift portrait raw" width="180"> |
-
-
-### `look_landscape_golden_hour` 📷 landscape raw
-
-_Sunset / sunrise mood. Warm temperature shift (+0.07 red), sigmoid contrast 1.3, warm shadows (hue 30, sat 0.20) + amber highlights (hue 50, sat 0.15), vibrance +0.10. Pushes the warmth that golden-hour light almost has and amplifies it without breaking color credibility. For scenes already on the warm side, apply at lower strength via opacity — not authored as parametric (look-not-primitive)._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_landscape_golden_hour-landscape.jpg" alt="look_landscape_golden_hour landscape raw" width="180"> |
-
-
-### `look_landscape_blue_hour_cool` 📷 landscape raw
-
-_Twilight / pre-dawn / blue-hour mood. Cool temperature shift (+0.07 blue), sigmoid contrast 1.3, cool shadows (hue 210, sat 0.20) + neutral-cool highlights (hue 200, sat 0.10), saturation_global -0.05. Opposite mood from golden_hour; equally valid genre signature. Composes with sigmoid_contrast for stronger drama if needed._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_landscape_blue_hour_cool-landscape.jpg" alt="look_landscape_blue_hour_cool landscape raw" width="180"> |
-
-
 ### `look_landscape_atmospheric_haze` 📷 landscape raw
 
 _Misty / hazy / fog-as-subject mood. Hazeremoval strength 0.5 (lift visibility while preserving the moody atmosphere), bilat clarity 0.3, warm shadows (hue 30, sat 0.10) + vibrance +0.05. The trick: lift JUST enough to read details, not enough to flatten the atmosphere. Strong hazeremoval values (>1.0) produce 'no atmosphere' results that defeat the intent — keep restrained._
@@ -998,17 +855,6 @@ _Misty / hazy / fog-as-subject mood. Hazeremoval strength 0.5 (lift visibility w
 | Landscape raw |
 |-|
 | <img src="../visual-proofs/expressive-baseline/look_landscape_atmospheric_haze-landscape.jpg" alt="look_landscape_atmospheric_haze landscape raw" width="180"> |
-
-
-### `look_landscape_autumn_pop` 📷 landscape raw
-
-_Autumn foliage / fall color. Slight warm temperature (+0.04 red), colorequal sat_orange +0.30 + sat_red +0.20 (lift autumn colors) + sat_blue -0.10 (compensating to keep skies natural — without this, skies turn cartoonish). Bilat clarity_strength 0.4 for foliage definition. A targeted seasonal grade; not for non-foliage scenes._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_landscape_autumn_pop-landscape.jpg" alt="look_landscape_autumn_pop landscape raw" width="180"> |
 
 
 ### `bw_convert` 📷 landscape raw
@@ -1088,28 +934,6 @@ _High-ISO wildlife recovery (low-light dance-floor, late dusk owl, early-dawn bi
 | <img src="../visual-proofs/expressive-baseline/look_wildlife_high_iso_recovery-landscape.jpg" alt="look_wildlife_high_iso_recovery landscape raw" width="180"> |
 
 
-### `look_wildlife_natural_warm` 📷 landscape raw
-
-_Warm golden-hour wildlife default — temperature +0.05 red shift + sigmoid 1.25 + vibrance +0.10 with slight saturation_global pull (-0.03 to keep the warmth credible, not cartoonish). The starting point for early-morning / late-afternoon wildlife where natural warmth IS the subject. Compose with look_wildlife_subject_sharpen for full effect._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_wildlife_natural_warm-landscape.jpg" alt="look_wildlife_natural_warm landscape raw" width="180"> |
-
-
-### `look_food_appetizing_warm` 📷 landscape raw
-
-_Default food editorial — warm WB (+0.04 red), gentle sigmoid 1.25, vibrance +0.15 + lifted midtone brilliance +0.08. Lauren C. Short / Darina Kopcok / Joanie Simon's foundational starting point for food blog and editorial work. Pre-WB-foundation (gray card recommended); downstream HSL color shaping per look_food_orange_pop / look_food_green_natural compose orthogonally._
-
-> 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
-
-| Landscape raw |
-|-|
-| <img src="../visual-proofs/expressive-baseline/look_food_appetizing_warm-landscape.jpg" alt="look_food_appetizing_warm landscape raw" width="180"> |
-
-
 ### `look_food_orange_pop` 📷 landscape raw
 
 _Lift the orange / red food band — tomato, carrot, salmon, paprika, peach. Colorequal sat_orange +0.30 + sat_red +0.20 (saturation lift on warm food colors) + slight brightness lifts. The HSL-per-color discipline that food photographers use INSTEAD of global saturation (which would destroy whites and greens). Compose on top of look_food_appetizing_warm._
@@ -1131,6 +955,32 @@ _Lift greens — fresh herbs, salad, parsley, basil — without crossing into th
 |-|
 | <img src="../visual-proofs/expressive-baseline/look_food_green_natural-landscape.jpg" alt="look_food_green_natural landscape raw" width="180"> |
 
+
+### Not yet honestly verifiable
+
+> ⏳ **Camera-portability gap; tracked in [#131](https://github.com/chipi/chemigram/issues/131) Step 2 / RFC-039.**
+
+These entries touch raw-domain modules whose chemigram apply path isn't yet camera-aware (today: `temperature`). Their `.dtstyle` blobs carry hardcoded raw-domain coefficients from the authoring camera; applying to a different body produces a foreign-WB cast that masks the entry's actual photographic effect. **No rendered image is shown** — because every rendering today would be misleading in one of two ways: either as the cast on the Sony fixtures (current state), or as the entry stripped of its intended WB shift (replacement that misleads about the entry's name).
+
+RFC-039 introduces raw-derived parameters in L2 composition. When camera-aware parametric WB ships, these entries graduate back to the **Real-raw entries** section above with honest after-images on any camera body. Apply-path correctness today is independently verified by the unit + integration + e2e test coverage; the limitation is verification fidelity on a foreign body, not engine correctness on the authoring body.
+
+| Entry | Modules touched | What the entry does |
+|-|-|-|
+| `wb_kelvin_delta` | `temperature` | WB Kelvin / tint UX wrapper (#102). |
+| `temperature` | `temperature` | Parameterized white balance (RFC-021; first multi-parameter ship). |
+| `look_vintage_film` | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — nostalgia / faded film aesthetic. |
+| `look_film_kodachrome` | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — Kodachrome film simulation (#104). |
+| `look_film_portra` | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — Kodak Portra 400 portrait film (#104). |
+| `look_70s_film` | `colorbalancergb`, `grain`, `sigmoid`, `temperature` | L2 look — 1970s film aesthetic (#104). |
+| `look_90s_grain` | `grain`, `sigmoid`, `temperature` | L2 look — 1990s film aesthetic (#104). |
+| `look_2000s_digital` | `colorbalancergb`, `sigmoid`, `temperature` | L2 look — early-2000s digital camera aesthetic (#104). |
+| `look_portrait_natural_skin` | `colorbalancergb`, `exposure`, `sigmoid`, `temperature` | Restraint-first portrait foundation — Tucker/Marino-aligned. |
+| `look_portrait_skin_warm_lift` | `exposure`, `temperature` | Subject-region warm + brighten. |
+| `look_landscape_golden_hour` | `colorbalancergb`, `sigmoid`, `temperature` | Sunset / sunrise mood. |
+| `look_landscape_blue_hour_cool` | `colorbalancergb`, `sigmoid`, `temperature` | Twilight / pre-dawn / blue-hour mood. |
+| `look_landscape_autumn_pop` | `bilat`, `colorequal`, `temperature` | Autumn foliage / fall color. |
+| `look_wildlife_natural_warm` | `colorbalancergb`, `sigmoid`, `temperature` | Warm golden-hour wildlife default — temperature +0. |
+| `look_food_appetizing_warm` | `colorbalancergb`, `sigmoid`, `temperature` | Default food editorial — warm WB (+0. |
 
 ---
 

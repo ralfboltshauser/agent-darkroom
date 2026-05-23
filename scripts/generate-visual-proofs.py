@@ -146,7 +146,11 @@ _SKIP_GRAYSCALE_TAGS: set[str] = {"saturation", "chroma", "vibrance"}
 # instead). Closes #129 (v1.10.0 visual-proofs trust gap).
 def _compute_skip_set_from_verification_module() -> set[str]:
     """Derive the skip-list from the principled module-level
-    discriminator in chemigram.core.visual_verification."""
+    discriminator in chemigram.core.visual_verification. This is the
+    union of real_raw + not_yet_portable entries — both skip the
+    synthetic-chart render. Real_raw entries route to the real-raw
+    fixture; not_yet_portable entries route to the table-only "Not yet
+    honestly verifiable" section."""
     from chemigram.core.visual_verification import verification_mode_for_entry
     from chemigram.core.vocab import load_packs
 
@@ -156,7 +160,20 @@ def _compute_skip_set_from_verification_module() -> set[str]:
     }
 
 
+def _compute_not_yet_portable_set() -> set[str]:
+    """Entries whose chemigram apply path isn't yet camera-aware (#131
+    Step 2 / RFC-039). These appear in the "Not yet honestly verifiable"
+    gallery section with no rendered image — every rendering today
+    would be misleading (foreign-camera WB cast)."""
+    from chemigram.core.visual_verification import is_not_yet_portable
+    from chemigram.core.vocab import load_packs
+
+    vocab = load_packs(["starter", "expressive-baseline"])
+    return {entry.name for entry in vocab.list_all() if is_not_yet_portable(entry)}
+
+
 _SKIP_VISUAL_PROOF_ENTRIES: set[str] = _compute_skip_set_from_verification_module()
+_NOT_YET_PORTABLE_ENTRIES: set[str] = _compute_not_yet_portable_set()
 
 # Subtypes that render against the **clipped-gradient** fixture in
 # addition to the default cc + grayscale targets. The colorchecker24
@@ -559,6 +576,21 @@ def _render_entry(entry, vocab, baseline, configdir, rendered: dict) -> None:
     pack_name = pack_root.name if pack_root else "unknown"
     entry_dir = PROOFS_DIR / pack_name
     entry_dir.mkdir(parents=True, exist_ok=True)
+
+    if entry.name in _NOT_YET_PORTABLE_ENTRIES:
+        # No render — the entry's dtstyle carries foreign-camera WB
+        # coefficients; every rendering today would be misleading. The
+        # entry appears in the gallery's "Not yet honestly verifiable"
+        # section as a table row, no after-image. Graduates back to
+        # real_raw when #131 Step 2 / RFC-039 ships camera-aware
+        # parametric apply for the relevant module(s).
+        rendered.setdefault(entry.name, {})
+        rendered[entry.name]["__not_yet_portable"] = True
+        print(
+            f"skipping {pack_name}/{entry.name} "
+            f"(not_yet_portable — tracked in #131 Step 2 / RFC-039)"
+        )
+        return
 
     if entry.name in _SKIP_VISUAL_PROOF_ENTRIES:
         target = _fixture_target_for_entry(entry)
@@ -1139,17 +1171,18 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:  # noqa: C90
 
     vocab = load_packs(["starter", "expressive-baseline"])
 
-    # Group entries by pack for the gallery. Include real_raw-needed entries
-    # even when they have no rendered output — they still appear in the
-    # "Needs real-raw fixture" table so the gallery is complete (closes the
-    # silent-drop bug class where unrendered entries vanished entirely).
+    # Group entries by pack for the gallery. Include real_raw and
+    # not_yet_portable entries even when they have no rendered output —
+    # they still appear in the gallery's tables / table-only sections so
+    # the gallery is complete (closes the silent-drop bug class where
+    # unrendered entries vanished entirely).
     by_pack: dict[str, list] = {}
     for entry in vocab.list_all():
         if entry.layer == "L1":
             # L1 camera baselines aren't standalone-renderable; skip.
             continue
-        is_chart = _vmode_check(entry) == "chart"
-        if is_chart and entry.name not in rendered:
+        mode = _vmode_check(entry)
+        if mode == "chart" and entry.name not in rendered:
             # A chart-verifiable entry with no render = silent drop. Surface it.
             continue
         pack_root = vocab.pack_for(entry.name)
@@ -1218,14 +1251,23 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:  # noqa: C90
         "Trust it.\n"
     )
     lines.append(
-        "> Entries that touch raw-domain modules (`temperature`, "
-        "`colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, `ashift`, "
-        "`crop`, `retouch`, `filmicrgb`, `diffuse`) can't be honestly "
-        "verified against a synthetic sRGB chart — those modules need "
-        "the full raw → input-profile → working-profile pipeline. Such "
-        "entries are listed in the **Needs real-raw fixture** section at "
-        "the bottom, awaiting [issue #130](https://github.com/chipi/chemigram/issues/130). "
-        "The principled module-level discriminator lives at "
+        "> Entries that touch raw-domain modules (`colorequal`, "
+        "`denoiseprofile`, `lens`, `hazeremoval`, `ashift`, `crop`, "
+        "`retouch`, `filmicrgb`, `diffuse`) can't be honestly verified "
+        "against a synthetic sRGB chart — those modules need the full "
+        "raw → input-profile → working-profile pipeline. Such entries "
+        "render against a CC BY-SA real-raw fixture in the **Real-raw "
+        "entries** section below.\n"
+    )
+    lines.append(
+        "> A separate **Not yet honestly verifiable** section lists entries "
+        "touching `temperature` — the chemigram apply path doesn't yet "
+        "compute camera-correct WB coefficients per raw at apply time, so "
+        "those entries' dtstyle blobs carry foreign-camera coefficients "
+        "that produce a visible cast on any non-matching body. Tracked in "
+        "[#131](https://github.com/chipi/chemigram/issues/131) Step 2 / "
+        "RFC-039 (raw-derived parameters in L2 composition). The "
+        "module-level discriminator lives at "
         "`src/chemigram/core/visual_verification.py`.\n"
     )
     landscape_present = LANDSCAPE_FIXTURE.exists()
@@ -1279,7 +1321,10 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:  # noqa: C90
     lines.append("")
     lines.append("---\n")
 
-    # One section per pack, split into "Chart-verifiable" + "Needs real-raw fixture"
+    # One section per pack, split into 3 buckets:
+    #   "Chart-verifiable" — synthetic chart is honest
+    #   "Real-raw entries" — render against landscape/portrait fixtures
+    #   "Not yet honestly verifiable" — pending #131 Step 2 / RFC-039
     from chemigram.core.visual_verification import verification_mode_for_entry as _vmode
 
     for pack_name in ("starter", "expressive-baseline"):
@@ -1287,12 +1332,14 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:  # noqa: C90
             continue
         entries = by_pack[pack_name]
         chart_entries = [e for e in entries if _vmode(e) == "chart"]
-        raw_entries = [e for e in entries if _vmode(e) != "chart"]
+        real_raw_entries = [e for e in entries if _vmode(e) == "real_raw"]
+        not_yet_portable_entries = [e for e in entries if _vmode(e) == "not_yet_portable"]
 
         lines.append(
             f"## `{pack_name}` pack — {len(entries)} entries "
             f"({len(chart_entries)} chart-verifiable, "
-            f"{len(raw_entries)} needs real-raw)\n"
+            f"{len(real_raw_entries)} real-raw, "
+            f"{len(not_yet_portable_entries)} not-yet-portable)\n"
         )
 
         if chart_entries:
@@ -1306,25 +1353,25 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:  # noqa: C90
             for entry in chart_entries:
                 lines.extend(_render_entry_md(entry, rendered))
 
-        if raw_entries:
+        if real_raw_entries:
             lines.append("### Real-raw entries\n")
             lines.append(
                 "These entries touch raw-domain darktable modules "
-                "(`temperature`, `colorequal`, `denoiseprofile`, `lens`, "
-                "`hazeremoval`, `ashift`, `crop`, `retouch`, `filmicrgb`, "
-                "or `diffuse`) — or compose looks that include one. The "
-                "synthetic chart can't represent the input these modules "
-                "expect; rendering against it produces structurally-"
-                "misleading output. Each entry is routed to either the "
-                "landscape or portrait CC BY-SA 4.0 fixture from "
-                "`tests/fixtures/raws/` so the after-image is honest. "
-                "Apply-path correctness is independently verified by the "
-                "unit + integration + e2e test coverage.\n"
+                "(`colorequal`, `denoiseprofile`, `lens`, `hazeremoval`, "
+                "`ashift`, `crop`, `retouch`, `filmicrgb`, `diffuse`) — "
+                "or compose looks that include one. The synthetic chart "
+                "can't represent the input these modules expect; rendering "
+                "against it produces structurally-misleading output. Each "
+                "entry is routed to either the landscape or portrait CC "
+                "BY-SA 4.0 fixture from `tests/fixtures/raws/` so the "
+                "after-image is honest. Apply-path correctness is "
+                "independently verified by the unit + integration + e2e "
+                "test coverage.\n"
             )
             # Per-entry: emit a rendered block if a real-raw render is on
             # disk, otherwise a summary table row for the unrendered set.
             unrendered = []
-            for entry in raw_entries:
+            for entry in real_raw_entries:
                 outs = rendered.get(entry.name) or {}
                 if outs.get("__real_raw_only"):
                     lines.extend(_render_entry_md(entry, rendered))
@@ -1348,6 +1395,46 @@ def render_gallery_md(rendered: dict[str, dict[str, Path]]) -> str:  # noqa: C90
                         desc = desc.split(".")[0] + "."
                     lines.append(f"| `{entry.name}` | {fixture} | {touches} | {desc} |")
                 lines.append("")
+
+        if not_yet_portable_entries:
+            lines.append("### Not yet honestly verifiable\n")
+            lines.append(
+                "> ⏳ **Camera-portability gap; tracked in [#131]"
+                "(https://github.com/chipi/chemigram/issues/131) Step 2 / "
+                "RFC-039.**\n"
+            )
+            lines.append(
+                "These entries touch raw-domain modules whose chemigram "
+                "apply path isn't yet camera-aware (today: `temperature`). "
+                "Their `.dtstyle` blobs carry hardcoded raw-domain "
+                "coefficients from the authoring camera; applying to a "
+                "different body produces a foreign-WB cast that masks the "
+                "entry's actual photographic effect. **No rendered image is "
+                "shown** — because every rendering today would be "
+                "misleading in one of two ways: either as the cast on the "
+                "Sony fixtures (current state), or as the entry stripped of "
+                "its intended WB shift (replacement that misleads about "
+                "the entry's name).\n"
+            )
+            lines.append(
+                "RFC-039 introduces raw-derived parameters in L2 composition. "
+                "When camera-aware parametric WB ships, these entries "
+                "graduate back to the **Real-raw entries** section above with "
+                "honest after-images on any camera body. Apply-path "
+                "correctness today is independently verified by the unit + "
+                "integration + e2e test coverage; the limitation is "
+                "verification fidelity on a foreign body, not engine "
+                "correctness on the authoring body.\n"
+            )
+            lines.append("| Entry | Modules touched | What the entry does |")
+            lines.append("|-|-|-|")
+            for entry in not_yet_portable_entries:
+                touches = ", ".join(f"`{m}`" for m in sorted(set(entry.touches)))
+                desc = (entry.description or "").replace("|", "\\|")
+                if "." in desc:
+                    desc = desc.split(".")[0] + "."
+                lines.append(f"| `{entry.name}` | {touches} | {desc} |")
+            lines.append("")
 
         lines.append("---\n")
 

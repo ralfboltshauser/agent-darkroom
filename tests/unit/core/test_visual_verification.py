@@ -12,8 +12,10 @@ from __future__ import annotations
 
 from chemigram.core.visual_verification import (
     _CHART_VERIFIABLE_MODULES,
+    _NOT_YET_PORTABLE_MODULES,
     _RAW_DOMAIN_MODULES,
     is_chart_verifiable,
+    is_not_yet_portable,
     verification_mode_for_entry,
 )
 from chemigram.core.vocab import load_packs
@@ -107,15 +109,59 @@ def test_l2_look_with_one_raw_module_is_not_chart_verifiable() -> None:
     assert not is_chart_verifiable(entry)
 
 
-def test_starter_pack_is_real_raw_by_module_definition() -> None:
-    """Both starter-pack entries touch temperature; the chart can't
-    verify either. Documents the v1.10.0 finding that even the most
-    basic starter entries need the real-raw fixture."""
+def test_starter_pack_is_not_yet_portable_by_module_definition() -> None:
+    """Both starter-pack entries touch temperature, which is in
+    :data:`_NOT_YET_PORTABLE_MODULES` until RFC-039 makes the
+    parametric WB path camera-aware. They can't be honestly rendered
+    on the real-raw fixtures because their dtstyle blobs carry foreign
+    -camera WB coefficients. Documents the v1.10.0/v1.11.0 finding
+    that the starter pack's WB-touching entries route to the gallery's
+    "Not yet honestly verifiable" section until #131 Step 2 ships."""
     vocab = load_packs(["starter"])
     for entry in vocab.list_all():
         if entry.layer == "L1":
             continue
-        assert verification_mode_for_entry(entry) == "real_raw", (
-            f"{entry.name} (touches={entry.touches}) should be real_raw — "
-            "starter pack all touches temperature"
+        assert verification_mode_for_entry(entry) == "not_yet_portable", (
+            f"{entry.name} (touches={entry.touches}) should be not_yet_portable — "
+            "starter pack all touches temperature, which awaits RFC-039 "
+            "camera-aware parametric apply"
+        )
+
+
+def test_chart_and_not_yet_portable_module_sets_are_disjoint() -> None:
+    """A module can't be both chart-verifiable and not-yet-portable.
+    Catches mistakes when editing the registries."""
+    overlap = _CHART_VERIFIABLE_MODULES & _NOT_YET_PORTABLE_MODULES
+    assert not overlap, (
+        f"Modules listed in both chart and not-yet-portable registries: "
+        f"{sorted(overlap)}. A module must be in exactly one bucket."
+    )
+
+
+def test_not_yet_portable_subset_of_raw_domain() -> None:
+    """Every not-yet-portable module must also be a raw-domain module
+    (it can't be in the chart-verifiable set; the not-yet-portable
+    bucket is a strictly-narrower categorization of raw-domain modules
+    pending engine work)."""
+    assert _NOT_YET_PORTABLE_MODULES.issubset(_RAW_DOMAIN_MODULES), (
+        f"Modules in _NOT_YET_PORTABLE_MODULES but not in _RAW_DOMAIN_MODULES: "
+        f"{sorted(_NOT_YET_PORTABLE_MODULES - _RAW_DOMAIN_MODULES)}. "
+        "Add them to _RAW_DOMAIN_MODULES too."
+    )
+
+
+def test_temperature_touching_entries_route_to_not_yet_portable() -> None:
+    """Spot-check: any entry touching the temperature module routes to
+    'not_yet_portable' until RFC-039 ships."""
+    vocab = load_packs(["expressive-baseline"])
+    for name in (
+        "temperature",
+        "wb_kelvin_delta",
+        "look_landscape_golden_hour",
+        "look_70s_film",
+    ):
+        entry = vocab.lookup_by_name(name)
+        assert entry is not None, f"{name} not found"
+        assert is_not_yet_portable(entry), (
+            f"{name} should be not_yet_portable (touches temperature)"
         )
