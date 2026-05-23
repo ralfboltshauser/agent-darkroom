@@ -171,3 +171,90 @@ def test_decode_rejects_short_blob() -> None:
 def test_decode_rejects_wrong_size_blob() -> None:
     with pytest.raises(ValueError, match="modversion"):
         decode("00" * 200)
+
+
+# Camera-aware ISO scaling (#134 / RFC-039)
+
+
+def test_patch_with_raw_path_scales_strength_above_reference_iso(tmp_path: Path) -> None:
+    """At ISO above the reference threshold, the patch auto-scales
+    denoise_strength upward (log2 scaling). Construct a fake EXIF
+    via a mocked exifread reader since the bundled fixtures are
+    ISO 100 (below reference)."""
+    import struct as _struct
+    from unittest.mock import patch as mock_patch
+
+    # Build a baseline op_params with strength=1.0 (the default).
+    # 8 mag floats + 6 calib floats + 1 mode int + 84 curve floats + 5 ints
+    fields = [0.0] * 8 + [0.0] * 6 + [0] + [0.0] * 84 + [0] * 5
+    fields[2] = 1.0  # denoise_strength index per _AXIS_FIELD_INDICES
+    src = _struct.pack("<8f6fi42f42f3iii", *fields).hex()
+
+    raw_path = tmp_path / "fake.arw"
+    raw_path.write_bytes(b"not actually a raw")
+
+    # Mock read_camera_iso to return ISO 800 (3 stops above reference 200).
+    # Expected scaling: log2(800/200) = 2, so 2**2 = 4x.
+    with mock_patch("chemigram.core.exif.read_camera_iso", return_value=800):
+        out = patch(src, raw_path=raw_path)
+
+    out_fields = decode(out)
+    assert out_fields[2] == pytest.approx(4.0, abs=0.01)
+
+
+def test_patch_with_raw_path_below_reference_iso_is_noop(tmp_path: Path) -> None:
+    """ISO below the reference threshold (clean capture) → strength
+    passes through unchanged. The auto-scaling only fires for ISO
+    above the reference."""
+    import struct as _struct
+    from unittest.mock import patch as mock_patch
+
+    fields = [0.0] * 8 + [0.0] * 6 + [0] + [0.0] * 84 + [0] * 5
+    fields[2] = 1.0
+    src = _struct.pack("<8f6fi42f42f3iii", *fields).hex()
+
+    raw_path = tmp_path / "fake.arw"
+    raw_path.write_bytes(b"x")
+
+    with mock_patch("chemigram.core.exif.read_camera_iso", return_value=100):
+        out = patch(src, raw_path=raw_path)
+
+    out_fields = decode(out)
+    assert out_fields[2] == pytest.approx(1.0, abs=0.001)
+
+
+def test_patch_with_raw_path_explicit_strength_wins(tmp_path: Path) -> None:
+    """When an explicit denoise_strength is supplied, it wins over the
+    ISO-derived auto-scaling."""
+    import struct as _struct
+    from unittest.mock import patch as mock_patch
+
+    fields = [0.0] * 8 + [0.0] * 6 + [0] + [0.0] * 84 + [0] * 5
+    fields[2] = 1.0
+    src = _struct.pack("<8f6fi42f42f3iii", *fields).hex()
+
+    raw_path = tmp_path / "fake.arw"
+    raw_path.write_bytes(b"x")
+
+    with mock_patch("chemigram.core.exif.read_camera_iso", return_value=6400):
+        out = patch(src, raw_path=raw_path, denoise_strength=2.5)
+
+    out_fields = decode(out)
+    # Explicit value 2.5 wins, NOT the ISO-scaled value
+    assert out_fields[2] == pytest.approx(2.5, abs=0.001)
+
+
+def test_patch_with_unreadable_raw_falls_back_to_source(tmp_path: Path) -> None:
+    """If EXIF can't be read, the auto-scaling silently skips and the
+    source strength is preserved."""
+    import struct as _struct
+
+    fields = [0.0] * 8 + [0.0] * 6 + [0] + [0.0] * 84 + [0] * 5
+    fields[2] = 1.0
+    src = _struct.pack("<8f6fi42f42f3iii", *fields).hex()
+
+    bad_raw = tmp_path / "junk.arw"
+    bad_raw.write_bytes(b"not a raw file")
+    out = patch(src, raw_path=bad_raw)
+    out_fields = decode(out)
+    assert out_fields[2] == pytest.approx(1.0, abs=0.001)

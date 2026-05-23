@@ -225,3 +225,40 @@ def test_read_exif_strips_leading_nul_bytes(
     )
     result = read_exif(raw)
     assert result.make == "NIKON"
+
+
+def test_read_camera_iso_landscape_fixture() -> None:
+    """ISO reader returns an int for the bundled landscape ARW."""
+    from chemigram.core.exif import read_camera_iso
+
+    raw_path = Path(__file__).resolve().parents[3] / "tests/fixtures/raws/landscape.ARW"
+    if not raw_path.exists():
+        pytest.skip("landscape fixture not available (git lfs pull?)")
+    iso = read_camera_iso(raw_path)
+    assert isinstance(iso, int) and iso > 0
+
+
+def test_read_camera_iso_returns_none_for_corrupt_file(tmp_path: Path) -> None:
+    """Corrupt file → exifread raises → wrapped in ExifReadError."""
+    from chemigram.core.exif import ExifReadError, read_camera_iso
+
+    raw = tmp_path / "junk.arw"
+    raw.write_bytes(b"not a raw file")
+    # exifread tolerates many malformed inputs, returning empty tags;
+    # corrupt input that DOES raise propagates as ExifReadError. Either
+    # outcome (None or ExifReadError) is acceptable for this robustness
+    # property.
+    try:
+        result = read_camera_iso(raw)
+        assert result is None
+    except ExifReadError:
+        pass
+
+
+def test_read_camera_iso_file_not_found(tmp_path: Path) -> None:
+    """Missing file raises FileNotFoundError."""
+    from chemigram.core.exif import read_camera_iso
+
+    nonexistent = tmp_path / "missing.arw"
+    with pytest.raises(FileNotFoundError):
+        read_camera_iso(nonexistent)

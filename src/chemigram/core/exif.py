@@ -122,6 +122,38 @@ def read_exif(path: Path) -> ExifData:
     )
 
 
+def read_camera_iso(path: Path) -> int | None:
+    """Read the raw's ISO speed rating from EXIF.
+
+    Returns the ISO as an integer (typically 100..51200 range), or
+    ``None`` if the tag is missing. Used by camera-aware denoise (#134
+    / RFC-039): noise floor scales with ISO, so the parametric apply
+    path scales the denoise threshold relative to the raw's ISO at
+    apply time.
+
+    Uses ``exifread.process_file`` (no rawpy needed for this field; ISO
+    is in standard EXIF). Returns None rather than raising on missing
+    tag — callers (parametric denoise.patch) treat absence as "skip
+    auto-scaling, use source coefficients."
+    """
+    if not path.exists():
+        raise FileNotFoundError(path)
+    try:
+        with path.open("rb") as fh:
+            tags = exifread.process_file(fh, details=False)
+    except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError) as exc:
+        raise ExifReadError(f"failed to read EXIF from {path}: {exc}") from exc
+    tag = tags.get("EXIF ISOSpeedRatings") or tags.get("Image ISOSpeedRatings")
+    if tag is None:
+        return None
+    try:
+        values = tag.values
+        first = values[0] if isinstance(values, list) else values
+        return int(first)
+    except (TypeError, ValueError, IndexError, AttributeError):
+        return None
+
+
 def read_camera_daylight_wb(path: Path) -> tuple[float, float, float]:
     """Read the camera-default daylight WB coefficients from a raw file.
 

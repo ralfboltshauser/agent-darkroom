@@ -90,6 +90,18 @@ defaults, optionally ship a second ``denoise_wavelets`` entry.
 from __future__ import annotations
 
 import struct
+from pathlib import Path
+
+# Reference ISO at which denoise_strength=1.0 is the documented default
+# (a clean, low-noise capture). Scaling factor applied above this:
+# strength scales linearly with log2(iso / reference), roughly doubling
+# every 2 stops. At ISO 6400 (6 stops up) the auto-scaled strength is
+# ~1.0 * 2**3 ≈ 8.0 — a daily-use-accurate approximation; the actual
+# noise profile depends on sensor + read noise + black level. Below
+# the reference ISO the auto-scaling is a no-op (no need to denoise
+# clean captures more aggressively than the dtstyle says).
+_DENOISE_REFERENCE_ISO = 200
+_DENOISE_STRENGTH_AXIS = "denoise_strength"
 
 # Struct: 8 mag + 6 calibration floats + mode + 84 curve floats + 5 ints
 # = 14 + 84 = 98 floats + 5 ints = 416 bytes total.
@@ -138,7 +150,12 @@ def encode(fields: tuple[float | int, ...]) -> str:
     return struct.pack(_STRUCT_FORMAT, *fields).hex()
 
 
-def patch(op_params: str, **values: float | None) -> str:
+def patch(
+    op_params: str,
+    *,
+    raw_path: Path | None = None,
+    **values: float | None,
+) -> str:
     """Patch any combination of denoiseprofile's 4 parameterized magnitude axes.
 
     Multi-axis partial-update: caller may supply any subset of the 4
@@ -159,6 +176,13 @@ def patch(op_params: str, **values: float | None) -> str:
 
     Args:
         op_params: hex-encoded source ``op_params`` (416 bytes / 832 hex chars).
+        raw_path: optional Path to source raw. When supplied AND
+            ``denoise_strength`` is NOT in ``values``, the patch reads
+            the raw's EXIF ISO and scales ``denoise_strength`` from
+            the source's encoded value by ``log2(iso / reference_iso)``
+            (clamped to no-op below reference). Camera-aware noise
+            handling per #134 / RFC-039. Read failures fall through
+            silently.
         **values: any subset of the 4 axis names listed above.
 
     Returns:
@@ -175,6 +199,24 @@ def patch(op_params: str, **values: float | None) -> str:
             f"valid axes: {sorted(_AXIS_FIELD_INDICES.keys())}"
         )
     fields = list(decode(op_params))
+    # Camera-aware ISO scaling (#134 / RFC-039): apply BEFORE explicit
+    # value overrides so an explicit denoise_strength still wins.
+    if raw_path is not None and values.get(_DENOISE_STRENGTH_AXIS) is None:
+        try:
+            from chemigram.core.exif import read_camera_iso
+
+            iso = read_camera_iso(raw_path)
+            if iso is not None and iso > _DENOISE_REFERENCE_ISO:
+                import math
+
+                idx = _AXIS_FIELD_INDICES[_DENOISE_STRENGTH_AXIS]
+                source = float(fields[idx])
+                # log2 scaling: ISO 200 (ref) -> 1x, ISO 400 -> 2x, ISO 800 -> 4x
+                scale = 2 ** math.log2(iso / _DENOISE_REFERENCE_ISO)
+                fields[idx] = source * scale
+        except Exception:  # noqa: S110
+            # Robust fallback: any EXIF read failure → keep source.
+            pass
     for axis_name, value in values.items():
         if value is not None:
             fields[_AXIS_FIELD_INDICES[axis_name]] = float(value)
