@@ -1869,64 +1869,6 @@
       ]
     },
     {
-      "name": "wb_kelvin_delta",
-      "layer": "L3",
-      "subtype": "wb",
-      "path": "layers/L3/temperature/wb_kelvin_delta.dtstyle",
-      "touches": [
-        "temperature"
-      ],
-      "tags": [
-        "wb",
-        "kelvin",
-        "tint",
-        "ux-wrapper",
-        "photographic-units",
-        "global",
-        "parameterized",
-        "multi-axis"
-      ],
-      "description": "WB Kelvin / tint UX wrapper (#102). Same temperature module as the temperature entry, but exposes photographic units instead of raw RGB coefficients. 2 axes: --param kelvin_delta=V (range [-3000, 3000]; positive = warmer) and --param tint_delta=V (range [-200, 200]; positive = magenta-shifted). Linear approximation: red_coeff *= 1 + kelvin_delta * 0.0001, blue_coeff inverse, green_coeff *= 1 + tint_delta * 0.0001. Daily-use accurate; not chromatic-adaptation-perfect. The temperature entry is preserved for users who want raw coefficient control. Note: kelvin_delta affects bytes 0 (red) AND 8 (blue); the manifest's field offset 0 is the primary-effect documentation; the decoder applies the inverse to blue automatically.",
-      "modversions": {
-        "temperature": 4
-      },
-      "darktable_version": "5.4",
-      "source": "expressive-baseline",
-      "license": "MIT",
-      "parameters": [
-        {
-          "name": "kelvin_delta",
-          "type": "float",
-          "range": [
-            -3000.0,
-            3000.0
-          ],
-          "default": 0.0,
-          "field": {
-            "module": "temperature",
-            "modversion": 4,
-            "offset": 0,
-            "encoding": "le_f32"
-          }
-        },
-        {
-          "name": "tint_delta",
-          "type": "float",
-          "range": [
-            -200.0,
-            200.0
-          ],
-          "default": 0.0,
-          "field": {
-            "module": "temperature",
-            "modversion": 4,
-            "offset": 4,
-            "encoding": "le_f32"
-          }
-        }
-      ]
-    },
-    {
       "name": "temperature",
       "layer": "L3",
       "subtype": "wb",

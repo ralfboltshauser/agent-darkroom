@@ -29,7 +29,8 @@ def test_vocab_list_returns_starter_entries(runner: CliRunner) -> None:
     out = result.stdout
     assert "wb_warm_subtle" in out
     assert "look_neutral" in out
-    assert "2 entries" in out
+    # post-#137: starter now includes wb_kelvin_delta (3 entries)
+    assert "3 entries" in out
 
 
 def test_vocab_list_json_emits_one_line_per_entry_plus_summary(runner: CliRunner) -> None:
@@ -39,9 +40,12 @@ def test_vocab_list_json_emits_one_line_per_entry_plus_summary(runner: CliRunner
     payloads = [json.loads(line) for line in lines]
     events = [p for p in payloads if p["event"] == "vocabulary_entry"]
     summaries = [p for p in payloads if p["event"] == "result"]
-    assert len(events) == 2  # post-v1.6.0 starter (RFC-021)
+    # post-#137 (RFC-039 close-out): wb_kelvin_delta moved to starter,
+    # so starter now ships 3 entries (wb_kelvin_delta + wb_warm_subtle +
+    # look_neutral).
+    assert len(events) == 3
     assert len(summaries) == 1
-    assert summaries[0]["count"] == 2
+    assert summaries[0]["count"] == 3
     assert summaries[0]["status"] == "ok"
     # Summary is the last line (per RFC-020 §C convention).
     assert payloads[-1]["event"] == "result"

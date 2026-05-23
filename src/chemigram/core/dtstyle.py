@@ -184,8 +184,11 @@ def parse_dtstyle(path: Path) -> DtstyleEntry:
         raise DtstyleParseError(f"{path}: missing <style>")
 
     plugin_elems = style.findall("plugin")
-    if not plugin_elems:
-        raise DtstyleParseError(f"{path}: <style> must contain at least one <plugin>")
+    # Empty <style> is allowed for composes-only entries (RFC-039 / #137).
+    # The entry's effect comes entirely from composing parametric
+    # primitives at apply time; the dtstyle itself adds no plugins.
+    # Manifest-level validation ensures the entry has either plugins or
+    # composes; this parser stays content-agnostic.
 
     # Parse all plugins, then filter out darktable's auto-applied entries
     # (multi_name prefixed "_builtin_") per ADR-010. Phase 0 working
@@ -195,7 +198,9 @@ def parse_dtstyle(path: Path) -> DtstyleEntry:
     plugins_all = tuple(_parse_plugin(p, path) for p in plugin_elems)
     plugins = tuple(p for p in plugins_all if not p.multi_name.startswith("_builtin_"))
 
-    if not plugins:
+    if plugin_elems and not plugins:
+        # dtstyle had plugins but ALL were filtered as _builtin_ — that's
+        # still a contributor authoring error worth flagging.
         filtered = len(plugins_all)
         raise DtstyleParseError(
             f"{path}: no user-authored <plugin> entries "

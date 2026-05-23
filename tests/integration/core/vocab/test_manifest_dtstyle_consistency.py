@@ -19,13 +19,18 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 def _packs_to_audit() -> list[VocabularyIndex]:
-    """Every pack that ships in-tree."""
+    """Pack indices to audit. Starter loads standalone (no external
+    composition dependencies). Expressive-baseline depends on starter
+    after RFC-039 / #137 (composed L2 looks reference starter's
+    wb_kelvin_delta primitive), so it loads alongside starter."""
     indices = []
     starter_root = REPO_ROOT / "vocabulary" / "starter"
+    expressive_root = REPO_ROOT / "vocabulary" / "packs" / "expressive-baseline"
     if starter_root.exists():
         indices.append(VocabularyIndex(starter_root))
-    expressive_root = REPO_ROOT / "vocabulary" / "packs" / "expressive-baseline"
-    if expressive_root.exists():
+    if expressive_root.exists() and starter_root.exists():
+        indices.append(VocabularyIndex([starter_root, expressive_root]))
+    elif expressive_root.exists():
         indices.append(VocabularyIndex(expressive_root))
     return indices
 

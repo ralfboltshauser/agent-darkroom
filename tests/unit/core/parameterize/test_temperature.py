@@ -293,20 +293,19 @@ def test_patch_without_raw_path_unchanged_default_behavior() -> None:
     assert out == src
 
 
-def test_patch_with_raw_path_substitutes_camera_wb_at_identity() -> None:
-    """When raw_path is supplied and no overrides are given, the
-    function reads camera WB and replaces source RGB coefficients
-    (RFC-039 / #131 Step 2). Sony landscape fixture has known
-    camera_whitebalance normalized to (R~2.39, G=1.0, B~1.71)."""
+def test_patch_with_raw_path_returns_none_at_strict_identity() -> None:
+    """RFC-039 ADR-093 follow-up: at strict identity (no overrides, no
+    non-zero deltas) with raw_path, patch returns None to signal "skip
+    this plugin." The engine drops the plugin from the dtstyle and
+    darktable applies its own camera-default WB — producing a render
+    that matches the no-temperature-op baseline pixel-for-pixel."""
     raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
     if not raw_path.exists():
         pytest.skip("landscape fixture not available (git lfs pull?)")
     src = "0000803f0000803f0000803f0000807f02000000"  # (1.0, 1.0, 1.0)
-    out = patch(src, raw_path=raw_path)
-    fields = decode(out)
-    assert fields[_RED_FIELD_INDEX] == pytest.approx(2.391, abs=0.01)
-    assert fields[_GREEN_FIELD_INDEX] == pytest.approx(1.0, abs=1e-3)
-    assert fields[_BLUE_FIELD_INDEX] == pytest.approx(1.711, abs=0.01)
+    assert patch(src, raw_path=raw_path) is None
+    # Also when kelvin/tint are explicitly 0
+    assert patch(src, kelvin_delta=0.0, tint_delta=0.0, raw_path=raw_path) is None
 
 
 def test_patch_with_raw_path_and_kelvin_delta_shifts_relative_to_camera() -> None:
@@ -341,10 +340,16 @@ def test_patch_with_raw_path_explicit_coefficient_overrides_wins() -> None:
 def test_patch_with_unreadable_raw_falls_back_silently(tmp_path: Path) -> None:
     """If rawpy can't read the file (corrupt, unsupported format), the
     substitution falls back to source coefficients and patch() does
-    NOT raise. Robustness property for the parametric apply path."""
+    NOT raise. At strict identity with an unreadable raw, the
+    identity-skip path STILL fires (returns None) since the user
+    indicated identity intent. Robustness property for the parametric
+    apply path."""
     bad_raw = tmp_path / "junk.arw"
     bad_raw.write_bytes(b"not a raw file")
     src = "0000803f0000803f0000803f0000807f02000000"
-    # Should return without raising
-    out = patch(src, raw_path=bad_raw)
-    assert out == src
+    # Identity with unreadable raw: still returns None (identity-skip)
+    assert patch(src, raw_path=bad_raw) is None
+    # Non-identity with unreadable raw: returns source-coefficient
+    # output (deltas applied; raw substitution silently skipped)
+    out = patch(src, kelvin_delta=500.0, raw_path=bad_raw)
+    assert out is not None and isinstance(out, str)

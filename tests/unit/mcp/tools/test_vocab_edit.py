@@ -12,6 +12,7 @@ from chemigram.mcp.registry import ToolContext, get_tool
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _EXPRESSIVE_BASELINE = _REPO_ROOT / "vocabulary" / "packs" / "expressive-baseline"
+_STARTER = _REPO_ROOT / "vocabulary" / "starter"
 
 # The four mask-bound entries shipped in expressive-baseline as of v1.4.0
 # (ADR-076). Each exercises a distinct dt_form serialization in dt_serialize.
@@ -134,7 +135,9 @@ def context_with_shipped_masks(context: ToolContext) -> ToolContext:
     """
     from chemigram.core.vocab import VocabularyIndex
 
-    eb = VocabularyIndex(_EXPRESSIVE_BASELINE)
+    # Post-#137: expressive-baseline depends on starter (composed
+    # wb_kelvin_delta lives in starter).
+    eb = VocabularyIndex([_STARTER, _EXPRESSIVE_BASELINE])
     for name in _SHIPPED_MASK_BOUND_ENTRIES:
         entry = eb.lookup_by_name(name)
         assert entry is not None, (

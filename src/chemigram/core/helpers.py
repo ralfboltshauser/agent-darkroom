@@ -227,6 +227,12 @@ def _apply_parameter_values_to_dtstyle(
                 values=values_by_module.get(plug.operation, {}),
                 raw_path=raw_path,
             )
+            if patched_hex is None:
+                # RFC-039 / ADR-093 follow-up: module signaled "skip
+                # this plugin entirely" (e.g., temperature at strict
+                # identity with raw_path — darktable applies its own
+                # camera-default when no temperature op is in history).
+                continue
             new_plugins.append(dataclasses.replace(plug, op_params=patched_hex))
         else:
             new_plugins.append(plug)
@@ -292,6 +298,15 @@ def apply_entry(  # noqa: C901
     if not isinstance(entry, VocabEntry):
         raise TypeError(f"entry must be a VocabEntry, got {type(entry).__name__}")
 
+    # Caller-bug sanity: parameter_values on a non-parametric entry is
+    # a TypeError, raised BEFORE composes resolution so the diagnostic
+    # is precise even when the entry composes other primitives.
+    if parameter_values and entry.parameters is None:
+        raise TypeError(
+            f"entry {entry.name!r} has no 'parameters' declaration; "
+            f"cannot apply parameter_values={parameter_values!r}"
+        )
+
     # Axis 5 (RFC-039 / #131 Step 2): L2 composition by primitive
     # reference. When entry.composes is set, resolve each reference to
     # a DtstyleEntry with parameter_values applied (camera-aware if
@@ -340,11 +355,9 @@ def apply_entry(  # noqa: C901
     #       (gives camera-aware modules a chance to substitute camera-
     #       default coefficients at identity).
     if parameter_values:
-        if entry.parameters is None:
-            raise TypeError(
-                f"entry {entry.name!r} has no 'parameters' declaration; "
-                f"cannot apply parameter_values={parameter_values!r}"
-            )
+        # parameters-None check already ran above (caller-bug sanity);
+        # narrow the type for mypy.
+        assert entry.parameters is not None
         dtstyle = _apply_parameter_values_to_dtstyle(
             dtstyle, entry.parameters, parameter_values, raw_path=raw_path
         )

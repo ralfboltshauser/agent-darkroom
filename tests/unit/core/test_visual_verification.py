@@ -109,22 +109,18 @@ def test_l2_look_with_one_raw_module_is_not_chart_verifiable() -> None:
     assert not is_chart_verifiable(entry)
 
 
-def test_starter_pack_is_not_yet_portable_by_module_definition() -> None:
-    """Both starter-pack entries touch temperature, which is in
-    :data:`_NOT_YET_PORTABLE_MODULES` until RFC-039 makes the
-    parametric WB path camera-aware. They can't be honestly rendered
-    on the real-raw fixtures because their dtstyle blobs carry foreign
-    -camera WB coefficients. Documents the v1.10.0/v1.11.0 finding
-    that the starter pack's WB-touching entries route to the gallery's
-    "Not yet honestly verifiable" section until #131 Step 2 ships."""
+def test_starter_pack_is_camera_portable_after_137() -> None:
+    """Post RFC-039 / #137: every starter L2/L3 WB-touching entry is
+    camera-portable. wb_kelvin_delta is the parametric primitive
+    (real_raw); wb_warm_subtle and look_neutral compose it
+    (real_raw). No starter entry should remain in not_yet_portable."""
     vocab = load_packs(["starter"])
     for entry in vocab.list_all():
         if entry.layer == "L1":
             continue
-        assert verification_mode_for_entry(entry) == "not_yet_portable", (
-            f"{entry.name} (touches={entry.touches}) should be not_yet_portable — "
-            "starter pack all touches temperature, which awaits RFC-039 "
-            "camera-aware parametric apply"
+        mode = verification_mode_for_entry(entry)
+        assert mode != "not_yet_portable", (
+            f"{entry.name} should NOT be not_yet_portable after RFC-039 / #137; got {mode}"
         )
 
 
@@ -150,19 +146,15 @@ def test_not_yet_portable_subset_of_raw_domain() -> None:
     )
 
 
-def test_discrete_temperature_entries_route_to_not_yet_portable() -> None:
-    """Discrete entries that directly inline a temperature plugin (no
-    parameters, no composes) stay in 'not_yet_portable'. After Phase 4
-    of RFC-039 (commits via vocabulary reauthor), most L2 looks have
-    graduated by composing wb_kelvin_delta. Today only wb_warm_subtle
-    remains because its dtstyle has only the temperature plugin
-    (stripping would leave an empty dtstyle)."""
+def test_no_loaded_entries_are_not_yet_portable_after_137() -> None:
+    """Post RFC-039 / #137: every vocabulary entry across starter +
+    expressive-baseline is either chart, real_raw, or manual. The
+    'not_yet_portable' bucket exists in the discriminator as a safety
+    net for any future module that ships without a camera-aware
+    parametric apply path — but no v1.11.0 entry triggers it."""
     vocab = load_packs(["starter", "expressive-baseline"])
-    entry = vocab.lookup_by_name("wb_warm_subtle")
-    assert entry is not None
-    assert is_not_yet_portable(entry), (
-        "wb_warm_subtle should still be not_yet_portable (discrete temperature plugin, no composes)"
-    )
+    offenders = [e.name for e in vocab.list_all() if e.layer != "L1" and is_not_yet_portable(e)]
+    assert not offenders, f"entries unexpectedly in not_yet_portable post-#137: {offenders}"
 
 
 def test_parametric_temperature_entries_route_to_real_raw() -> None:

@@ -162,11 +162,13 @@ def _do_apply_primitive(
 
     has_parameters = parameter_values is not None or vocab_entry.parameters is not None
     has_strength = strength is not None
+    has_composes = bool(vocab_entry.composes)
 
-    # Route through apply_entry when parameter axis OR strength axis is in
-    # play. apply_entry handles the parameter-only / mask-only / strength /
-    # composition shapes.
-    if has_parameters or has_strength:
+    # Route through apply_entry when parameter axis OR strength axis OR
+    # composes (RFC-039 / #133) is in play. apply_entry handles the
+    # parameter-only / mask-only / strength / composition shapes; for
+    # composes it needs the vocab index to resolve primitive references.
+    if has_parameters or has_strength or has_composes:
         try:
             new_xmp = apply_entry(
                 baseline_xmp,
@@ -174,6 +176,7 @@ def _do_apply_primitive(
                 parameter_values=parameter_values,
                 mask_spec=effective_mask,
                 strength=strength,
+                vocab=vocabulary if has_composes else None,
             )
         except (ValueError, TypeError) as exc:
             writer.error(str(exc), ExitCode.INVALID_INPUT, entry=entry_name)

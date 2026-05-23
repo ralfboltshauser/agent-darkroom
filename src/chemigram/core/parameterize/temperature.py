@@ -93,7 +93,7 @@ def patch(
     kelvin_delta: float | None = None,
     tint_delta: float | None = None,
     raw_path: Path | None = None,
-) -> str:
+) -> str | None:
     """Patch ``red``, ``green`` and/or ``blue`` coefficient fields in a
     20-byte temperature blob.
 
@@ -164,19 +164,45 @@ def patch(
     function never raises on raw-read failure. This keeps the parametric
     apply path robust for test fixtures.
 
+    Returns ``None`` when called with ``raw_path`` and no shift (zero
+    deltas, no explicit coefficients) — the engine drops the plugin
+    entirely so darktable applies its own camera-default WB. Avoids
+    the identity-render-fidelity gap noted in ADR-093: an explicit
+    op_params with rawpy-derived coefficients renders slightly
+    differently from a no-temperature-op render because darktable
+    suppresses its internal auto-insert when any temperature op is
+    present.
+
     Raises:
         ValueError: input blob is not 20 bytes after hex-decode.
     """
     fields = list(decode(op_params))
+    # Identity-skip (RFC-039 ADR-093 follow-up): when raw_path is
+    # supplied AND no shift is requested (no explicit coefficients, no
+    # non-zero deltas), return None to signal "skip this plugin." The
+    # caller (_apply_parameter_values_to_dtstyle) drops the plugin and
+    # darktable falls back to its internal camera-default WB —
+    # producing a render that exactly matches the no-temperature-op
+    # baseline.
+    coefficient_overrides_supplied = any(
+        c is not None for c in (red_coeff, green_coeff, blue_coeff)
+    )
+    no_kelvin_shift = kelvin_delta is None or kelvin_delta == 0
+    no_tint_shift = tint_delta is None or tint_delta == 0
+    if (
+        raw_path is not None
+        and not coefficient_overrides_supplied
+        and no_kelvin_shift
+        and no_tint_shift
+    ):
+        return None
+
     # Camera-aware substitution (RFC-039 / #131 Step 2): when raw_path is
     # supplied, swap the source RGB coefficients with the camera's
     # daylight WB before applying any deltas. Bypassed if any direct
     # coefficient override (red/green/blue_coeff) is supplied — those
     # take precedence over the camera-default since the caller is
     # explicitly opting into raw-coefficient control.
-    coefficient_overrides_supplied = any(
-        c is not None for c in (red_coeff, green_coeff, blue_coeff)
-    )
     if raw_path is not None and not coefficient_overrides_supplied:
         try:
             from chemigram.core.exif import read_camera_daylight_wb

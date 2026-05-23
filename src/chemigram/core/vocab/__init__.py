@@ -977,9 +977,19 @@ def load_packs(pack_names: list[str]) -> VocabularyIndex:
 
     Pack order matters for explanation only — the resulting index has a
     flat namespace, so collisions are reported in input order.
+
+    Auto-include of starter (RFC-039 / #137): the starter pack ships
+    parametric primitives (currently ``wb_kelvin_delta``) that other
+    packs compose. If the caller requests any non-starter pack without
+    also requesting starter, starter is auto-prepended. The starter
+    pack is the chemigram-shipped foundation — analogous to a standard
+    library — and explicit loading is unnecessary.
     """
     if not pack_names:
         raise VocabError("load_packs requires at least one pack name")
+    # Auto-prepend starter if any non-starter pack is requested without it
+    if "starter" not in pack_names and any(n != "starter" for n in pack_names):
+        pack_names = ["starter", *pack_names]
     pack_roots: list[Path] = []
     for name in pack_names:
         if name == "starter":

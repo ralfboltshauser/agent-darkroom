@@ -1,6 +1,64 @@
 {
-  "_comment": "Starter vocabulary pack. Deliberately small per IMPLEMENTATION.md (Phase 2 grows this from real session evidence). Calibrated to darktable 5.4.1. v1.6.0: removed expo_+0.5 / expo_-0.5 \u2014 replaced by the parameterized 'exposure' entry in expressive-baseline (RFC-021 / ADR-077..080).",
+  "_comment": "Starter vocabulary pack. Deliberately small per IMPLEMENTATION.md (Phase 2 grows this from real session evidence). Calibrated to darktable 5.4.1. v1.6.0: removed expo_+0.5 / expo_-0.5 \u2014 replaced by the parameterized 'exposure' entry in expressive-baseline (RFC-021 / ADR-077..080). v1.11.0 (RFC-039 / #137): wb_kelvin_delta moved here from expressive-baseline so starter entries can compose it for camera-aware WB; wb_warm_subtle and look_neutral reauthored to compose wb_kelvin_delta.",
   "entries": [
+    {
+      "name": "wb_kelvin_delta",
+      "layer": "L3",
+      "subtype": "wb",
+      "path": "layers/L3/wb/wb_kelvin_delta.dtstyle",
+      "touches": [
+        "temperature"
+      ],
+      "tags": [
+        "wb",
+        "kelvin",
+        "tint",
+        "ux-wrapper",
+        "photographic-units",
+        "global",
+        "parameterized",
+        "multi-axis"
+      ],
+      "description": "WB Kelvin / tint UX wrapper (#102). Same temperature module as the temperature entry, but exposes photographic units instead of raw RGB coefficients. 2 axes: --param kelvin_delta=V (range [-3000, 3000]; positive = warmer) and --param tint_delta=V (range [-200, 200]; positive = magenta-shifted). Linear approximation: red_coeff *= 1 + kelvin_delta * 0.0001, blue_coeff inverse, green_coeff *= 1 + tint_delta * 0.0001. Daily-use accurate; not chromatic-adaptation-perfect. RFC-039 / #131 made apply path camera-aware: at non-zero delta, shifts are relative to the target raw's camera-default WB read via rawpy.",
+      "modversions": {
+        "temperature": 4
+      },
+      "darktable_version": "5.4",
+      "source": "starter",
+      "license": "MIT",
+      "parameters": [
+        {
+          "name": "kelvin_delta",
+          "type": "float",
+          "range": [
+            -3000.0,
+            3000.0
+          ],
+          "default": 0.0,
+          "field": {
+            "module": "temperature",
+            "modversion": 4,
+            "offset": 0,
+            "encoding": "le_f32"
+          }
+        },
+        {
+          "name": "tint_delta",
+          "type": "float",
+          "range": [
+            -200.0,
+            200.0
+          ],
+          "default": 0.0,
+          "field": {
+            "module": "temperature",
+            "modversion": 4,
+            "offset": 4,
+            "encoding": "le_f32"
+          }
+        }
+      ]
+    },
     {
       "name": "wb_warm_subtle",
       "layer": "L3",
@@ -14,13 +72,19 @@
         "warm",
         "global"
       ],
-      "description": "Warm white balance, subtle.",
-      "modversions": {
-        "temperature": 4
-      },
+      "description": "Warm white balance, subtle. Reauthored RFC-039 / #137 to compose wb_kelvin_delta with a fixed +500K shift; camera-portable.",
+      "modversions": {},
       "darktable_version": "5.4",
       "source": "starter",
-      "license": "MIT"
+      "license": "MIT",
+      "composes": [
+        {
+          "primitive": "wb_kelvin_delta",
+          "parameter_values": {
+            "kelvin_delta": 500.0
+          }
+        }
+      ]
     },
     {
       "name": "look_neutral",
@@ -35,14 +99,19 @@
         "look",
         "neutral"
       ],
-      "description": "Neutral L2 look \u2014 exposure + warm-subtle WB baseline.",
+      "description": "Neutral L2 look \u2014 exposure + warm-subtle WB baseline. Reauthored RFC-039 / #137 to compose wb_kelvin_delta (no shift at default); camera-portable.",
       "modversions": {
-        "exposure": 7,
-        "temperature": 4
+        "exposure": 7
       },
       "darktable_version": "5.4",
       "source": "starter",
-      "license": "MIT"
+      "license": "MIT",
+      "composes": [
+        {
+          "primitive": "wb_kelvin_delta",
+          "parameter_values": {}
+        }
+      ]
     }
   ]
 }

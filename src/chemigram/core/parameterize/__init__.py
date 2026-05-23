@@ -55,7 +55,7 @@ class PatchError(Exception):
 # Registry: (module_name, modversion) -> callable(op_params, **values) -> patched op_params hex.
 # Keys are pinned so a darktable modversion bump fails loud rather than
 # silently corrupting bytes.
-_PATCH_REGISTRY: dict[tuple[str, int], Callable[..., str]] = {
+_PATCH_REGISTRY: dict[tuple[str, int], Callable[..., str | None]] = {
     ("ashift", 5): ashift.patch,
     ("exposure", 7): exposure.patch,
     ("filmicrgb", 6): filmicrgb.patch,
@@ -84,7 +84,7 @@ def patch_op_params(
     modversion: int,
     values: dict[str, float],
     raw_path: Path | None = None,
-) -> str:
+) -> str | None:
     """Apply caller-supplied parameter ``values`` to a module's ``op_params``.
 
     Args:
@@ -103,7 +103,10 @@ def patch_op_params(
             fixtures) pass ``None``; behavior is unchanged for those.
 
     Returns:
-        New hex-encoded ``op_params`` with the named fields patched.
+        New hex-encoded ``op_params`` with the named fields patched, or
+        ``None`` if the module's patch function signaled "skip this
+        plugin entirely" (e.g., temperature at strict identity with
+        ``raw_path`` — letting darktable apply its own camera-default).
 
     Raises:
         PatchError: ``(module, modversion)`` not in the registry, or the
