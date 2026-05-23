@@ -61,6 +61,7 @@ discrete dtstyle entries.
 from __future__ import annotations
 
 import struct
+from pathlib import Path
 
 # Struct format: 18 floats + 11 signed-int 4-byte fields = 116 bytes.
 _STRUCT_FORMAT = "<18f11i"
@@ -106,7 +107,12 @@ def encode(fields: tuple[float | int, ...]) -> str:
     return struct.pack(_STRUCT_FORMAT, *fields).hex()
 
 
-def patch(op_params: str, **values: float | None) -> str:
+def patch(
+    op_params: str,
+    *,
+    raw_path: Path | None = None,
+    **values: float | None,
+) -> str:
     """Patch any combination of filmicrgb's 8 parameterized magnitude axes.
 
     Multi-axis partial-update: caller may supply any subset of the 8
@@ -154,6 +160,29 @@ def patch(op_params: str, **values: float | None) -> str:
             f"valid axes: {sorted(_AXIS_FIELD_INDICES.keys())}"
         )
     fields = list(decode(op_params))
+    # Camera-aware auto-tune (#135 / RFC-039): when raw_path is supplied
+    # AND no explicit black_point_source / white_point_source overrides,
+    # compute the points from the raw's actual histogram. Mirrors
+    # darktable's "Auto-tune levels" button on the filmic module.
+    # Auto-tuning only fires for the BLACK and WHITE points; the other
+    # axes (grey, output_power, contrast, saturation, etc.) are
+    # photographer choices that don't depend on raw metadata.
+    if (
+        raw_path is not None
+        and values.get("black_point_source") is None
+        and values.get("white_point_source") is None
+    ):
+        try:
+            from chemigram.core.exif import read_filmic_auto_points
+
+            auto = read_filmic_auto_points(raw_path)
+            if auto is not None:
+                black_ev, white_ev = auto
+                fields[_AXIS_FIELD_INDICES["black_point_source"]] = black_ev
+                fields[_AXIS_FIELD_INDICES["white_point_source"]] = white_ev
+        except Exception:  # noqa: S110
+            # Robust fallback: any failure → keep source values.
+            pass
     for axis_name, value in values.items():
         if value is not None:
             fields[_AXIS_FIELD_INDICES[axis_name]] = float(value)

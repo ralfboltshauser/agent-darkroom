@@ -122,6 +122,58 @@ def read_exif(path: Path) -> ExifData:
     )
 
 
+def read_filmic_auto_points(
+    path: Path, *, black_percentile: float = 1.0, white_percentile: float = 99.0
+) -> tuple[float, float] | None:
+    """Compute filmic-friendly black_point_source / white_point_source
+    in log2-EV space from the raw's actual histogram.
+
+    Returns ``(black_ev, white_ev)`` where both values are relative to
+    the camera's mid-gray reference (18.45% of white_level). Mirrors
+    darktable's "Auto-tune levels" button on the filmic module.
+
+    Used by camera-aware filmic (#135 / RFC-039): at apply time, the
+    parametric primitive substitutes these auto-tuned points for the
+    dtstyle's authored defaults (typically -8.0 / +4.0), producing a
+    tone curve fitted to the actual scene's dynamic range.
+
+    Returns ``None`` if rawpy can't read the file or compute valid
+    percentiles (very dark / completely clipped raw). Callers treat
+    None as "skip auto-tune, use source coefficients."
+
+    Raises:
+        FileNotFoundError: ``path`` does not exist.
+        ExifReadError: rawpy can't parse the raw.
+    """
+    if not path.exists():
+        raise FileNotFoundError(path)
+    try:
+        import math
+
+        import numpy as np
+        import rawpy
+
+        with rawpy.imread(str(path)) as raw:
+            img = raw.raw_image_visible
+            black_level = (
+                float(raw.black_level_per_channel[0]) if raw.black_level_per_channel else 0.0
+            )
+            white_level = float(raw.white_level) if raw.white_level else float(img.max())
+            grey = (white_level - black_level) * 0.1845 + black_level
+            p_black = float(np.percentile(img, black_percentile))
+            p_white = float(np.percentile(img, white_percentile))
+            # Need positive distances above black_level for log2
+            if p_black <= black_level or p_white <= black_level or grey <= black_level:
+                return None
+            black_ev = math.log2((p_black - black_level) / (grey - black_level))
+            white_ev = math.log2((p_white - black_level) / (grey - black_level))
+            return black_ev, white_ev
+    except FileNotFoundError:
+        raise
+    except Exception as exc:
+        raise ExifReadError(f"failed to compute filmic auto-points for {path}: {exc}") from exc
+
+
 def read_camera_iso(path: Path) -> int | None:
     """Read the raw's ISO speed rating from EXIF.
 
