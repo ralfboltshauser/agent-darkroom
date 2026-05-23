@@ -105,6 +105,9 @@ ADRs come from two streams:
 | ADR-088 | Parametric L2 strength via Path B (per-parameter interpolation); closes RFC-035 | Draft (impl shipped; flips to Accepted on darkroom validation) |
 | ADR-089 | Mixed-op `apply_per_region` schema extension; closes RFC-036 | Draft (impl shipped; flips to Accepted on darkroom validation) |
 | ADR-090 | `propagate_state` MCP verb (anchor-and-sync workflow); closes RFC-037 | Draft (impl shipped; flips to Accepted on darkroom validation) |
+| ADR-091 | Engine raw-metadata-aware apply API (raw_path threading + rawpy reader); closes RFC-039 | Draft (impl shipped; flips to Accepted on darkroom validation) |
+| ADR-092 | Manifest `composes` field for L2 composition by reference; closes RFC-039 | Draft (impl shipped; flips to Accepted on darkroom validation) |
+| ADR-093 | Camera-aware parametric `temperature` semantics (identity = camera WB; deltas in coefficient space); closes RFC-039 | Draft (impl shipped; flips to Accepted on darkroom validation) |
 
 ## Conventions
 

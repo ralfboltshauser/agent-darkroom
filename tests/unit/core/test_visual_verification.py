@@ -150,18 +150,57 @@ def test_not_yet_portable_subset_of_raw_domain() -> None:
     )
 
 
-def test_temperature_touching_entries_route_to_not_yet_portable() -> None:
-    """Spot-check: any entry touching the temperature module routes to
-    'not_yet_portable' until RFC-039 ships."""
+def test_discrete_temperature_entries_route_to_not_yet_portable() -> None:
+    """Discrete entries that directly inline a temperature plugin (no
+    parameters, no composes) stay in 'not_yet_portable'. After Phase 4
+    of RFC-039 (commits via vocabulary reauthor), most L2 looks have
+    graduated by composing wb_kelvin_delta. Today only wb_warm_subtle
+    remains because its dtstyle has only the temperature plugin
+    (stripping would leave an empty dtstyle)."""
+    vocab = load_packs(["starter", "expressive-baseline"])
+    entry = vocab.lookup_by_name("wb_warm_subtle")
+    assert entry is not None
+    assert is_not_yet_portable(entry), (
+        "wb_warm_subtle should still be not_yet_portable (discrete temperature plugin, no composes)"
+    )
+
+
+def test_parametric_temperature_entries_route_to_real_raw() -> None:
+    """L3 parametric temperature entries (temperature, wb_kelvin_delta)
+    have a temperature plugin BUT also have parameters declared
+    targeting that module — so the parametric apply path (camera-aware
+    post-Phase 2) handles them. They're real_raw, not
+    not_yet_portable."""
+    vocab = load_packs(["expressive-baseline"])
+    for name in ("temperature", "wb_kelvin_delta"):
+        entry = vocab.lookup_by_name(name)
+        assert entry is not None
+        assert not is_not_yet_portable(entry), (
+            f"{name} should NOT be not_yet_portable (parametric covers temperature)"
+        )
+
+
+def test_composed_l2_looks_route_to_real_raw() -> None:
+    """L2 looks reauthored to compose wb_kelvin_delta (Phase 4) are
+    portable — their dtstyle no longer carries a temperature plugin;
+    the temperature effect comes via composition through the camera-
+    aware parametric apply path."""
     vocab = load_packs(["expressive-baseline"])
     for name in (
-        "temperature",
-        "wb_kelvin_delta",
         "look_landscape_golden_hour",
         "look_70s_film",
+        "look_portrait_skin_warm_lift",
+        "look_film_kodachrome",
     ):
         entry = vocab.lookup_by_name(name)
-        assert entry is not None, f"{name} not found"
-        assert is_not_yet_portable(entry), (
-            f"{name} should be not_yet_portable (touches temperature)"
+        assert entry is not None
+        # touches still includes temperature (composed effect), but
+        # direct touches (dtstyle plugins) does not.
+        assert "temperature" in entry.touches
+        plugin_ops = {p.operation for p in entry.dtstyle.plugins}
+        assert "temperature" not in plugin_ops, (
+            f"{name}'s dtstyle should NOT have temperature plugin after Phase 4"
+        )
+        assert not is_not_yet_portable(entry), (
+            f"{name} should be portable (composes wb_kelvin_delta, not direct temperature)"
         )

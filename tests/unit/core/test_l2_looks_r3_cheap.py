@@ -57,7 +57,8 @@ def test_all_r3_looks_load(vocab: VocabularyIndex) -> None:
 def test_global_r3_look_applies(vocab: VocabularyIndex, empty_baseline: Xmp, name: str) -> None:
     entry = vocab.lookup_by_name(name)
     assert entry is not None
-    result = apply_entry(empty_baseline, entry)
+    # Pass vocab so RFC-039 composes references resolve.
+    result = apply_entry(empty_baseline, entry, vocab=vocab)
     ops = {h.operation for h in result.history}
     for touched in entry.touches:
         assert touched in ops, f"{name}: missing {touched} in history"
@@ -73,7 +74,12 @@ def test_masked_r3_look_applies(vocab: VocabularyIndex, empty_baseline: Xmp, nam
     assert resolved is not None
     result = apply_with_mask(empty_baseline, entry.dtstyle, resolved)
     ops = {h.operation for h in result.history}
+    # Only assert own-dtstyle touches; composed effects are applied
+    # via a separate path (apply_entry + vocab) which doesn't run here.
+    own_ops = {p.operation for p in entry.dtstyle.plugins}
     for touched in entry.touches:
+        if touched not in own_ops:
+            continue
         assert touched in ops
 
 

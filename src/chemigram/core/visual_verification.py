@@ -125,6 +125,25 @@ _NOT_YET_PORTABLE_MODULES: frozenset[str] = frozenset(
 )
 
 
+def _direct_touches(entry: Any) -> set[str]:
+    """Modules the entry touches DIRECTLY via its own dtstyle plugins
+    (excluding modules touched only via :data:`composes` references).
+
+    RFC-039 composition: an L2 look may have ``temperature`` in its
+    declared ``touches`` (the aggregated effect set) while NOT having
+    a temperature plugin in its own dtstyle — the temperature op
+    comes via composition of the parametric ``wb_kelvin_delta``
+    primitive, which is camera-aware at apply time. Such entries are
+    camera-portable; direct touches is what the discriminator uses
+    to identify "carries a hardcoded coefficient blob" vs "delegates
+    to a camera-aware primitive."
+    """
+    dtstyle = getattr(entry, "dtstyle", None)
+    if dtstyle is None:
+        return set()
+    return {p.operation for p in getattr(dtstyle, "plugins", ())}
+
+
 def verification_mode_for_entry(entry: Any) -> str:
     """Return ``"chart"`` | ``"real_raw"`` | ``"not_yet_portable"`` |
     ``"manual"`` for a vocab entry.
@@ -133,11 +152,16 @@ def verification_mode_for_entry(entry: Any) -> str:
 
     1. Every touched module in :data:`_CHART_VERIFIABLE_MODULES` →
        ``"chart"`` (synthetic chart is an honest fixture).
-    2. Any touched module in :data:`_NOT_YET_PORTABLE_MODULES` →
+    2. The entry DIRECTLY touches (via its own dtstyle, not via
+       composition) any module in :data:`_NOT_YET_PORTABLE_MODULES` →
        ``"not_yet_portable"`` (the entry's dtstyle carries
        camera-specific coefficients that aren't yet computed per-raw at
        apply time; until that ships, the real-raw render shows a
        foreign-camera cast rather than the entry's intended effect).
+       RFC-039 composition is exempt: an L2 look that composes a
+       parametric primitive (e.g., ``wb_kelvin_delta``) for the
+       not-yet-portable module's effect is CAMERA-PORTABLE because
+       composition routes through the camera-aware apply path.
     3. Otherwise (raw-domain but camera-portable) → ``"real_raw"``
        (chemigram applies it correctly on any raw via the real-raw
        fixture).
@@ -157,11 +181,23 @@ def verification_mode_for_entry(entry: Any) -> str:
         return "chart"
     if touches.issubset(_CHART_VERIFIABLE_MODULES):
         return "chart"
-    if touches & _NOT_YET_PORTABLE_MODULES:
-        # Any not-yet-portable module taints the whole entry. Multi-
-        # module L2 looks composed of camera-portable raw modules plus
-        # one not-yet-portable module (typically temperature) still
-        # can't be honestly rendered on a foreign body's fixture.
+    # not_yet_portable check uses DIRECT touches only (RFC-039): if the
+    # entry's own dtstyle has a not-yet-portable module's plugin
+    # inlined with hardcoded coefficients, the entry can't be honestly
+    # rendered on a foreign body. Two exceptions:
+    #   (a) the not-yet-portable module is touched only via composition
+    #       — apply path is camera-aware, entry IS portable
+    #   (b) the entry declares ``parameters`` covering that module —
+    #       the parametric apply path is camera-aware (Phase 2), entry
+    #       IS portable
+    not_yet_portable_direct = _direct_touches(entry) & _NOT_YET_PORTABLE_MODULES
+    if not_yet_portable_direct:
+        # Check exception (b): are the touched not-yet-portable modules
+        # all covered by the entry's parameter declarations?
+        params = getattr(entry, "parameters", None) or ()
+        parametric_modules = {getattr(p.field, "module", None) for p in params}
+        if not_yet_portable_direct.issubset(parametric_modules):
+            return "real_raw"
         return "not_yet_portable"
     # Any single touched module not in the chart-verifiable set demotes
     # the whole entry to real_raw. Multi-module L2 looks composed of

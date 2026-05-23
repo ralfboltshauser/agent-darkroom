@@ -476,7 +476,7 @@ The canonical state board for the tech plane. When an RFC closes into an ADR, bo
 | RFC-036 | Mixed-op `apply_per_region` (un-defer of RFC-031) | Decided; ADR-089 Draft until darkroom validation | ADR-089 (closes) |
 | RFC-037 | `propagate_state` MCP verb (anchor-and-sync workflow) | Decided; ADR-090 Draft until darkroom validation | ADR-090 (closes) |
 | RFC-038 | Mode B autonomous session protocol | Draft v0.1 (v1.11+ pick) | — (pending) |
-| RFC-039 | Raw-derived parameters in L2 composition (camera-aware WB; pattern extends to denoise/filmic/lens) | Draft v0.1 | — (pending; ≥3 ADRs once decided) |
+| RFC-039 | Raw-derived parameters in L2 composition (camera-aware WB; pattern extends to denoise/filmic/lens) | Decided; ADR-091/092/093 Draft until darkroom validation | ADR-091 (engine raw_path), ADR-092 (composes field), ADR-093 (temperature semantics) |
 
 ### ADRs
 
@@ -571,6 +571,9 @@ The canonical state board for the tech plane. When an RFC closes into an ADR, bo
 | ADR-088 | Parametric L2 strength via Path B (per-parameter interpolation); closes RFC-035 | Draft (impl shipped; flips to Accepted on darkroom validation) |
 | ADR-089 | Mixed-op `apply_per_region` schema extension; closes RFC-036 | Draft (impl shipped; flips to Accepted on darkroom validation) |
 | ADR-090 | `propagate_state` MCP verb (anchor-and-sync workflow); closes RFC-037 | Draft (impl shipped; flips to Accepted on darkroom validation) |
+| ADR-091 | Engine raw-metadata-aware apply API (raw_path threading + rawpy reader); closes RFC-039 | Draft (impl shipped; flips to Accepted on darkroom validation) |
+| ADR-092 | Manifest `composes` field for L2 composition by reference; closes RFC-039 | Draft (impl shipped; flips to Accepted on darkroom validation) |
+| ADR-093 | Camera-aware parametric `temperature` semantics (identity = camera WB; deltas in coefficient space); closes RFC-039 | Draft (impl shipped; flips to Accepted on darkroom validation) |
 
 ---
 

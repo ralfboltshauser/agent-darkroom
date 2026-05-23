@@ -1,9 +1,9 @@
 # RFC-039 — Raw-derived parameters in L2 composition
 
-> Status · Draft v0.1
+> Status · Decided; ADR-091/092/093 Draft until darkroom validation
 > TA anchor · /components/synthesizer · /contracts/vocabulary-manifest · /contracts/mcp-tools · /constraints/opaque-hex-blobs
 > Related · RFC-021 (parameterized vocabulary magnitudes / ADR-077..080), RFC-022 (bulk parameterization / ADR-081), RFC-035 (parametric L2 strength / ADR-088)
-> Closes into · ADR-NNN (engine raw-metadata-aware apply API), ADR-NNN (manifest `composes` field), ADR-NNN (camera-aware parametric temperature semantics)
+> Closes into · ADR-091 (engine raw-metadata-aware apply API), ADR-092 (manifest `composes` field), ADR-093 (camera-aware parametric temperature semantics)
 > Why this is an RFC · 17 vocabulary entries (14 L2 looks + 3 L3 primitives) carry hardcoded raw-domain WB coefficients from their authoring camera body; applying them to a different body produces a foreign-WB cast that contradicts the entry's name. The same defect class applies to denoise (threshold per ISO), filmic (black point per histogram), and lens (correction per body+lens). The vocabulary's foundational claim — "an entry is reusable across photographers AND across raws" — is currently false for raw-derived parameters. Three real options for restoring the claim, each with substantial architectural cost. The right answer isn't obvious and the engine API needs to be designed once across all raw-derived parameters, not retrofitted module-by-module.
 
 ## The question

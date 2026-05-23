@@ -468,14 +468,16 @@ def _render_one(input_path: Path, xmp_path: Path, output_path: Path, configdir: 
     return result.success
 
 
-def _synthesize_for_entry(baseline, entry, vocab=None):
+def _synthesize_for_entry(baseline, entry, vocab=None, raw_path=None):
     """Build the XMP that applies entry to baseline.
 
     Mask-bound entries (`mask_spec` set) route through `apply_with_drawn_mask`;
-    others go through the plain `synthesize_xmp` path. Named-mask
-    references (``{"kind": "named", "name": "mask_X"}``) require the
-    vocabulary index to resolve to a real drawn / parametric spec
-    (RFC-032). Without ``vocab``, named refs cannot be applied.
+    composes-bound entries (RFC-039 `composes` set) route through
+    `apply_entry` with the vocab so the parametric primitive
+    references resolve. Plain entries take the synthesize_xmp shortcut.
+
+    Named-mask references (``{"kind": "named", "name": "mask_X"}``)
+    require the vocabulary index to resolve (RFC-032).
     """
     if entry.mask_spec is not None:
         spec = entry.mask_spec
@@ -489,6 +491,11 @@ def _synthesize_for_entry(baseline, entry, vocab=None):
 
             spec = resolve_named_mask_spec(spec, vocab)
         return apply_with_drawn_mask(baseline, entry.dtstyle, spec)
+    if entry.composes:
+        # RFC-039: composition needs vocab to resolve primitive refs.
+        # apply_entry handles the full apply pipeline including
+        # camera-aware substitution when raw_path is supplied.
+        return apply_entry(baseline, entry, vocab=vocab, raw_path=raw_path)
     return synthesize_xmp(baseline, [entry.dtstyle])
 
 
@@ -600,7 +607,10 @@ def _render_entry(entry, vocab, baseline, configdir, rendered: dict) -> None:
             # apply path is the same; only the input differs.
             print(f"rendering {pack_name}/{entry.name} against {target.slug} raw…")
             try:
-                applied_xmp = _synthesize_for_entry(baseline, entry, vocab)
+                # Pass the routed raw_path so camera-aware parametric
+                # primitives (including composed ones, RFC-039) get the
+                # raw EXIF context.
+                applied_xmp = _synthesize_for_entry(baseline, entry, vocab, raw_path=target.path)
             except Exception as exc:
                 print(f"  ✗ synthesize failed: {exc}", file=sys.stderr)
                 return
