@@ -312,6 +312,26 @@ When state changes, several files must update together. Common cases:
 
 Don't commit a partial state change. Either all related files update together, or none do.
 
+### After every push: verify CI
+
+**Always check GitHub Actions after `git push`.** Local tests pass != CI passes. The CI matrix runs on ubuntu + macOS across Python 3.11/3.12/3.13 — combinations that catch platform-specific failures, missing-dep failures, and LFS-pointer-not-content failures that local development hides.
+
+The workflow:
+
+1. `git push origin <branch>`
+2. `gh run list --limit 2 --branch <branch>` — confirm new runs appeared
+3. Wait for completion via Bash background loop (`until [ "$(gh run list --limit 1 --json status --jq '.[0].status')" = "completed" ]; do sleep 15; done`) or via Monitor
+4. If failure: `gh run view <id> --log-failed` to read the failure, fix, push, re-verify
+5. Don't move on to the next task while CI is red
+
+CI failures the user shouldn't have to surface manually:
+- LFS-tracked fixtures absent on CI (use `tests/_lfs.py::skip_if_lfs_pointer`)
+- Platform-specific file paths or line endings
+- Missing dev dependencies the local venv had cached
+- Pre-commit hook fixes that didn't propagate (ruff format, end-of-file-fixer)
+
+Treat CI as a hard prerequisite, not a follow-up. If you've pushed and walked away, CI may be red and you don't know.
+
 ---
 
 ## Phase awareness
