@@ -184,6 +184,16 @@ _NOT_YET_PORTABLE_ENTRIES: set[str] = _compute_not_yet_portable_set()
 # See tests/fixtures/reference-targets/README.md for the layout.
 _EXTRA_CLIPPED_FIXTURE_SUBTYPES: set[str] = {"highlights", "grain"}
 
+# Entry NAMES (not subtypes) that also benefit from the clipped fixture.
+# These are sigmoid-subtype entries whose dtstyle pins `target_black` /
+# `target_white` — the colorchecker's discrete patches mask the curve's
+# direction-of-effect (mean luma reads ambiguous), but continuous tone
+# shows the lift / crush cleanly. Routing per-entry avoids adding the
+# whole `sigmoid` subtype (which would also drag in sigmoid_contrast,
+# whites_open, etc. where the chart already shows the effect honestly).
+# Closes #139.
+_EXTRA_CLIPPED_FIXTURE_ENTRY_NAMES: set[str] = {"blacks_lifted", "blacks_crushed"}
+
 # Per-parameter sweep values for the parameter-sweep gallery rows. Maps
 # a parameter name to the list of values to render. The first value
 # is treated as the "baseline" of the sweep (typically 0 / default).
@@ -764,7 +774,10 @@ def _render_clipped_fixture(
     ``clipped``, ``clipped_masked``, and ``clipped_baseline`` so the
     markdown emit can render an extra row beneath the main 4-column block.
     """
-    if entry.subtype not in _EXTRA_CLIPPED_FIXTURE_SUBTYPES:
+    if (
+        entry.subtype not in _EXTRA_CLIPPED_FIXTURE_SUBTYPES
+        and entry.name not in _EXTRA_CLIPPED_FIXTURE_ENTRY_NAMES
+    ):
         return
 
     # Render the clipped fixture's baseline once per script run.
