@@ -56,3 +56,10 @@ jobs:
 
       - name: Verify vocabulary manifest
         run: ./scripts/verify-vocab.sh
+
+      # Audit gallery renders for direction-of-effect regressions (#141).
+      # Exits non-zero on any FAIL; WARNs are surfaced in the log for review
+      # but don't fail the build (--strict opts into warn-as-failure for
+      # pre-release runs).
+      - name: Audit visual-proof renders
+        run: uv run scripts/audit_visual_proofs.py

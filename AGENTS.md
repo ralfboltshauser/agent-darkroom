@@ -333,6 +333,9 @@ CI failures the user shouldn't have to surface manually:
 - Platform-specific file paths or line endings
 - Missing dev dependencies the local venv had cached
 - Pre-commit hook fixes that didn't propagate (ruff format, end-of-file-fixer)
+- Visual-proof regressions (the `Audit visual-proof renders` CI step runs
+  `scripts/audit_visual_proofs.py` and fails on direction-of-effect
+  contradictions; run locally before pushing if you touched dtstyle bytes)
 
 Treat CI as a hard prerequisite, not a follow-up. If you've pushed and walked away, CI may be red and you don't know.
 
