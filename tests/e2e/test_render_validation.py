@@ -25,9 +25,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from chemigram.core.pipeline import render
 from chemigram.core.vocab import VocabularyIndex
-from chemigram.core.xmp import Xmp, synthesize_xmp, write_xmp
+from chemigram.core.xmp import Xmp, write_xmp
 
 
 def _render(
@@ -257,6 +259,24 @@ def test_expo_plus_minus_approximately_cancels(
     )
 
 
+@pytest.mark.skip(
+    reason=(
+        "Test assertion was tuned for the pre-RFC-039 wb_warm_subtle which "
+        "inlined explicit raw-domain coefficients. Post-RFC-039 / #137, the "
+        "entry composes wb_kelvin_delta with kelvin_delta=+500 anchored on "
+        "the raw's daylight WB — the warm shift is now RELATIVE to the "
+        "camera's daylight, not absolute. The baseline (no temperature op) "
+        "renders against darktable's auto-WB (camera_whitebalance, often "
+        "the as-shot WB), while the warmed version renders against daylight "
+        "WB * 1.05 — direction-of-effect comparison between these two WB "
+        "anchors isn't stable across scene lighting. Direction-of-effect "
+        "for the composed wb_warm_subtle path is now verified by "
+        "tests/integration/core/test_cross_camera_wb.py (#142) which "
+        "checks the op_params bytes across 3 camera bodies, and by the "
+        "byte-level kelvin_delta scaling tests in "
+        "tests/unit/core/parameterize/test_temperature.py."
+    )
+)
 def test_wb_warm_subtle_warms_image(
     test_raw: Path,
     configdir: Path,
@@ -267,14 +287,17 @@ def test_wb_warm_subtle_warms_image(
     pixel_stats,
 ) -> None:
     """Applying ``wb_warm_subtle`` shifts the image toward warm tones —
-    measurable as an increase in (R+G)/(2*B).
+    measurable as an increase in (R+G)/(2*B). See skip reason above for
+    why this is no longer a sound test post-RFC-039.
     """
+    from chemigram.core.helpers import apply_entry
+
     base = _render(
         test_raw, baseline_xmp, configdir, tmp_path, name="base", binary=darktable_binary
     )
     entry = starter_vocab.lookup_by_name("wb_warm_subtle")
     assert entry is not None
-    warmed = synthesize_xmp(baseline_xmp, [entry.dtstyle])
+    warmed = apply_entry(baseline_xmp, entry, vocab=starter_vocab, raw_path=test_raw)
     warmed_jpg = _render(
         test_raw, warmed, configdir, tmp_path, name="warmed", binary=darktable_binary
     )
@@ -282,9 +305,6 @@ def test_wb_warm_subtle_warms_image(
     base_warmth = pixel_stats.warmth_ratio(base)
     warmed_warmth = pixel_stats.warmth_ratio(warmed_jpg)
 
-    # Warmth shift on a typical scene is a fraction-of-a-unit change in
-    # the ratio.  We demand a clearly-positive delta but stay tolerant
-    # of scene-specific magnitude.
     assert warmed_warmth > base_warmth, (
         f"wb_warm_subtle should warm the image, got base={base_warmth:.4f}, "
         f"warmed={warmed_warmth:.4f}"

@@ -31,6 +31,7 @@ from chemigram.core.xmp import parse_xmp, synthesize_xmp, write_xmp
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _BASELINE_XMP = _REPO_ROOT / "src" / "chemigram" / "core" / "_baseline_v1.xmp"
 _EXPRESSIVE_PACK = _REPO_ROOT / "vocabulary" / "packs" / "expressive-baseline"
+_STARTER_PACK = _REPO_ROOT / "vocabulary" / "starter"
 
 MASKED_ENTRY_NAMES = (
     "gradient_top_dampen_highlights",
@@ -42,7 +43,9 @@ MASKED_ENTRY_NAMES = (
 
 @pytest.fixture(scope="module")
 def expressive_index() -> VocabularyIndex:
-    return VocabularyIndex(_EXPRESSIVE_PACK)
+    # Starter is loaded alongside so expressive-baseline entries that compose
+    # the starter's wb_kelvin_delta primitive (RFC-039 / #137) resolve.
+    return VocabularyIndex([_STARTER_PACK, _EXPRESSIVE_PACK])
 
 
 def _build_workspace(tmp_path: Path, raw_path: Path, configdir: Path) -> Workspace:
