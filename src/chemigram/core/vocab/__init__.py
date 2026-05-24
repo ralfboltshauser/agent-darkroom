@@ -217,6 +217,17 @@ class VocabEntry:
     # Depth-1 only — L2 looks compose L3 primitives, never other L2
     # looks. Tuple from day one (always a tuple, never a single ref).
     composes: tuple[CompositionRef, ...] | None = None
+    # requires_content: scene content the entry's effect needs in order
+    # to read meaningfully. Used by the visual-proof generator to route
+    # content-dependent entries to a real-raw fixture in addition to
+    # the synthetic chart — closes #138 (content-aware fixture routing).
+    # Today's tags: "sky" / "water" / "foliage" / "landscape" / "food"
+    # route to the landscape fixture; "skin" routes to portrait. The
+    # discriminator (chemigram.core.visual_verification) is module-
+    # concerned; this field is the content-concern layered on top.
+    # Empty tuple means the entry's effect doesn't depend on specific
+    # scene content beyond what the chart already carries.
+    requires_content: tuple[str, ...] = ()
 
 
 class VocabularyIndex:
@@ -511,6 +522,7 @@ class VocabularyIndex:
         applies_to = self._extract_applies_to(raw, layer, manifest_path)
         parameters = self._extract_parameters(raw, manifest_path)
         composes = self._extract_composes(raw, manifest_path)
+        requires_content = self._extract_requires_content(raw, manifest_path)
 
         return VocabEntry(
             name=str(raw["name"]),
@@ -530,7 +542,50 @@ class VocabularyIndex:
             mask_spec=raw.get("mask_spec"),
             parameters=parameters,
             composes=composes,
+            requires_content=requires_content,
         )
+
+    # Supported content tags per #138. Adding a new tag here requires
+    # also extending the visual-proof generator's routing.
+    _SUPPORTED_CONTENT_TAGS: tuple[str, ...] = (
+        "sky",
+        "water",
+        "foliage",
+        "landscape",
+        "food",
+        "skin",
+    )
+
+    def _extract_requires_content(
+        self, raw: dict[str, Any], manifest_path: Path
+    ) -> tuple[str, ...]:
+        """Parse the optional ``requires_content`` array on a manifest
+        entry (#138). Returns the tags as a tuple, or ``()`` if absent.
+
+        Validates that each tag is in :data:`_SUPPORTED_CONTENT_TAGS`
+        — fails loud on typos / unsupported tags at load time.
+        """
+        rc_raw = raw.get("requires_content")
+        if rc_raw is None:
+            return ()
+        if not isinstance(rc_raw, list):
+            raise ManifestError(
+                f"{manifest_path}: entry {raw['name']!r} 'requires_content' must be a list"
+            )
+        out: list[str] = []
+        for idx, tag in enumerate(rc_raw):
+            if not isinstance(tag, str):
+                raise ManifestError(
+                    f"{manifest_path}: entry {raw['name']!r} requires_content[{idx}] "
+                    f"must be a string, got {type(tag).__name__}"
+                )
+            if tag not in self._SUPPORTED_CONTENT_TAGS:
+                raise ManifestError(
+                    f"{manifest_path}: entry {raw['name']!r} requires_content[{idx}] "
+                    f"unknown tag {tag!r}; supported: {sorted(self._SUPPORTED_CONTENT_TAGS)}"
+                )
+            out.append(tag)
+        return tuple(out)
 
     def _validate_shape(self, raw: Any, manifest_path: Path) -> None:
         if not isinstance(raw, dict):

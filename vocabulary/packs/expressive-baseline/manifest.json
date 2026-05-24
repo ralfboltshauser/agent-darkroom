@@ -246,7 +246,10 @@
       },
       "darktable_version": "5.4",
       "source": "expressive-baseline",
-      "license": "MIT"
+      "license": "MIT",
+      "requires_content": [
+        "sky"
+      ]
     },
     {
       "name": "bw_foliage",
@@ -269,7 +272,10 @@
       },
       "darktable_version": "5.4",
       "source": "expressive-baseline",
-      "license": "MIT"
+      "license": "MIT",
+      "requires_content": [
+        "foliage"
+      ]
     },
     {
       "name": "toneequalizer",
@@ -3376,7 +3382,10 @@
           "max": 0.7,
           "feather": 0.05
         }
-      }
+      },
+      "requires_content": [
+        "sky"
+      ]
     },
     {
       "name": "look_horizon_warm_glow",
@@ -3958,7 +3967,10 @@
       },
       "darktable_version": "5.4",
       "source": "expressive-baseline",
-      "license": "MIT"
+      "license": "MIT",
+      "requires_content": [
+        "landscape"
+      ]
     },
     {
       "name": "look_landscape_intimate_quiet",
@@ -3985,7 +3997,10 @@
       },
       "darktable_version": "5.4",
       "source": "expressive-baseline",
-      "license": "MIT"
+      "license": "MIT",
+      "requires_content": [
+        "landscape"
+      ]
     },
     {
       "name": "look_landscape_golden_hour",
@@ -4163,7 +4178,10 @@
       "mask_spec": {
         "kind": "named",
         "name": "mask_sky"
-      }
+      },
+      "requires_content": [
+        "sky"
+      ]
     },
     {
       "name": "look_landscape_water_silk",
@@ -4192,7 +4210,10 @@
       "mask_spec": {
         "kind": "named",
         "name": "mask_water_blue_cyan"
-      }
+      },
+      "requires_content": [
+        "water"
+      ]
     },
     {
       "name": "bw_convert",
@@ -4681,7 +4702,10 @@
       },
       "darktable_version": "5.4",
       "source": "expressive-baseline",
-      "license": "MIT"
+      "license": "MIT",
+      "requires_content": [
+        "food"
+      ]
     },
     {
       "name": "look_food_green_natural",
@@ -4703,7 +4727,10 @@
       },
       "darktable_version": "5.4",
       "source": "expressive-baseline",
-      "license": "MIT"
+      "license": "MIT",
+      "requires_content": [
+        "food"
+      ]
     },
     {
       "name": "look_food_texture_subtle",
@@ -4730,7 +4757,10 @@
       "mask_spec": {
         "kind": "named",
         "name": "mask_subject"
-      }
+      },
+      "requires_content": [
+        "food"
+      ]
     },
     {
       "name": "look_product_packshot_clean",

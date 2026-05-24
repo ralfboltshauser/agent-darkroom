@@ -679,6 +679,13 @@ def _render_entry(entry, vocab, baseline, configdir, rendered: dict) -> None:
     _render_masked_variant(entry, baseline, entry_dir, configdir, rendered, baseline_paths)
     _render_clipped_fixture(entry, baseline, entry_dir, configdir, rendered, vocab)
     _render_parameter_sweep(entry, baseline, entry_dir, configdir, rendered, baseline_paths)
+    # Content-aware extra render (#138 / RFC-039 follow-up): chart-
+    # verifiable entries whose effect targets specific scene content
+    # (sky / water / foliage / skin / etc.) also render against the
+    # matching real-raw fixture. The chart-rendered row shows the
+    # module-level signal; the real-raw row shows the photographic
+    # effect on actual content.
+    _render_content_fixture(entry, entry_dir, configdir, rendered, vocab)
 
 
 def _render_parameter_sweep(
@@ -812,6 +819,81 @@ def _render_clipped_fixture(
         rendered[entry.name]["clipped_masked"] = out
         rendered[entry.name]["clipped_masked_diff"] = _mean_pixel_diff(out, baseline_clipped)
     masked_xmp_path.unlink(missing_ok=True)
+
+
+# Content-tag → real-raw fixture routing (#138). All landscape-shape
+# content tags route to LANDSCAPE_TARGET; "skin" routes to PORTRAIT_TARGET.
+_CONTENT_TAG_TO_FIXTURE: dict[str, RenderTarget] = {}
+
+
+def _content_tag_to_fixture(tag: str) -> RenderTarget | None:
+    """Map a requires_content tag to the real-raw fixture that carries
+    matching scene content. None if the tag isn't routable today."""
+    if not _CONTENT_TAG_TO_FIXTURE:
+        # Lazy-init: RenderTarget refs need to be defined before this dict
+        # populates. Both target globals are defined module-level above.
+        _CONTENT_TAG_TO_FIXTURE.update(
+            {
+                "sky": LANDSCAPE_TARGET,
+                "water": LANDSCAPE_TARGET,
+                "foliage": LANDSCAPE_TARGET,
+                "landscape": LANDSCAPE_TARGET,
+                "food": LANDSCAPE_TARGET,
+                "skin": PORTRAIT_TARGET,
+            }
+        )
+    return _CONTENT_TAG_TO_FIXTURE.get(tag)
+
+
+def _render_content_fixture(entry, entry_dir: Path, configdir: Path, rendered: dict, vocab) -> None:
+    """For chart-verifiable entries with ``requires_content`` tags
+    (#138 / RFC-039 follow-up), render an extra row against the
+    matching real-raw fixture. The chart-rendered output above shows
+    the module-level effect; this row shows the photographic payoff
+    on actual content (sky / water / foliage / skin / etc.).
+
+    Routing uses :func:`_content_tag_to_fixture` — multi-tag entries
+    use the FIRST tag's fixture (in practice every entry's tags route
+    to the same fixture, so this is unambiguous today).
+
+    Skipped when:
+    - entry has no ``requires_content`` tags
+    - the routed fixture doesn't exist on disk (LFS not pulled)
+    - the entry is already in real_raw / not_yet_portable mode (it
+      doesn't render against the chart; the content fixture is its
+      ONLY render, handled elsewhere)
+    """
+    if not entry.requires_content:
+        return
+    if entry.name in _SKIP_VISUAL_PROOF_ENTRIES:
+        # Already routed to real-raw via the discriminator; no extra row needed.
+        return
+    target: RenderTarget | None = None
+    for tag in entry.requires_content:
+        target = _content_tag_to_fixture(tag)
+        if target is not None:
+            break
+    if target is None or not target.path.exists():
+        return
+
+    # Use the FULL baseline (raw_baseline shape — _baseline_v1.xmp with full
+    # history) for real-raw renders. Chart-verifiable entries normally
+    # render against empty-history baseline; for content rendering we
+    # want the full pipeline so the raw renders correctly.
+    raw_baseline = parse_xmp(_BASELINE_TEMPLATE_XMP)
+    try:
+        applied_xmp = _synthesize_for_entry(raw_baseline, entry, vocab, raw_path=target.path)
+    except Exception as exc:
+        print(f"  ✗ content-fixture synthesize failed: {exc}", file=sys.stderr)
+        return
+    xmp_path = entry_dir / f"_{entry.name}_content.xmp"
+    write_xmp(applied_xmp, xmp_path)
+    slug = f"content_{target.slug}"
+    out = entry_dir / f"{entry.name}-{slug}.jpg"
+    if _render_one(target.path, xmp_path, out, configdir):
+        rendered[entry.name][slug] = out
+        rendered[entry.name][f"{slug}_fixture"] = target.slug
+    xmp_path.unlink(missing_ok=True)
 
 
 def _render_masked_variant(
@@ -1083,6 +1165,27 @@ def _render_entry_md(entry, rendered: dict[str, dict[str, Path]]) -> list[str]: 
                 f"| {_img_md(clipped, f'{entry.name} clipped-gradient global')} "
                 f"| {_img_md(clipped_masked, f'{entry.name} clipped-gradient masked')} |"
             )
+
+    # Extra row: content-fixture render for entries with requires_content
+    # tags (#138). The content fixture is the real-raw landscape or
+    # portrait raw — the chart-rendered above shows the module-level
+    # signal; this row shows the photographic payoff on actual content.
+    for slug_key in ("content_landscape", "content_portrait"):
+        content_path = outs.get(slug_key)
+        if content_path in (None, "skipped"):
+            continue
+        fixture_name = "Landscape raw" if "landscape" in slug_key else "Portrait raw"
+        out.append("")
+        out.append(
+            f"**On the {fixture_name.lower()} fixture** (real-raw content "
+            f"matching this entry's `requires_content` tags; the chart's "
+            "module-level signal is honest, but the content-level payoff "
+            "shows here):"
+        )
+        out.append("")
+        out.append(f"| {fixture_name} |")
+        out.append("|-|")
+        out.append(f"| {_img_md(content_path, f'{entry.name} content {fixture_name}')} |")
 
     # Parameter sweep rows (RFC-021/RFC-022): for parameterized entries,
     # show the entry rendered at multiple parameter values side-by-side.
@@ -1535,7 +1638,9 @@ def _reconstruct_rendered_from_disk() -> dict[str, dict[str, Path]]:  # noqa: C9
 
             rendered.setdefault(entry_name, {})[slug] = jpg
             # Mark real-raw routing so the markdown emit uses the
-            # real-raw block instead of the chart block.
+            # real-raw block instead of the chart block. Exclude the
+            # content_* slugs — those are #138 content-fixture extras
+            # rendered alongside the chart, not in place of it.
             if slug in ("landscape", "portrait"):
                 rendered[entry_name]["__real_raw_only"] = True
                 rendered[entry_name]["__real_raw_fixture"] = slug

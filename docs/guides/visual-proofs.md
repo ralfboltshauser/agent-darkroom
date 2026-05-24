@@ -171,6 +171,12 @@ _B&W with sky-drama mix (red-emphasis: R 0.5 / G 0.4 / B 0.1). Lightens reds and
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/bw_sky_drama-colorchecker.jpg" alt="bw_sky_drama ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_sky_drama-grayscale.jpg" alt="bw_sky_drama grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_sky_drama-colorchecker-masked.jpg" alt="bw_sky_drama ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_sky_drama-grayscale-masked.jpg" alt="bw_sky_drama grayscale masked" width="180"> |
 
+**On the landscape raw fixture** (real-raw content matching this entry's `requires_content` tags; the chart's module-level signal is honest, but the content-level payoff shows here):
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/bw_sky_drama-content_landscape.jpg" alt="bw_sky_drama content Landscape raw" width="180"> |
+
 ### `bw_foliage`
 
 _B&W with foliage mix (green-emphasis: R 0.1 / G 0.7 / B 0.2). Lightens greens — separates foliage from neighboring tones; useful for forest / botanical work where green is the dominant subject. normalize_grey=true._
@@ -178,6 +184,12 @@ _B&W with foliage mix (green-emphasis: R 0.1 / G 0.7 / B 0.2). Lightens greens �
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/bw_foliage-colorchecker.jpg" alt="bw_foliage ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_foliage-grayscale.jpg" alt="bw_foliage grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_foliage-colorchecker-masked.jpg" alt="bw_foliage ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_foliage-grayscale-masked.jpg" alt="bw_foliage grayscale masked" width="180"> |
+
+**On the landscape raw fixture** (real-raw content matching this entry's `requires_content` tags; the chart's module-level signal is honest, but the content-level payoff shows here):
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/bw_foliage-content_landscape.jpg" alt="bw_foliage content Landscape raw" width="180"> |
 
 ### `toneequalizer`
 
@@ -621,6 +633,12 @@ _L2 look — deepen sky blues in the upper half. Drawn gradient (top half) + col
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_sky_blue_deepen-colorchecker.jpg" alt="look_sky_blue_deepen ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_sky_blue_deepen-grayscale.jpg" alt="look_sky_blue_deepen grayscale" width="180"> |
 
+**On the landscape raw fixture** (real-raw content matching this entry's `requires_content` tags; the chart's module-level signal is honest, but the content-level payoff shows here):
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_sky_blue_deepen-content_landscape.jpg" alt="look_sky_blue_deepen content Landscape raw" width="180"> |
+
 ### `look_horizon_warm_glow` 🟦 mask-bound
 
 _L2 look — lift warm tones near the horizon. Horizontal gradient anchored at midline + color_h filter on warm tones (orange/red). Sunset / golden-hour enhancement without affecting cool tones._
@@ -685,6 +703,12 @@ _Heaton/PureRAW-style grand vista. Sigmoid contrast 1.4, mildly warm shadows (hu
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/look_landscape_grand_vista-colorchecker.jpg" alt="look_landscape_grand_vista ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_grand_vista-grayscale.jpg" alt="look_landscape_grand_vista grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_grand_vista-colorchecker-masked.jpg" alt="look_landscape_grand_vista ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_grand_vista-grayscale-masked.jpg" alt="look_landscape_grand_vista grayscale masked" width="180"> |
 
+**On the landscape raw fixture** (real-raw content matching this entry's `requires_content` tags; the chart's module-level signal is honest, but the content-level payoff shows here):
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_landscape_grand_vista-content_landscape.jpg" alt="look_landscape_grand_vista content Landscape raw" width="180"> |
+
 ### `look_landscape_intimate_quiet`
 
 _Marino-style intimate / small-scene restraint. Very gentle sigmoid contrast (1.05), saturation pulled back (-0.10), bilat softened (clarity_strength -0.3 — opposite of clarity boost). The defining stylistic choice for forest interiors, abstract details, and any scene where drama would betray the subject. Applies LESS than the baseline does, deliberately._
@@ -692,6 +716,12 @@ _Marino-style intimate / small-scene restraint. Very gentle sigmoid contrast (1.
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/look_landscape_intimate_quiet-colorchecker.jpg" alt="look_landscape_intimate_quiet ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_intimate_quiet-grayscale.jpg" alt="look_landscape_intimate_quiet grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_intimate_quiet-colorchecker-masked.jpg" alt="look_landscape_intimate_quiet ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_intimate_quiet-grayscale-masked.jpg" alt="look_landscape_intimate_quiet grayscale masked" width="180"> |
+
+**On the landscape raw fixture** (real-raw content matching this entry's `requires_content` tags; the chart's module-level signal is honest, but the content-level payoff shows here):
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_landscape_intimate_quiet-content_landscape.jpg" alt="look_landscape_intimate_quiet content Landscape raw" width="180"> |
 
 ### `look_landscape_dramatic_moody`
 
@@ -709,6 +739,12 @@ _Sky-targeted enhancement (Heaton 'adaptive sky' shape). Cool-tone highlights sh
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_landscape_sky_enhance-colorchecker.jpg" alt="look_landscape_sky_enhance ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_sky_enhance-grayscale.jpg" alt="look_landscape_sky_enhance grayscale" width="180"> |
 
+**On the landscape raw fixture** (real-raw content matching this entry's `requires_content` tags; the chart's module-level signal is honest, but the content-level payoff shows here):
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_landscape_sky_enhance-content_landscape.jpg" alt="look_landscape_sky_enhance content Landscape raw" width="180"> |
+
 ### `look_landscape_water_silk` 🟦 mask-bound
 
 _Water surfaces — silky water in long-exposure work, glassy lakes. Bilat clarity_strength -0.4 (smooths the texture, OPPOSITE of clarity), cool-tone shadows (hue 200, sat 0.10), vibrance +0.05. Pre-baked with mask_water_blue_cyan so the smoothing scopes to water without affecting rocks, foliage, or sky. Reduces clarity selectively to enhance the smoothness photographers spent shutter-time creating._
@@ -716,6 +752,12 @@ _Water surfaces — silky water in long-exposure work, glassy lakes. Bilat clari
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_landscape_water_silk-colorchecker.jpg" alt="look_landscape_water_silk ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_water_silk-grayscale.jpg" alt="look_landscape_water_silk grayscale" width="180"> |
+
+**On the landscape raw fixture** (real-raw content matching this entry's `requires_content` tags; the chart's module-level signal is honest, but the content-level payoff shows here):
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_landscape_water_silk-content_landscape.jpg" alt="look_landscape_water_silk content Landscape raw" width="180"> |
 
 ### `look_wildlife_subject_sharpen` 🟦 mask-bound
 
@@ -748,6 +790,12 @@ _Subtle texture lift for food — bread crust, pastry layers, meat fibers, fruit
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_food_texture_subtle-colorchecker.jpg" alt="look_food_texture_subtle ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_food_texture_subtle-grayscale.jpg" alt="look_food_texture_subtle grayscale" width="180"> |
+
+**On the landscape raw fixture** (real-raw content matching this entry's `requires_content` tags; the chart's module-level signal is honest, but the content-level payoff shows here):
+
+| Landscape raw |
+|-|
+| <img src="../visual-proofs/expressive-baseline/look_food_texture_subtle-content_landscape.jpg" alt="look_food_texture_subtle content Landscape raw" width="180"> |
 
 ### `look_product_packshot_clean`
 
