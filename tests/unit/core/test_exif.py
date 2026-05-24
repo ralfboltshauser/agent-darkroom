@@ -161,6 +161,10 @@ def test_read_camera_daylight_wb_landscape_fixture() -> None:
     if not raw_path.exists():
         pytest.skip("landscape fixture not available (git lfs pull?)")
 
+    from tests._lfs import skip_if_lfs_pointer
+
+    skip_if_lfs_pointer(raw_path)
+
     r, g, b = read_camera_daylight_wb(raw_path)
     assert g == pytest.approx(1.0, abs=1e-9), "must be normalized to G=1"
     assert 1.5 < r < 3.5, f"R coefficient out of plausible range: {r}"
@@ -234,6 +238,10 @@ def test_read_camera_iso_landscape_fixture() -> None:
     raw_path = Path(__file__).resolve().parents[3] / "tests/fixtures/raws/landscape.ARW"
     if not raw_path.exists():
         pytest.skip("landscape fixture not available (git lfs pull?)")
+
+    from tests._lfs import skip_if_lfs_pointer
+
+    skip_if_lfs_pointer(raw_path)
     iso = read_camera_iso(raw_path)
     assert isinstance(iso, int) and iso > 0
 

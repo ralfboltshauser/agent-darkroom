@@ -248,6 +248,10 @@ def test_patch_with_landscape_fixture_real_histogram() -> None:
     raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
     if not raw_path.exists():
         pytest.skip("landscape fixture not available (git lfs pull?)")
+
+    from tests._lfs import skip_if_lfs_pointer
+
+    skip_if_lfs_pointer(raw_path)
     import struct as _struct
 
     fields = [0.0] * 18 + [0] * 11

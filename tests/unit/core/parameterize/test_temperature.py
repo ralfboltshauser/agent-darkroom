@@ -302,6 +302,10 @@ def test_patch_with_raw_path_returns_none_at_strict_identity() -> None:
     raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
     if not raw_path.exists():
         pytest.skip("landscape fixture not available (git lfs pull?)")
+
+    from tests._lfs import skip_if_lfs_pointer
+
+    skip_if_lfs_pointer(raw_path)
     src = "0000803f0000803f0000803f0000807f02000000"  # (1.0, 1.0, 1.0)
     assert patch(src, raw_path=raw_path) is None
     # Also when kelvin/tint are explicitly 0
@@ -315,6 +319,10 @@ def test_patch_with_raw_path_and_kelvin_delta_shifts_relative_to_camera() -> Non
     raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
     if not raw_path.exists():
         pytest.skip("landscape fixture not available (git lfs pull?)")
+
+    from tests._lfs import skip_if_lfs_pointer
+
+    skip_if_lfs_pointer(raw_path)
     src = "0000803f0000803f0000803f0000807f02000000"  # source ignored due to raw_path
     out = patch(src, kelvin_delta=1500.0, raw_path=raw_path)
     fields = decode(out)
@@ -331,6 +339,10 @@ def test_patch_with_raw_path_explicit_coefficient_overrides_wins() -> None:
     raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
     if not raw_path.exists():
         pytest.skip("landscape fixture not available (git lfs pull?)")
+
+    from tests._lfs import skip_if_lfs_pointer
+
+    skip_if_lfs_pointer(raw_path)
     src = "0000803f0000803f0000803f0000807f02000000"
     out = patch(src, red_coeff=2.5, raw_path=raw_path)
     fields = decode(out)

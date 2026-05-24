@@ -200,6 +200,10 @@ def test_patch_with_raw_path_populates_camera_lens_from_exif() -> None:
     raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
     if not raw_path.exists():
         pytest.skip("landscape fixture not available (git lfs pull?)")
+
+    from tests._lfs import skip_if_lfs_pointer
+
+    skip_if_lfs_pointer(raw_path)
     from chemigram.core.parameterize.lens import (
         _CAMERA_FIELD_INDEX,
         _FOCAL_FIELD_INDEX,
@@ -266,6 +270,10 @@ def test_patch_preserves_existing_camera_string(tmp_path: Path) -> None:
     raw_path = Path(__file__).resolve().parents[4] / "tests/fixtures/raws/landscape.ARW"
     if not raw_path.exists():
         pytest.skip("landscape fixture not available")
+
+    from tests._lfs import skip_if_lfs_pointer
+
+    skip_if_lfs_pointer(raw_path)
     out = patch(src, raw_path=raw_path)
     out_fields = decode(out)
     assert out_fields[_CAMERA_FIELD_INDEX].rstrip(b"\x00") == b"Canon EOS R5"

@@ -851,6 +851,10 @@ def test_apply_entry_composes_resolves_camera_aware_temperature(tmp_path: Path) 
     raw_path = TEST_PACK_ROOT.parents[3] / "tests/fixtures/raws/landscape.ARW"
     if not raw_path.exists():
         pytest.skip("landscape fixture not available (git lfs pull?)")
+
+    from tests._lfs import skip_if_lfs_pointer
+
+    skip_if_lfs_pointer(raw_path)
     baseline_xmp = TEST_PACK_ROOT.parents[3] / "src/chemigram/core/_baseline_v1.xmp"
 
     vocab = load_packs(["starter", "expressive-baseline"])
