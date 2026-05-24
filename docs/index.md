@@ -13,7 +13,7 @@
 
 A craft-research project. The agent reads your taste, you describe intent, the agent edits via a vocabulary of named moves on top of darktable. Sessions accumulate; the project gets richer over time.
 
-**v1.10.0 shipped May 2026; v1.11.0 in flight.** Phase 1 closed at v1.0.0; v1.6–v1.8 closed Lightroom daily-use parity (51/52, 98%); v1.9.0 closed the mask + retouch architecture trilogy (RFC-024/025/026/029 + ADR-084..087); v1.10.0 added photographer-workflow vocabulary (29 new L2 looks across 6 genres + bw_convert v2) plus three workflow primitives (RFC-035/036/037 + ADR-088/089/090). **v1.11.0** (in flight) closes RFC-039 → ADR-091/092/093 + sibling ADR-094/095/096 — raw-derived parameters in L2 composition (camera-aware WB / denoise / filmic / lens). The vocabulary now ports across camera bodies via per-raw EXIF substitution. Visual-proofs gallery trust gap closed (#129/#130/#138/#139); formal audit wired to CI (#141, 114 ok / 0 warn / 0 fail); cross-camera verification fixtures from 4 manufacturers (#142). Phase 2 (use-driven vocabulary maturation) in progress; **114 vocabulary entries** shipped (3 starter + 111 expressive-baseline).
+**Status.** Phase 1 closed at v1.0.0; v1.10.0 shipped May 2026; **v1.11.0 in flight**. The vocabulary now ports across camera bodies (raw-aware WB / denoise / filmic / lens via per-raw EXIF substitution — RFC-039). Phase 2 (use-driven vocabulary maturation) in progress. **114 vocabulary entries** (3 starter + 111 expressive-baseline); 2200+ tests; real-darktable e2e suite. Full release history: [`CHANGELOG.md`](https://github.com/chipi/chemigram/blob/main/CHANGELOG.md).
 
 ---
 
@@ -67,7 +67,7 @@ flowchart LR
         CC[Claude Code / Desktop /<br/>Cursor / Continue / ...]
     end
     subgraph ADAPTERS["adapters"]
-        MCP[chemigram-mcp<br/>27 tools]
+        MCP[chemigram-mcp<br/>28 tools]
         CLI[chemigram CLI<br/>28 verbs]
     end
     subgraph CORE["chemigram.core"]
@@ -94,7 +94,7 @@ Four engine subsystems plus two adapter layers:
 2. **Versioning** — content-addressed DAG of XMP snapshots. Branches, tags, the works.
 3. **Masking** — drawn-form geometry (gradient/ellipse/rectangle/path) encoded into darktable's XMP `masks_history`; parametric range filters (luminance + HSL color) via blendif bytes; LLM-vision-as-provider for content-derived masks (RFC-026 / ADR-086) using the chat-client's vision capability; spot heal/clone via the `apply_spot` MCP tool (RFC-025 / ADR-087). Per ADR-076 (v1.5.0) the PNG-based masker was retired; content-aware masking is now layered: byte-level for darktable-native cases, LLM-vision for coarse subject identification, deployed sibling providers (RFC-030 deferred) for the precision tier.
 4. **Context** — multi-scope tastes (`_default.md` + genre files), per-image `brief.md` and `notes.md`, JSONL session transcripts, vocabulary gaps.
-5. **MCP server** — 27 tools that adapt the engine for any MCP-capable client (Claude Code, Cursor, Continue, Cline, Zed, Claude Desktop, …).
+5. **MCP server** — 28 tools that adapt the engine for any MCP-capable client (Claude Code, Cursor, Continue, Cline, Zed, Claude Desktop, …).
 6. **CLI** (v1.3.0+) — `chemigram` binary, mirroring the MCP tool surface verb-for-verb. Subprocess-callable for batch processing, custom agent loops, and CI scripts.
 
 ## Two planes of control
@@ -121,7 +121,7 @@ Not "the agent edits well." Something deeper.
 A photographer who's used Chemigram for six months has:
 
 - Taste files that articulate their photographic intent in a structured, evolving way — readable by them, by the agent, by another photographer trying to understand their work
-- A vocabulary of 100–200 named moves capturing how they actually edit, encoded as portable `.dtstyle` files
+- A personal vocabulary capturing how they actually edit, encoded as portable `.dtstyle` files; what size that vocabulary reaches is up to the photographer's work, not a target
 - Hundreds of session transcripts showing how their taste developed in negotiation with the agent
 - Per-image notes carrying forward subject identifications, lighting decisions, branch explorations
 - Sessions that take 12 turns instead of 25 because context compounds

@@ -14,29 +14,16 @@ your taste, you describe intent, the agent edits via a vocabulary of
 named moves on top of darktable. Sessions accumulate; the project gets
 richer over time.
 
-**Status:** v1.10.0 shipped May 2026 — Phase 1 closed at v1.0.0
-(minimum viable loop), Phase 2 in progress (use-driven vocabulary
-maturation). v1.6–v1.8 closed Lightroom daily-use parity (51/52, 98%);
-v1.10.0 added the **photographer-workflows survey** vocabulary
-expansion (29 new L2 looks across 6 genres + colorequal-based
-bw_convert v2) plus three workflow primitives: parametric L2
-strength (RFC-035 / ADR-088), mixed-op `apply_per_region`
-(RFC-036 / ADR-089), and `propagate_state` (RFC-037 / ADR-090,
-the Lightroom-Sync analog). v1.9.0 closed the **mask + retouch
-architecture trilogy**: spatial masks (RFC-029 / ADR-084),
-parametric range filters (RFC-024 / ADR-085), LLM-vision
-content-derived masks (RFC-026 / ADR-086), spot heal/clone
-(RFC-025 / ADR-087). v1.10.0 shipped 6-genre photographer-workflow
-expansion (RFC-035/036/037 → ADR-088/089/090). v1.11.0 (in flight)
-ships RFC-039 → ADR-091/092/093 — raw-derived parameters in L2
-composition (camera-aware WB / denoise / filmic / lens), cross-camera
-verification fixtures (#142), formalized visual-proof audit (#141),
-and cross-pack composition stress coverage (#145). 2200+ tests,
-real-darktable e2e suite, **114 vocabulary entries** (3 starter + 111
-expressive-baseline). Not a
-Lightroom replacement. Not a digital asset manager. A probe into
-where photographic taste lives and how it transmits through
-language and feedback.
+**Status:** Phase 1 closed at v1.0.0 (minimum viable loop). v1.10.0
+shipped May 2026; **v1.11.0 in flight** — RFC-039 makes the vocabulary
+port across camera bodies (raw-aware WB / denoise / filmic / lens via
+per-raw EXIF substitution). **114 vocabulary entries** (3 starter +
+111 expressive-baseline); 2200+ tests; real-darktable e2e suite; full
+release history in [`CHANGELOG.md`](CHANGELOG.md).
+
+Not a Lightroom replacement. Not a digital asset manager. A probe into
+where photographic taste lives and how it transmits through language
+and feedback.
 
 ## What this is
 
@@ -46,9 +33,11 @@ darktable headlessly through composable vocabulary primitives, manages
 masks and snapshots, and learns across sessions. Two modes:
 
 - **Mode A (the journey)** — collaborative editing where you and the
-  agent work through one photo together, conversationally.
+  agent work through one photo together, conversationally. Ships
+  today.
 - **Mode B (autonomous fine-tuning)** — agent runs alone, branching to
   explore variants, self-evaluating against criteria you provide.
+  Drafted (RFC-038); not yet shipped.
 
 ## Built on darktable
 
@@ -70,7 +59,7 @@ discipline that wraps darktable into something an LLM can drive with
 intent. Strip chemigram away and darktable still produces the same
 beautiful renders; strip darktable away and chemigram is a pile of
 JSON. The architectural commitment is explicit and load-bearing — see
-[CLAUDE.md § "darktable does the photography, Chemigram does the loop"](CLAUDE.md).
+[AGENTS.md § "darktable does the photography, Chemigram does the loop"](AGENTS.md).
 
 If you're new to darktable: **try it**. It's free, it's MIT-spirited
 (GPLv3), it runs natively on macOS / Linux / Windows, and the
@@ -113,8 +102,10 @@ your attention.
 | 1.6 | Parameterized vocabulary (Path C as default) | ✅ Closed (v1.6.0) — RFC-021 / ADR-077..080. 18 parameterized entries across 11 modules. |
 | 1.7 | Tier 2 expansion + Lightroom-parity Bucket A | ✅ Closed (v1.7.0) — RFC-022 / ADR-081 tiering policy; A.1–A.7 buckets shipped. |
 | 1.8 | HSL via colorequal + denoise + lens + filmic v6 | ✅ Closed (v1.8.0) — RFC-023 / ADR-083; #95–#97 visual proofs verified. Lightroom daily-use parity 51/52 (98%). |
-| 1.9 | Mask + retouch architecture trilogy | ✅ Closed (v1.9.0) — RFC-024 / ADR-085 (parametric range), RFC-025 / ADR-087 (spot heal/clone), RFC-026 / ADR-086 (LLM-vision masks), RFC-029 / ADR-084 (compositional masks). RFC-030 deferred (deployed sibling-provider precision tier). |
-| 2 | Vocabulary maturation — grow vocab from session evidence | In progress (use-driven; intermittent). 83 entries shipped. |
+| 1.9 | Mask + retouch architecture trilogy | ✅ Closed (v1.9.0) — RFC-024/025/026/029 → ADR-084..087. RFC-030 deferred (deployed sibling-provider precision tier). |
+| 1.10 | Photographer-workflow vocabulary expansion + workflow primitives | ✅ Closed (v1.10.0) — RFC-035/036/037 → ADR-088/089/090. 29 new L2 looks across 6 genres + bw_convert v2. |
+| 1.11 | Raw-derived parameters in L2 composition + visual-proof trust closure | In flight (v1.11.0) — RFC-039 → ADR-091/092/093 + sibling ADR-094/095/096. Camera-aware WB / denoise / filmic / lens; cross-camera verification (#142); formal audit (#141). |
+| 2 | Vocabulary maturation — grow vocab from session evidence | In progress (use-driven; intermittent). 114 entries shipped (3 starter + 111 expressive-baseline). |
 | 3+ | Multi-photographer review / pack management / AI provider scaffolding | Conditional / future — RFC-027, RFC-028, RFC-030. |
 
 For the canonical phase plan and current status, see `docs/IMPLEMENTATION.md`.
@@ -144,7 +135,7 @@ For the full flow — darktable setup, MCP-client matrix (Claude Code / Desktop,
 
 ## Quickstart — scripts and agent loops (CLI, v1.3.0+)
 
-For batch processing, shell scripts, and agent loops where MCP's session model is the wrong shape. The CLI mirrors the MCP tool surface verb-for-verb (`chemigram apply-primitive` ↔ MCP `apply_primitive`); see PRD-005 / RFC-020 for the design.
+For batch processing, shell scripts, and agent loops where MCP's session model is the wrong shape. The CLI mirrors the MCP tool surface verb-for-verb (`chemigram apply-primitive` ↔ MCP `apply_primitive`) — 28 verbs total; see PRD-005 / RFC-020 for the design.
 
 ```bash
 # 1. install — same as above
@@ -175,7 +166,7 @@ flowchart LR
         CC[Claude Code / Desktop /<br/>Cursor / Continue / ...]
     end
     subgraph ADAPTERS["adapters"]
-        MCP[chemigram-mcp<br/>27 tools]
+        MCP[chemigram-mcp<br/>28 tools]
         CLI[chemigram CLI<br/>28 verbs]
     end
     subgraph CORE["chemigram.core"]
@@ -232,7 +223,7 @@ See **[`docs/getting-started.md`](docs/getting-started.md#your-first-session)** 
 
 ## Growing your vocabulary
 
-The starter vocabulary that ships with `chemigram` is deliberately small — two entries (a warm-WB nudge, an L2 neutral look). The companion `expressive-baseline` pack adds 81 more entries: 18 parameterized primitives across 11 modules (Path C; RFC-021), 13 L2 looks (cinematic / portrait / decade / 5 compositional-mask looks via the v1.9.0 trilogy), L3 discrete kinds + 4 mask-bound primitives. Plus the **`apply_spot` MCP tool** (RFC-025 / ADR-087) for blemish removal / cloning. Phase 2 grows the vocabulary from real session evidence: the agent logs gaps when it reaches for moves you don't have; once a month or so, you open darktable, capture the missing primitives as `.dtstyle` files, and drop them into `~/.chemigram/vocabulary/personal/`. After 3 months of regular use most photographers reach 30–60 personal entries; after 6 months, 80–120. The vocabulary becomes an articulation of *your* craft.
+The starter vocabulary that ships with `chemigram` is deliberately small — three entries (a parametric WB primitive, a warm-WB sugar, an L2 neutral look). The companion `expressive-baseline` pack adds 111 entries: parameterized L3 primitives across the major darktable modules (Path C; RFC-021), L2 looks across 6 genres (cinematic / portrait / landscape / wildlife / food / product + B&W variants), and mask-bound primitives. Plus the **`apply_spot` MCP tool** (RFC-025 / ADR-087) for blemish removal / cloning. Phase 2 grows the vocabulary from real session evidence: the agent logs gaps when it reaches for moves you don't have; you open darktable periodically, capture the missing primitives as `.dtstyle` files, and drop them into `~/.chemigram/vocabulary/personal/`. The personal pack grows at whatever cadence the photographer's actual work demands — there's no target. The vocabulary becomes an articulation of *your* craft.
 
 Full procedure in **[`docs/getting-started.md`](docs/getting-started.md#growing-your-vocabulary)** and **[`vocabulary/starter/README.md`](vocabulary/starter/README.md)**.
 

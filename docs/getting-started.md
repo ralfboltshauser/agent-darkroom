@@ -29,14 +29,14 @@ The guide grows as the project does. If something here is wrong or unclear, plea
 pip install chemigram
 ```
 
-That's it for the engine. The package ships with a small starter vocabulary built in (5 entries, deliberately small per the project's Phase 2 design — see [Growing your vocabulary](#growing-your-vocabulary) below).
+That's it for the engine. The package ships with a small starter vocabulary built in (3 entries, deliberately minimal per the project's Phase 2 design — see [Growing your vocabulary](#growing-your-vocabulary) below). The companion `expressive-baseline` pack adds 111 more entries and is included with the install.
 
 Verify the install:
 
 ```bash
 chemigram-mcp --help 2>&1 | head -1   # should not error
 python -c "from chemigram.core.vocab import load_starter; print(len(load_starter().list_all()), 'entries')"
-# → 5 entries
+# → 3 entries
 ```
 
 ### Setting up darktable on macOS
@@ -540,7 +540,7 @@ Going deeper (project-internal — for contributors):
 
 **"can't init develop system" from darktable** — your configdir isn't initialized. Open the darktable GUI once and quit. If the error persists, set `CHEMIGRAM_DT_CONFIGDIR` to a writable directory you've initialized.
 
-**`MASKING_ERROR` from `apply_primitive`** — the entry's `mask_spec` is malformed (unknown `dt_form`, missing/wrong `dt_params`). Inspect the entry with `chemigram vocab show <name>`; valid forms are `gradient`, `ellipse`, `rectangle` per ADR-076. (Subject-precise content-aware masking is Phase 4 work; v1.5.0 has no AI-driven masker — the earlier PNG path was retired because darktable doesn't read external PNGs for raster masks.)
+**`MASKING_ERROR` from `apply_primitive`** — the entry's `mask_spec` is malformed (unknown `dt_form`, missing/wrong `dt_params`). Inspect the entry with `chemigram vocab show <name>`; valid forms are `gradient`, `ellipse`, `rectangle`, `path` per ADR-076 + ADR-084. (Subject-precise content-aware masking ships via LLM-vision as of v1.9.0 / RFC-026 / ADR-086; the earlier PNG path was retired because darktable doesn't read external PNGs for raster masks.)
 
 **`STATE_ERROR: workspace has no current XMP`** — the workspace's HEAD doesn't resolve to a snapshot. This usually means the `ingest` step didn't complete cleanly. Try ingesting under a different `image_id` or delete the half-built workspace and start over.
 
