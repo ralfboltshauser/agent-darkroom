@@ -42,6 +42,11 @@ These entries touch raw-domain darktable modules (`colorequal`, `denoiseprofile`
 
 _WB Kelvin / tint UX wrapper (#102). Same temperature module as the temperature entry, but exposes photographic units instead of raw RGB coefficients. 2 axes: --param kelvin_delta=V (range [-3000, 3000]; positive = warmer) and --param tint_delta=V (range [-200, 200]; positive = magenta-shifted). Linear approximation: red_coeff *= 1 + kelvin_delta * 0.0001, blue_coeff inverse, green_coeff *= 1 + tint_delta * 0.0001. Daily-use accurate; not chromatic-adaptation-perfect. RFC-039 / #131 made apply path camera-aware: at non-zero delta, shifts are relative to the target raw's camera-default WB read via rawpy._
 
+> 🔬 **CI assertions** (parametric):
+>   - `warmer` (kelvin_delta=2000) → `render_completes()` against grayscale
+>   - `cooler` (kelvin_delta=-1500) → `render_completes()` against grayscale
+>   - `tint_only` (tint_delta=100) → `render_completes()` against grayscale
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -52,6 +57,8 @@ _WB Kelvin / tint UX wrapper (#102). Same temperature module as the temperature 
 ### `wb_warm_subtle` 📷 landscape raw
 
 _Warm white balance, subtle. Reauthored RFC-039 / #137 to compose wb_kelvin_delta with a fixed +500K shift; camera-portable._
+
+> 🔬 **CI**: skipped — Reauthored under RFC-039 / #137 to compose wb_kelvin_delta with kelvin_delta=+500. The composed primitive's apply path is camera-aware (reads raw EXIF WB at apply time); the synthetic grayscale fixture isn't a raw — no EXIF — so the parametric apply returns identity-skip and the temperature op is dropped. Direction-of-effect is asserted on real raws by tests/integration/core/test_cross_camera_wb.py (#142, across 3 camera bodies) and at the byte level by tests/unit/core/parameterize/test_temperature.py (kelvin_delta scaling).
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -83,6 +90,10 @@ These entries' touched darktable modules operate on already-developed sRGB / wor
 
 _Parameterized grain strength (RFC-021). Pass --value V; range [0.0, 100.0]. 8 = grain_fine-equivalent, 25 = grain_medium-equivalent, 50 = grain_heavy-equivalent. Replaces the v1.5.x discrete grain_fine / grain_medium / grain_heavy entries with a single continuous-magnitude primitive._
 
+> 🔬 **CI assertions** (parametric):
+>   - `grain_strength_50` (grain_strength=50) → `pixel_std_increase(1)` against grayscale
+>   - `grain_strength_8` (grain_strength=8) → `pixel_std_increase(0.05)` against grayscale
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -99,6 +110,10 @@ _Parameterized grain strength (RFC-021). Pass --value V; range [0.0, 100.0]. 8 =
 
 _Parameterized vignette (RFC-021). Pass --value V (CLI) or value: V (MCP); range [-1.0, +1.0] (negative darkens corners; positive lifts). Replaces the v1.5.x discrete vignette_subtle / vignette_medium / vignette_heavy entries with a single continuous-magnitude primitive._
 
+> 🔬 **CI assertions** (parametric):
+>   - `brightness_-0.5` (brightness=-0.5) → `bright_dampen(-0.005)` against grayscale
+>   - `brightness_-0.8` (brightness=-0.8) → `bright_dampen(-0.01)` against grayscale
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/vignette-colorchecker.jpg" alt="vignette ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/vignette-grayscale.jpg" alt="vignette grayscale global" width="180"> | _(n/a)_ | _(n/a)_ |
@@ -106,6 +121,10 @@ _Parameterized vignette (RFC-021). Pass --value V (CLI) or value: V (MCP); range
 ### `highlights_clip_threshold`
 
 _Parameterized highlight-recovery clip threshold (RFC-021). Pass --value V; range [0.0, 2.0]: lower = more aggressive recovery (0.95 = subtle, 0.85 = strong, 0.5 = aggressive). Default 1.0 (darktable default; recovers only above 1.0). Replaces the v1.5.x discrete highlights_recovery_subtle / highlights_recovery_strong entries._
+
+> 🔬 **CI assertions** (parametric):
+>   - `clip_0.85` (clip_threshold=0.85) → `render_completes()` against grayscale
+>   - `clip_0.95` (clip_threshold=0.95) → `render_completes()` against grayscale
 
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
@@ -123,6 +142,10 @@ _Parameterized highlight-recovery clip threshold (RFC-021). Pass --value V; rang
 
 _Parameterized sigmoid tone-curve contrast (RFC-021). Pass --value V (CLI) or value: V (MCP); range [0.5, 5.0] (1.0 = mild s-curve, 1.5 = darktable default / no curve change, 2.5 = aggressive s-curve). Replaces the v1.5.x discrete contrast_low / contrast_high entries with a single continuous-magnitude primitive._
 
+> 🔬 **CI assertions** (parametric):
+>   - `contrast_2.5` (contrast=2.5) → `contrast_increase(0.005, -0.005)` against grayscale
+>   - `contrast_1.0` (contrast=1) → `contrast_decrease(-0.002, 0.002)` against grayscale
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-colorchecker.jpg" alt="sigmoid_contrast ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-grayscale.jpg" alt="sigmoid_contrast grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-colorchecker-masked.jpg" alt="sigmoid_contrast ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/sigmoid_contrast-grayscale-masked.jpg" alt="sigmoid_contrast grayscale masked" width="180"> |
@@ -130,6 +153,8 @@ _Parameterized sigmoid tone-curve contrast (RFC-021). Pass --value V (CLI) or va
 ### `blacks_lifted`
 
 _Lift target black to 0.5._
+
+> 🔬 **CI**: skipped — Sigmoid 'target_black' is scene-referred; effect is below noise on display-referred chart input. Covered by test_path_a_sigmoid.py against real raws.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -145,6 +170,8 @@ _Lift target black to 0.5._
 
 _Crush blacks: target 0.001 + skew -0.3._
 
+> 🔬 **CI**: skipped — Same as blacks_lifted.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/blacks_crushed-colorchecker.jpg" alt="blacks_crushed ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/blacks_crushed-grayscale.jpg" alt="blacks_crushed grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/blacks_crushed-colorchecker-masked.jpg" alt="blacks_crushed ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/blacks_crushed-grayscale-masked.jpg" alt="blacks_crushed grayscale masked" width="180"> |
@@ -159,6 +186,8 @@ _Crush blacks: target 0.001 + skew -0.3._
 
 _Open whites: target 300 (3x default)._
 
+> 🔬 **CI assertion**: `bright_open(0.005)` against the grayscale fixture.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/whites_open-colorchecker.jpg" alt="whites_open ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/whites_open-grayscale.jpg" alt="whites_open grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/whites_open-colorchecker-masked.jpg" alt="whites_open ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/whites_open-grayscale-masked.jpg" alt="whites_open grayscale masked" width="180"> |
@@ -166,6 +195,8 @@ _Open whites: target 300 (3x default)._
 ### `bw_sky_drama`
 
 _B&W with sky-drama mix (red-emphasis: R 0.5 / G 0.4 / B 0.1). Lightens reds and darkens blues — classic 'red filter' landscape look that emphasizes clouds against sky. normalize_grey=true._
+
+> 🔬 **CI assertion**: `chroma_zero(8)` against the colorchecker fixture.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -181,6 +212,8 @@ _B&W with sky-drama mix (red-emphasis: R 0.5 / G 0.4 / B 0.1). Lightens reds and
 
 _B&W with foliage mix (green-emphasis: R 0.1 / G 0.7 / B 0.2). Lightens greens — separates foliage from neighboring tones; useful for forest / botanical work where green is the dominant subject. normalize_grey=true._
 
+> 🔬 **CI assertion**: `chroma_zero(8)` against the colorchecker fixture.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/bw_foliage-colorchecker.jpg" alt="bw_foliage ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_foliage-grayscale.jpg" alt="bw_foliage grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_foliage-colorchecker-masked.jpg" alt="bw_foliage ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/bw_foliage-grayscale-masked.jpg" alt="bw_foliage grayscale masked" width="180"> |
@@ -195,6 +228,10 @@ _B&W with foliage mix (green-emphasis: R 0.1 / G 0.7 / B 0.2). Lightens greens �
 
 _Parameterized 9-band tone equalizer (RFC-022 Tier 2; most complex multi-parameter ship). Pass --param NODE=V for any of: noise, ultra_deep_blacks, deep_blacks, blacks, shadows, midtones, highlights, whites, speculars. Each in [-2.0, +2.0] EV; default 0.0. Algorithm fields preserved at darktable defaults._
 
+> 🔬 **CI assertions** (parametric):
+>   - `compress_curve` (shadows=1, highlights=-1, midtones=0) → `render_completes()` against grayscale
+>   - `midtones_lift` (midtones=0.5) → `render_completes()` against grayscale
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -204,6 +241,10 @@ _Parameterized 9-band tone equalizer (RFC-022 Tier 2; most complex multi-paramet
 ### `sharpen`
 
 _Parameterized sharpening (RFC-022 Tier 2). Pass --value V; range [0.0, 2.0] (0.0 = no sharpen, 0.5 = subtle, 1.0 = strong, 2.0 = aggressive). Radius preserved at darktable default 2.0 px, threshold at 0.5._
+
+> 🔬 **CI assertions** (parametric):
+>   - `amount_1.0` (amount=1) → `render_completes()` against grayscale
+>   - `amount_0.5` (amount=0.5) → `render_completes()` against grayscale
 
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
@@ -215,6 +256,10 @@ _Parameterized sharpening (RFC-022 Tier 2). Pass --value V; range [0.0, 2.0] (0.
 
 _Parameterized clarity strength on bilat / local laplacian (RFC-021). Pass --value V; range [-1.0, 4.0]. 1.5 = clarity_strong-equivalent. clarity_painterly stays as a separate discrete entry — different kind, not strength._
 
+> 🔬 **CI assertions** (parametric):
+>   - `clarity_strength_2.5` (clarity_strength=2.5) → `render_completes()` against grayscale
+>   - `clarity_strength_0.5` (clarity_strength=0.5) → `render_completes()` against grayscale
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -225,6 +270,8 @@ _Parameterized clarity strength on bilat / local laplacian (RFC-021). Pass --val
 
 _Soft painterly local contrast (detail 0.4)._
 
+> 🔬 **CI**: skipped — Local-contrast on edges/details, not flat patches (covered by test_path_b_localcontrast.py). The strength axis was parameterized in v1.6.0+ (bilat_clarity_strength); clarity_painterly stays discrete because it represents a different *kind* of clarity (different sigma_r/s/midtone shaping), not a different strength.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/clarity_painterly-colorchecker.jpg" alt="clarity_painterly ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/clarity_painterly-grayscale.jpg" alt="clarity_painterly grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/clarity_painterly-colorchecker-masked.jpg" alt="clarity_painterly ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/clarity_painterly-grayscale-masked.jpg" alt="clarity_painterly grayscale masked" width="180"> |
@@ -232,6 +279,8 @@ _Soft painterly local contrast (detail 0.4)._
 ### `clarity_etched`
 
 _L3 discrete kind — etched / over-defined clarity (#110). bilat_clarity_strength=2.0 (high local-contrast bite)._
+
+> 🔬 **CI**: skipped — Strength variant of bilat_clarity_strength (parameterized covers strength); kind-specific sigma/midtone shaping not flat-patch testable.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -241,6 +290,8 @@ _L3 discrete kind — etched / over-defined clarity (#110). bilat_clarity_streng
 
 _L3 discrete kind — soft / dreamy clarity (#110). bilat_clarity_strength=-0.5 (negative bite — softens local contrast)._
 
+> 🔬 **CI**: skipped — Negative-strength variant of bilat_clarity_strength; same coverage rationale as clarity_painterly.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/clarity_dreamy-colorchecker.jpg" alt="clarity_dreamy ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/clarity_dreamy-grayscale.jpg" alt="clarity_dreamy grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/clarity_dreamy-colorchecker-masked.jpg" alt="clarity_dreamy ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/clarity_dreamy-grayscale-masked.jpg" alt="clarity_dreamy grayscale masked" width="180"> |
@@ -248,6 +299,8 @@ _L3 discrete kind — soft / dreamy clarity (#110). bilat_clarity_strength=-0.5 
 ### `sharpen_edge_only`
 
 _L3 discrete kind — edge-only sharpening (#110). amount=0.6 with default radius (2.0 px) and threshold (0.5). Threshold gates sharpening to detected edges only._
+
+> 🔬 **CI**: skipped — Edge-only sharpening; effect on flat patches is below noise. Covered by parameterized sharpen entry.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -257,6 +310,8 @@ _L3 discrete kind — edge-only sharpening (#110). amount=0.6 with default radiu
 
 _L3 discrete kind — whole-image sharpening with bite (#110). amount=1.2 (strong)._
 
+> 🔬 **CI**: skipped — Whole-image sharpen; covered by parameterized sharpen entry's high-magnitude values.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/sharpen_overall-colorchecker.jpg" alt="sharpen_overall ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen_overall-grayscale.jpg" alt="sharpen_overall grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen_overall-colorchecker-masked.jpg" alt="sharpen_overall ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/sharpen_overall-grayscale-masked.jpg" alt="sharpen_overall grayscale masked" width="180"> |
@@ -264,6 +319,8 @@ _L3 discrete kind — whole-image sharpening with bite (#110). amount=1.2 (stron
 ### `vignette_subtle`
 
 _L3 discrete kind — gentle peripheral darkening (#110). brightness=-0.15._
+
+> 🔬 **CI**: skipped — Magnitude variant of vignette; covered by parameterized vignette entry's range.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -273,6 +330,8 @@ _L3 discrete kind — gentle peripheral darkening (#110). brightness=-0.15._
 
 _L3 discrete kind — pronounced peripheral darkening (#110). brightness=-0.5._
 
+> 🔬 **CI**: skipped — Magnitude variant of vignette; covered by parameterized vignette entry's range.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/vignette_strong-colorchecker.jpg" alt="vignette_strong ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/vignette_strong-grayscale.jpg" alt="vignette_strong grayscale global" width="180"> | _(n/a)_ | _(n/a)_ |
@@ -280,6 +339,12 @@ _L3 discrete kind — pronounced peripheral darkening (#110). brightness=-0.5._
 ### `exposure`
 
 _Parameterized exposure compensation (RFC-021). Pass --value V (CLI) or value: V (MCP) in EV stops; range [-3.0, +3.0]. Replaces the v1.5.x discrete expo_+0.3 / expo_+0.5 / expo_-0.3 / expo_-0.5 / shadows_global_+/- entries with a single continuous-magnitude primitive._
+
+> 🔬 **CI assertions** (parametric):
+>   - `ev_+0.5` (ev=0.5) → `bright_open(0.05)` against grayscale
+>   - `ev_-0.5` (ev=-0.5) → `bright_dampen(-0.05)` against grayscale
+>   - `ev_+1.0` (ev=1) → `bright_open(0.15)` against grayscale
+>   - `ev_-1.0` (ev=-1) → `bright_dampen(-0.15)` against grayscale
 
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
@@ -291,6 +356,11 @@ _Parameterized exposure compensation (RFC-021). Pass --value V (CLI) or value: V
 
 _Parameterized global saturation in colorbalancergb (RFC-021). Pass --value V (CLI) or value: V (MCP); range [-1.0, +1.0] (-1.0 = fully desaturated / monochrome; +0.5 = strong boost). Replaces the v1.5.x discrete sat_kill / sat_boost_moderate / sat_boost_strong entries with a single continuous-magnitude primitive._
 
+> 🔬 **CI assertions** (parametric):
+>   - `sat_-1.0` (saturation_global=-1) → `chroma_zero(12)` against colorchecker
+>   - `sat_+0.5` (saturation_global=0.5) → `chroma_increase(3)` against colorchecker
+>   - `sat_+0.25` (saturation_global=0.25) → `chroma_increase(1)` against colorchecker
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -300,6 +370,9 @@ _Parameterized global saturation in colorbalancergb (RFC-021). Pass --value V (C
 ### `vibrance`
 
 _Parameterized vibrance on colorbalancergb (RFC-022 Tier 2). Pass --value V; range [-1.0, +1.0]. 0.3 = vibrance_+0.3-equivalent. Vibrance protects already-saturated pixels — gentler chroma push than saturation_global. Replaces v1.5.x vibrance_+0.3._
+
+> 🔬 **CI assertions** (parametric):
+>   - `vibrance_+0.3` (vibrance=0.3) → `chroma_increase(0.5)` against colorchecker
 
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
@@ -311,6 +384,9 @@ _Parameterized vibrance on colorbalancergb (RFC-022 Tier 2). Pass --value V; ran
 
 _Parameterized global chroma on colorbalancergb (RFC-022 Tier 2). Pass --value V; range [-1.0, +1.0]. Less saturated-pixel protection than vibrance, more aggressive than saturation_global at equal magnitudes._
 
+> 🔬 **CI assertions** (parametric):
+>   - `chroma_+0.3` (chroma_global=0.3) → `chroma_increase(0.3)` against colorchecker
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -320,6 +396,9 @@ _Parameterized global chroma on colorbalancergb (RFC-022 Tier 2). Pass --value V
 ### `hue_angle`
 
 _Parameterized global hue rotation on colorbalancergb (RFC-022 Tier 2). Pass --value V in degrees; range [-180.0, +180.0]. Rotates every pixel's hue around the color wheel without changing saturation or luminance._
+
+> 🔬 **CI assertions** (parametric):
+>   - `rot_+30` (hue_angle=30) → `render_completes()` against colorchecker
 
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
@@ -331,6 +410,9 @@ _Parameterized global hue rotation on colorbalancergb (RFC-022 Tier 2). Pass --v
 
 _Parameterized global brilliance on colorbalancergb (RFC-022 Tier 2 / #86). Pass --value V; range [-1.0, +1.0]. Brilliance shapes per-zone luminance — the global axis moves all zones together. Per-zone variants (highlights/midtones/shadows) target specific tonal ranges._
 
+> 🔬 **CI assertions** (parametric):
+>   - `brilliance_+0.5` (brilliance_global=0.5) → `bright_open(0.02)` against grayscale
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -340,6 +422,9 @@ _Parameterized global brilliance on colorbalancergb (RFC-022 Tier 2 / #86). Pass
 ### `brilliance_highlights`
 
 _Parameterized highlight-zone brilliance on colorbalancergb (RFC-022 Tier 2 / #86). Pass --value V; range [-1.0, +1.0]. Targets only the highlight tonal zone — useful for selectively brightening or compressing high-key areas without affecting shadows / midtones._
+
+> 🔬 **CI assertions** (parametric):
+>   - `brilliance_+0.5` (brilliance_highlights=0.5) → `zone_lift(0.01)` against grayscale
 
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
@@ -351,6 +436,9 @@ _Parameterized highlight-zone brilliance on colorbalancergb (RFC-022 Tier 2 / #8
 
 _Parameterized midtone-zone brilliance on colorbalancergb (RFC-022 Tier 2 / #86). Pass --value V; range [-1.0, +1.0]. Targets only the midtone tonal zone — selectively shapes the body of the tonal distribution._
 
+> 🔬 **CI assertions** (parametric):
+>   - `brilliance_+0.5` (brilliance_midtones=0.5) → `zone_lift(0.01)` against grayscale
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -360,6 +448,9 @@ _Parameterized midtone-zone brilliance on colorbalancergb (RFC-022 Tier 2 / #86)
 ### `brilliance_shadows`
 
 _Parameterized shadow-zone brilliance on colorbalancergb (RFC-022 Tier 2 / #86). Pass --value V; range [-1.0, +1.0]. Targets only the shadow tonal zone — selectively lifts or deepens dark areas without affecting highlights / midtones._
+
+> 🔬 **CI assertions** (parametric):
+>   - `brilliance_+0.5` (brilliance_shadows=0.5) → `render_completes()` against grayscale
 
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
@@ -371,6 +462,9 @@ _Parameterized shadow-zone brilliance on colorbalancergb (RFC-022 Tier 2 / #86).
 
 _Parameterized per-zone hue rotation for shadows (#91 Bucket A.5; Lightroom Color Grading shadows wheel). Pass --value V; range [0.0, 360.0] degrees. Default 0.0._
 
+> 🔬 **CI assertions** (parametric):
+>   - `210deg` (hue_shadows=210) → `render_completes()` against grayscale
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -380,6 +474,9 @@ _Parameterized per-zone hue rotation for shadows (#91 Bucket A.5; Lightroom Colo
 ### `hue_midtones`
 
 _Parameterized per-zone hue rotation for midtones (#91 Bucket A.5; Lightroom Color Grading midtones wheel). Pass --value V; range [0.0, 360.0] degrees. Default 0.0._
+
+> 🔬 **CI assertions** (parametric):
+>   - `30deg` (hue_midtones=30) → `render_completes()` against grayscale
 
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
@@ -391,6 +488,9 @@ _Parameterized per-zone hue rotation for midtones (#91 Bucket A.5; Lightroom Col
 
 _Parameterized per-zone hue rotation for highlights (#91 Bucket A.5; Lightroom Color Grading highlights wheel). Pass --value V; range [0.0, 360.0] degrees. Default 0.0._
 
+> 🔬 **CI assertions** (parametric):
+>   - `45deg` (hue_highlights=45) → `render_completes()` against grayscale
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -400,6 +500,9 @@ _Parameterized per-zone hue rotation for highlights (#91 Bucket A.5; Lightroom C
 ### `saturation_shadows`
 
 _Parameterized per-zone saturation for shadows (#91 Bucket A.5; pairs with hue_shadows for full Lightroom shadow-zone color-grading control). Pass --value V; range [-1.0, +1.0]._
+
+> 🔬 **CI assertions** (parametric):
+>   - `boost` (saturation_shadows=0.4) → `chroma_increase(0.3)` against colorchecker
 
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
@@ -411,6 +514,9 @@ _Parameterized per-zone saturation for shadows (#91 Bucket A.5; pairs with hue_s
 
 _Parameterized per-zone saturation for midtones (#91 Bucket A.5). Pass --value V; range [-1.0, +1.0]._
 
+> 🔬 **CI assertions** (parametric):
+>   - `boost` (saturation_midtones=0.3) → `chroma_increase(0.3)` against colorchecker
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -420,6 +526,9 @@ _Parameterized per-zone saturation for midtones (#91 Bucket A.5). Pass --value V
 ### `saturation_highlights`
 
 _Parameterized per-zone saturation for highlights (#91 Bucket A.5). Pass --value V; range [-1.0, +1.0]._
+
+> 🔬 **CI assertions** (parametric):
+>   - `boost` (saturation_highlights=0.3) → `chroma_increase(0.3)` against colorchecker
 
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
@@ -431,6 +540,9 @@ _Parameterized per-zone saturation for highlights (#91 Bucket A.5). Pass --value
 
 _Parameterized shadow-zone falloff weight (#91 Bucket A.5; Lightroom Color Grading 'Blending' bottom). Pass --value V; range [0.0, 4.0]; default 1.0. Higher = more aggressive zone overlap._
 
+> 🔬 **CI assertions** (parametric):
+>   - `high` (shadows_weight=2) → `render_completes()` against grayscale
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -440,6 +552,9 @@ _Parameterized shadow-zone falloff weight (#91 Bucket A.5; Lightroom Color Gradi
 ### `highlights_weight`
 
 _Parameterized highlights-zone falloff weight (#91 Bucket A.5; Lightroom Color Grading 'Blending' top). Pass --value V; range [0.0, 4.0]; default 1.0._
+
+> 🔬 **CI assertions** (parametric):
+>   - `high` (highlights_weight=2) → `render_completes()` against grayscale
 
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
@@ -451,6 +566,9 @@ _Parameterized highlights-zone falloff weight (#91 Bucket A.5; Lightroom Color G
 
 _Parameterized shadow/highlight balance point (#91 Bucket A.5; Lightroom Color Grading 'Balance' slider). Pass --value V; range [-2.0, 2.0]; default 0.0 (neutral midpoint). Negative shifts the split toward shadows; positive toward highlights._
 
+> 🔬 **CI assertions** (parametric):
+>   - `shifted` (white_fulcrum=0.5) → `render_completes()` against grayscale
+
 > ⚙️ **Main row = parametric default (identity).** This entry's default parameter value is the identity (no-op); the main row below shows the unchanged input by design. See the **parameter sweep** lower down for what the entry does at non-default values.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
@@ -461,6 +579,8 @@ _Parameterized shadow/highlight balance point (#91 Bucket A.5; Lightroom Color G
 
 _Warm shadows (orange tint, hue 30 deg, chroma 0.3)._
 
+> 🔬 **CI assertion**: `lab_b_shift(0.5)` against the grayscale fixture.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/grade_shadows_warm-colorchecker.jpg" alt="grade_shadows_warm ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_shadows_warm-grayscale.jpg" alt="grade_shadows_warm grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_shadows_warm-colorchecker-masked.jpg" alt="grade_shadows_warm ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_shadows_warm-grayscale-masked.jpg" alt="grade_shadows_warm grayscale masked" width="180"> |
@@ -468,6 +588,8 @@ _Warm shadows (orange tint, hue 30 deg, chroma 0.3)._
 ### `grade_shadows_cool`
 
 _Cool shadows (blue tint, hue 210 deg, chroma 0.3)._
+
+> 🔬 **CI assertion**: `lab_b_shift(0.5)` against the grayscale fixture.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -477,6 +599,8 @@ _Cool shadows (blue tint, hue 210 deg, chroma 0.3)._
 
 _Warm highlights (orange tint, hue 45 deg, chroma 0.2)._
 
+> 🔬 **CI assertion**: `lab_b_shift(0.3)` against the grayscale fixture.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/grade_highlights_warm-colorchecker.jpg" alt="grade_highlights_warm ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_highlights_warm-grayscale.jpg" alt="grade_highlights_warm grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_highlights_warm-colorchecker-masked.jpg" alt="grade_highlights_warm ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_highlights_warm-grayscale-masked.jpg" alt="grade_highlights_warm grayscale masked" width="180"> |
@@ -484,6 +608,8 @@ _Warm highlights (orange tint, hue 45 deg, chroma 0.2)._
 ### `grade_highlights_cool`
 
 _Cool highlights (blue tint, hue 200 deg, chroma 0.2)._
+
+> 🔬 **CI assertion**: `lab_b_shift(0.3)` against the grayscale fixture.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -493,6 +619,8 @@ _Cool highlights (blue tint, hue 200 deg, chroma 0.2)._
 
 _Warm midtones (orange tint, hue 35 deg, chroma 0.25)._
 
+> 🔬 **CI assertion**: `lab_b_shift(0.4)` against the grayscale fixture.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/grade_midtones_warm-colorchecker.jpg" alt="grade_midtones_warm ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_midtones_warm-grayscale.jpg" alt="grade_midtones_warm grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_midtones_warm-colorchecker-masked.jpg" alt="grade_midtones_warm ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_midtones_warm-grayscale-masked.jpg" alt="grade_midtones_warm grayscale masked" width="180"> |
@@ -500,6 +628,8 @@ _Warm midtones (orange tint, hue 35 deg, chroma 0.25)._
 ### `grade_midtones_cool`
 
 _Cool midtones (blue tint, hue 215 deg, chroma 0.25)._
+
+> 🔬 **CI assertion**: `lab_b_shift(0.4)` against the grayscale fixture.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -509,6 +639,8 @@ _Cool midtones (blue tint, hue 215 deg, chroma 0.25)._
 
 _L3 discrete kind — classic split-toning composite (#110). Combines grade_shadows_cool (blue tint, hue 210 deg / chroma 0.3) with grade_highlights_warm (orange tint, hue 45 deg / chroma 0.2) in one entry. The signature 'cinematic' split-tone in a single primitive._
 
+> 🔬 **CI**: skipped — Compositional split-tone (shadows_cool + highlights_warm); sub-effects covered by per-zone grade entries.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/grade_split_warm_cool-colorchecker.jpg" alt="grade_split_warm_cool ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_split_warm_cool-grayscale.jpg" alt="grade_split_warm_cool grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_split_warm_cool-colorchecker-masked.jpg" alt="grade_split_warm_cool ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/grade_split_warm_cool-grayscale-masked.jpg" alt="grade_split_warm_cool grayscale masked" width="180"> |
@@ -516,6 +648,8 @@ _L3 discrete kind — classic split-toning composite (#110). Combines grade_shad
 ### `chroma_boost_shadows`
 
 _Boost shadow chroma +0.3._
+
+> 🔬 **CI assertion**: `chroma_increase(0.3)` against the colorchecker fixture.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -525,6 +659,8 @@ _Boost shadow chroma +0.3._
 
 _Boost mid-tone chroma +0.3._
 
+> 🔬 **CI assertion**: `chroma_increase(0.3)` against the colorchecker fixture.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/chroma_boost_midtones-colorchecker.jpg" alt="chroma_boost_midtones ColorChecker global" width="180"> | _(n/a)_ | <img src="../visual-proofs/expressive-baseline/chroma_boost_midtones-colorchecker-masked.jpg" alt="chroma_boost_midtones ColorChecker masked" width="180"> | _(n/a)_ |
@@ -532,6 +668,8 @@ _Boost mid-tone chroma +0.3._
 ### `chroma_boost_highlights`
 
 _Boost highlight chroma +0.3._
+
+> 🔬 **CI assertion**: `chroma_increase(0.3)` against the colorchecker fixture.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -541,6 +679,8 @@ _Boost highlight chroma +0.3._
 
 _Dampen top-half highlights via -0.5 EV through a top-bright gradient._
 
+> 🔬 **CI assertion**: `zone_dampen(-0.005)` against the colorchecker fixture.
+
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/gradient_top_dampen_highlights-colorchecker.jpg" alt="gradient_top_dampen_highlights ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/gradient_top_dampen_highlights-grayscale.jpg" alt="gradient_top_dampen_highlights grayscale" width="180"> |
@@ -548,6 +688,8 @@ _Dampen top-half highlights via -0.5 EV through a top-bright gradient._
 ### `gradient_bottom_lift_shadows` 🟦 mask-bound
 
 _Lift bottom-half shadows via +0.4 EV through a bottom-bright gradient._
+
+> 🔬 **CI assertion**: `zone_lift(0.005)` against the colorchecker fixture.
 
 | ColorChecker | Grayscale ramp |
 |-|-|
@@ -557,6 +699,8 @@ _Lift bottom-half shadows via +0.4 EV through a bottom-bright gradient._
 
 _Lift +0.6 EV in a centered radial mask region (subject emphasis)._
 
+> 🔬 **CI assertion**: `zone_lift(0.005)` against the colorchecker fixture.
+
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/radial_subject_lift-colorchecker.jpg" alt="radial_subject_lift ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/radial_subject_lift-grayscale.jpg" alt="radial_subject_lift grayscale" width="180"> |
@@ -564,6 +708,8 @@ _Lift +0.6 EV in a centered radial mask region (subject emphasis)._
 ### `rectangle_subject_band_dim` 🟦 mask-bound
 
 _Dim -0.3 EV in a horizontal mid-band rectangle (de-emphasize a horizon line)._
+
+> 🔬 **CI**: skipped — Mask y=[0.4, 0.6] + 0.05 border doesn't align cleanly with the ColorChecker chart's row layout — empirically the complement zone (outer rows) shows more dimming than the inner zone. The wire IS correct (verified by test_drawn_mask_shapes_effect.py and build-by-words rectangle e2e tests against real raws); the chart-isolation assertion is the wrong shape for this entry. Leave skipped until a chart-aligned fixture or a different mask geometry is set up.
 
 | ColorChecker | Grayscale ramp |
 |-|-|
@@ -666,6 +812,8 @@ _L2 look — lift dark pixels globally (no spatial mask). Pure parametric range_
 ### `skin_smooth_painterly` 🟦 mask-bound
 
 _Approximate frequency separation for skin smoothing (Portrait Gap #4, cheap variant). Reduces local contrast (texture-band frequency) within the skin region — the color band stays untouched. Pass --value V or --param clarity_strength=V; range [-1.0, 4.0], typical -0.3 to -0.7 for natural smoothing. -0.5 default. Pre-baked with mask_skin_region. **Not** Photoshop's true frequency separation (band decomposition); approximation via bilat softening on a hue-masked region. Compose orthogonally with skin_uniformity (color-band uniformity) for the full skin-uniformity-plus-smoothing move. For sharper precision, override mask_spec via render_preview + LLM-vision (see docs/guides/llm-vision-for-masks.md Pattern 7)._
+
+> 🔬 **CI**: skipped — Skin-specific bilat shaping; covered by parameterized bilat_clarity_strength entry.
 
 | ColorChecker | Grayscale ramp |
 |-|-|
@@ -813,6 +961,10 @@ These entries touch raw-domain darktable modules (`colorequal`, `denoiseprofile`
 
 _Parameterized crop (RFC-022 Tier 2). Pass --param cx=V cy=V cw=V ch=V — each in [0.0, 1.0]. Default 0,0,1,1 (no crop). cx/cy = top-left margin, cw/ch = bottom-right margin (so crop region is [cx..cw] x [cy..ch] in normalized coords). First workflow-primitive parameterized entry; aspect-ratio constraint preserved at -1/-1 (free)._
 
+> 🔬 **CI assertions** (parametric):
+>   - `center_80pct` (cx=0.1, cy=0.1, cw=0.9, ch=0.9) → `render_completes()` against colorchecker
+>   - `top_half` (cx=0, cy=0, cw=1, ch=0.5) → `render_completes()` against colorchecker
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -823,6 +975,11 @@ _Parameterized crop (RFC-022 Tier 2). Pass --param cx=V cy=V cw=V ch=V — each 
 ### `transform` 📷 landscape raw
 
 _Parameterized perspective / transform (#101). Closes the Lightroom Transform panel parity gap via darktable's ashift module. 5 magnitude axes: --param transform_rotation=V (image rotation in degrees), --param transform_lensshift_v=V (vertical perspective / keystone), --param transform_lensshift_h=V (horizontal perspective), --param transform_shear=V, --param transform_aspect=V (post-transform aspect adjust; default 1.0). Axis names use transform_ prefix. Lens-tuning floats (focal length, crop factor, ortho-correction) and the user-drawn-lines storage are preserved verbatim — those are darktable-GUI-authored when needed._
+
+> 🔬 **CI assertions** (parametric):
+>   - `rotation` (transform_rotation=5) → `render_completes()` against grayscale
+>   - `keystone` (transform_lensshift_v=0.3, transform_lensshift_h=-0.2) → `render_completes()` against grayscale
+>   - `all_axes` (transform_rotation=3, transform_lensshift_v=0.2, transform_lensshift_h=-0.1, transform_shear=0.05, transform_aspect=1.1) → `render_completes()` against grayscale
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -835,6 +992,11 @@ _Parameterized perspective / transform (#101). Closes the Lightroom Transform pa
 
 _Parameterized lens correction (#95). 10 manual-override magnitude axes via darktable's lens module: --param lens_scale=V (output scaling), --param lens_tca_r=V / lens_tca_b=V (manual TCA shifts; 1.0 = no shift), --param lens_cor_distortion=V / lens_cor_vignette=V / lens_cor_ca_r=V / lens_cor_ca_b=V (per-correction-type strengths for embedded-metadata method), --param lens_v_strength=V / lens_v_radius=V / lens_v_steepness=V (manual vignette correction). NOTE: this entry's photographic effect requires lensfun identifier strings (camera/lens) and shooting metadata (focal/aperture/distance) to be populated. EXIF auto-binding for these is a follow-up; until then, the entry is most useful for overriding strength sliders on a darktable-GUI-authored baseline._
 
+> 🔬 **CI assertions** (parametric):
+>   - `v_strength` (lens_v_strength=0.5) → `render_completes()` against grayscale
+>   - `tca_shift` (lens_tca_r=1.005, lens_tca_b=0.995) → `render_completes()` against grayscale
+>   - `all_strength_axes` (lens_scale=1, lens_cor_distortion=0.8, lens_cor_vignette=0.6, lens_v_strength=0.4) → `render_completes()` against grayscale
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -845,6 +1007,11 @@ _Parameterized lens correction (#95). 10 manual-override magnitude axes via dark
 ### `denoise` 📷 landscape raw
 
 _Parameterized denoising via darktable's denoiseprofile module (#96). NLMEANS (non-local-means) mode with 4 magnitude axes: --param denoise_strength=V (primary noise slider; range [0.001, 1000.0]), --param denoise_shadows=V (preserve shadow noise vs detail; range [0.0, 1.8]), --param denoise_radius=V (patch size; range [0.0, 12.0]), --param denoise_scattering=V (search-zone spread; range [0.0, 20.0]). Axis names carry the denoise_ prefix to disambiguate from same-named axes on other modules (e.g. dehaze.strength). Per-channel noise calibration a[3]/b[3] auto-populated by darktable from camera+ISO database. WAVELETS mode would need an empirically-captured wavelet-curve baseline (tracked under #100 / task C); for now NLMEANS ships clean and lines up with Lightroom's patch-similarity Noise Reduction._
+
+> 🔬 **CI assertions** (parametric):
+>   - `strength_strong` (denoise_strength=5) → `render_completes()` against grayscale
+>   - `shadows_protect` (denoise_shadows=1.6) → `render_completes()` against grayscale
+>   - `all_axes` (denoise_strength=3, denoise_shadows=1.4, denoise_radius=2, denoise_scattering=1) → `render_completes()` against grayscale
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -857,6 +1024,11 @@ _Parameterized denoising via darktable's denoiseprofile module (#96). NLMEANS (n
 
 _Parameterized filmic v6 tone mapping (#97). Modern darktable tone-mapping; ships parallel to sigmoid (~80% of tone-mapping use cases). 8 magnitude axes: grey_point_source (default 18.45%), black_point_source (default -8.0 EV), white_point_source (default 4.0 EV), output_power (default 4.0 gamma), latitude (default 0.01), contrast (default 1.0), saturation (default 0.0), balance (default 0.0). Curve mode enums (shadows/highlights/preserve_color/version/spline_version) are pinned at darktable defaults; author discrete entries for non-default modes._
 
+> 🔬 **CI assertions** (parametric):
+>   - `contrast_strong` (contrast=2) → `render_completes()` against grayscale
+>   - `saturation_boost` (saturation=25) → `render_completes()` against grayscale
+>   - `all_axes` (grey_point_source=18.45, black_point_source=-8, white_point_source=4, output_power=4, contrast=1.5, saturation=15, balance=5) → `render_completes()` against grayscale
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -867,6 +1039,11 @@ _Parameterized filmic v6 tone mapping (#97). Modern darktable tone-mapping; ship
 ### `texture` 📷 landscape raw
 
 _Parameterized texture (#92 Bucket A.6). Lightroom-style Texture via darktable's diffuse-or-sharpen module. Three axes: --param first=V (finest detail scale, primary Texture axis; range [-1.0, 1.0]), --param second=V (next-up scale; range [-1.0, 1.0]), --param sharpness=V (global sharpening; range [-1.0, 1.0]). Negative values smooth, positive enhance. All default 0.0. Closes the Lightroom Texture parity gap._
+
+> 🔬 **CI assertions** (parametric):
+>   - `first_strong` (first=0.5) → `render_completes()` against grayscale
+>   - `first_smoothing` (first=-0.3) → `render_completes()` against grayscale
+>   - `all_axes` (first=0.5, second=0.3, sharpness=0.4) → `render_completes()` against grayscale
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -879,6 +1056,11 @@ _Parameterized texture (#92 Bucket A.6). Lightroom-style Texture via darktable's
 
 _Parameterized HSL Saturation row (RFC-023). Lightroom HSL Color Mixer Saturation parity via darktable's colorequal module. 8 per-color axes (sat_red, sat_orange, sat_yellow, sat_green, sat_cyan, sat_blue, sat_lavender, sat_magenta); each range [-1.0, 1.0]; default 0.0. Negative desaturates that color zone (e.g. sat_orange=-0.3 → mute skin tones); positive boosts. Compose with hsl_hue and hsl_luminance for the full HSL Color Mixer._
 
+> 🔬 **CI assertions** (parametric):
+>   - `sat_blue` (sat_blue=0.5) → `render_completes()` against grayscale
+>   - `sat_orange_negative` (sat_orange=-0.3) → `render_completes()` against grayscale
+>   - `full_row` (sat_red=0.2, sat_orange=-0.1, sat_blue=0.3, sat_green=0.2) → `render_completes()` against grayscale
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -889,6 +1071,10 @@ _Parameterized HSL Saturation row (RFC-023). Lightroom HSL Color Mixer Saturatio
 ### `hsl_hue` 📷 landscape raw
 
 _Parameterized HSL Hue row (RFC-023). Lightroom HSL Color Mixer Hue parity via colorequal. 8 per-color hue-shift axes (hue_red, hue_orange, hue_yellow, hue_green, hue_cyan, hue_blue, hue_lavender, hue_magenta); each range [-180.0, 180.0] degrees; default 0.0. Shifts that color zone toward an adjacent hue (e.g. hue_green=15.0 → foliage warmer toward yellow)._
+
+> 🔬 **CI assertions** (parametric):
+>   - `hue_green` (hue_green=15) → `render_completes()` against grayscale
+>   - `multi_axis` (hue_blue=20, hue_orange=-10) → `render_completes()` against grayscale
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -901,6 +1087,10 @@ _Parameterized HSL Hue row (RFC-023). Lightroom HSL Color Mixer Hue parity via c
 
 _Parameterized HSL Luminance row (RFC-023). Lightroom HSL Color Mixer Luminance parity via colorequal. 8 per-color brightness axes (bright_red, bright_orange, bright_yellow, bright_green, bright_cyan, bright_blue, bright_lavender, bright_magenta); each range [-1.0, 1.0]; default 0.0. Negative darkens that color zone (e.g. bright_blue=-0.3 → deeper sky); positive lightens._
 
+> 🔬 **CI assertions** (parametric):
+>   - `bright_blue_negative` (bright_blue=-0.4) → `render_completes()` against grayscale
+>   - `multi_axis` (bright_red=0.2, bright_yellow=-0.2) → `render_completes()` against grayscale
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -912,6 +1102,11 @@ _Parameterized HSL Luminance row (RFC-023). Lightroom HSL Color Mixer Luminance 
 
 _Parameterized dehaze (#90 Bucket A.2). Lightroom-style Dehaze via darktable's hazeremoval module. Two axes: --param strength=V (range [-1.0, 1.0]; positive removes haze, negative adds atmospheric fog) and --param distance=V (range [0.0, 1.0]; depth-falloff). Closes the Lightroom Dehaze parity gap._
 
+> 🔬 **CI assertions** (parametric):
+>   - `strength_strong` (strength=0.6) → `render_completes()` against grayscale
+>   - `strength_negative` (strength=-0.4) → `render_completes()` against grayscale
+>   - `distance_high` (distance=0.7) → `render_completes()` against grayscale
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -922,6 +1117,12 @@ _Parameterized dehaze (#90 Bucket A.2). Lightroom-style Dehaze via darktable's h
 ### `temperature` 📷 landscape raw
 
 _Parameterized white balance (RFC-021; first multi-parameter ship). Three axes: --param red_coeff=V (warmer image: red↑), --param green_coeff=V (Lightroom Tint axis: green↑ → magenta-shifted, green↓ → green-shifted), --param blue_coeff=V (cooler image: blue↑). Range [0.5, 4.0] each; all default 1.0 (no shift). Replaces the v1.5.x discrete wb_cool_subtle entry. green_coeff added in #90 Bucket A.3 to close the Lightroom Tint parity gap. Starter's wb_warm_subtle remains as a discrete teaching artifact; production use of WB shifts should prefer this parameterized entry._
+
+> 🔬 **CI assertions** (parametric):
+>   - `warmer` (red_coeff=2.148, blue_coeff=1.209) → `render_completes()` against grayscale
+>   - `cooler` (red_coeff=1.209, blue_coeff=2.137) → `render_completes()` against grayscale
+>   - `tint_magenta` (green_coeff=1.2) → `render_completes()` against grayscale
+>   - `tint_green` (green_coeff=0.85) → `render_completes()` against grayscale
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -1000,6 +1201,8 @@ _L2 look — early-2000s digital camera aesthetic (#104). sigmoid_contrast 1.3 +
 
 _Skin-tone uniformity (RFC-033). Compresses skin-band saturation variance toward uniform appearance — Capture One's Skin Tone Uniformity equivalent for chemigram. Pre-baked with mask_skin_region so the move is scoped automatically. Pass --value V or --param sat_orange=V; range [-1.0, 0.0]. -0.3 is moderate uniformity; -0.6 is strong (typical Woloszynowicz/Adler/Nordqvist range); -1.0 fully desaturates the skin band; 0.0 is no-op. Override mask_spec for per-image manual mask if mask_skin_region's hue-range fallback leaks (Phase-1 LLM-vision fallback per RFC-032). Frequency-separation texture work composes orthogonally; this primitive is color-band uniformity only._
 
+> 🔬 **CI**: skipped — Skin-uniformity primitive (RFC-033); needs visual review per the darkroom-session checkpoint, not flat-patch isolation.
+
 > 📷 **Real-raw rendering** (fixture: `portrait.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the portrait fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Portrait raw |
@@ -1076,6 +1279,8 @@ _Autumn foliage / fall color. Slight warm temperature (+0.04 red), colorequal sa
 ### `bw_convert` 📷 landscape raw
 
 _B&W conversion (RFC-033 follow-up; survey Gap #1). Single colorequal plugin with all 8 sat axes set to -1.0 (full saturation kill = grayscale). Exposes 8 bright_X parameters emulating Adams-school color-filter strength: bright_red +0.3 lightens skin / red flowers / darkens skies in B&W; bright_blue -0.2 darkens skies; bright_green +0.3 lightens foliage; etc. The chemigram analog of Photoshop Channel Mixer (Monochrome) and Silver Efex Color Filters. Universal Step 1 of any B&W workflow per the photographer survey (6/6 photographers reach for color-filter-driven conversion as their foundational B&W move)._
+
+> 🔬 **CI assertion**: `chroma_zero(8)` against the colorchecker fixture.
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 

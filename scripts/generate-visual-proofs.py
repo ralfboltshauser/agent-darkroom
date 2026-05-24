@@ -43,11 +43,26 @@ from PIL import Image, ImageChops
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
+sys.path.insert(0, str(REPO))  # so `tests.e2e._lab_grade_deltas` imports
 
 from chemigram.core.helpers import apply_entry, apply_with_drawn_mask  # noqa: E402
 from chemigram.core.pipeline import render  # noqa: E402
 from chemigram.core.vocab import load_packs  # noqa: E402
 from chemigram.core.xmp import parse_xmp, synthesize_xmp, write_xmp  # noqa: E402
+
+# Lab-grade assertion lookup tables (#144). Imported lazily so that
+# missing pytest doesn't break the gallery generator's import path
+# (the tests/ tree depends on pytest at module-import time).
+try:
+    from tests.e2e._lab_grade_deltas import (
+        EXPECTED_EFFECTS,
+        PARAMETERIZED_EFFECTS,
+        SKIP_REASONS,
+    )
+except ImportError:
+    EXPECTED_EFFECTS = {}  # type: ignore[assignment]
+    PARAMETERIZED_EFFECTS = {}  # type: ignore[assignment]
+    SKIP_REASONS = {}  # type: ignore[assignment]
 
 # We deliberately use an EMPTY baseline (zero history entries) for the
 # gallery. The shipped baseline XMP (`_baseline_v1.xmp`) has 11 history
@@ -931,6 +946,76 @@ def _render_masked_variant(
     masked_xmp_path.unlink(missing_ok=True)
 
 
+# Map from LabCheck helper qualname prefix → human-readable shorthand.
+# The LabCheck constructors return closures with __qualname__ like
+# ``_check_bright_open.<locals>.check``; we extract the constructor name
+# and combine it with the closure's captured arguments (thresholds).
+_LAB_CHECK_HUMAN_NAMES: dict[str, str] = {
+    "_check_bright_open": "bright_open",
+    "_check_bright_dampen": "bright_dampen",
+    "_check_dark_lift": "dark_lift",
+    "_check_dark_crush": "dark_crush",
+    "_check_contrast_increase": "contrast_increase",
+    "_check_contrast_decrease": "contrast_decrease",
+    "_check_chroma_zero": "chroma_zero",
+    "_check_chroma_increase": "chroma_increase",
+    "_check_exposure_ratio": "exposure_ratio",
+    "_check_lab_a_shift": "lab_a_shift",
+    "_check_lab_b_shift": "lab_b_shift",
+    "_check_zone_lift": "zone_lift",
+    "_check_zone_dampen": "zone_dampen",
+    "_check_pixel_std_increase": "pixel_std_increase",
+    "_check_render_completes": "render_completes",
+}
+
+
+def _describe_labcheck(check) -> str:
+    """One-line description of a LabCheck closure: constructor name +
+    captured threshold args (if any). Used by the gallery to surface
+    "what does CI mechanically verify for this entry?" alongside the
+    entry's photographic intent description."""
+    qual = getattr(check, "__qualname__", "")
+    ctor = qual.split(".", 1)[0] if qual else ""
+    name = _LAB_CHECK_HUMAN_NAMES.get(ctor, ctor or "unknown_check")
+    closure_args = [getattr(c, "cell_contents", None) for c in (check.__closure__ or ())]
+    # Drop indices lists from the rendering (they're long and noisy);
+    # keep numeric thresholds.
+    numeric_args = [a for a in closure_args if isinstance(a, (int, float))]
+    if numeric_args:
+        args_str = ", ".join(f"{a:g}" for a in numeric_args)
+        return f"{name}({args_str})"
+    return f"{name}()"
+
+
+def _assertion_md(entry) -> str | None:
+    """Build the one-line markdown describing CI's lab-grade assertion
+    for ``entry``, if any. Returns ``None`` when the entry has no
+    lab-grade coverage (e.g., L2 composite auto-skipped by the
+    structural rule in test_lab_grade_primitives.py)."""
+    # Direct EXPECTED_EFFECTS coverage
+    if entry.name in EXPECTED_EFFECTS:
+        target, check = EXPECTED_EFFECTS[entry.name]
+        return f"> 🔬 **CI assertion**: `{_describe_labcheck(check)}` against the {target} fixture."
+    # PARAMETERIZED_EFFECTS — list each variant
+    variants = [
+        (label, target, check, params)
+        for (name, label), (target, check, params) in PARAMETERIZED_EFFECTS.items()
+        if name == entry.name
+    ]
+    if variants:
+        lines = ["> 🔬 **CI assertions** (parametric):"]
+        for label, target, check, params in variants:
+            params_str = ", ".join(f"{k}={v:g}" for k, v in params.items())
+            lines.append(
+                f">   - `{label}` ({params_str}) → `{_describe_labcheck(check)}` against {target}"
+            )
+        return "\n".join(lines)
+    # Documented skip
+    if entry.name in SKIP_REASONS:
+        return f"> 🔬 **CI**: skipped — {SKIP_REASONS[entry.name]}"
+    return None
+
+
 def _img_md(p, alt: str) -> str:
     """Render an image cell as inline HTML so we can size it tight."""
     if p is None:
@@ -1066,6 +1151,15 @@ def _render_entry_md(entry, rendered: dict[str, dict[str, Path]]) -> list[str]: 
     mask_marker = " 🟦 mask-bound" if is_mask_bound else ""
     out.append(f"### `{entry.name}`{mask_marker}\n")
     out.append(f"_{entry.description}_\n")
+
+    # CI lab-grade assertion line (#144) — surfaces what CI mechanically
+    # verifies for this entry alongside the photographic-intent
+    # description. None when the entry has no lab-grade coverage (e.g.,
+    # L2 composite auto-skipped by the structural rule).
+    assertion_line = _assertion_md(entry)
+    if assertion_line is not None:
+        out.append(assertion_line)
+        out.append("")
 
     # Parametric-identity-default entries: main row renders at default
     # (0.0 / identity) which is no-op by design. Annotate explicitly so
@@ -1236,6 +1330,15 @@ def _render_real_raw_entry_md(entry, outs: dict) -> list[str]:
     out: list[str] = []
     out.append(f"### `{entry.name}` 📷 {fixture_slug} raw\n")
     out.append(f"_{entry.description}_\n")
+
+    # CI lab-grade assertion line (#144) — real-raw entries often have
+    # SKIP_REASONS or no chart coverage (chart fixture is structurally
+    # wrong); _assertion_md returns the documented pointer when set.
+    assertion_line = _assertion_md(entry)
+    if assertion_line is not None:
+        out.append(assertion_line)
+        out.append("")
+
     out.append(
         f"> 📷 **Real-raw rendering** (fixture: `{fixture_slug}.ARW`, "
         "CC BY-SA 4.0). This entry touches a raw-domain darktable module "
