@@ -108,6 +108,9 @@ ADRs come from two streams:
 | ADR-091 | Engine raw-metadata-aware apply API (raw_path threading + rawpy reader); closes RFC-039 | Draft (impl shipped; flips to Accepted on darkroom validation) |
 | ADR-092 | Manifest `composes` field for L2 composition by reference; closes RFC-039 | Draft (impl shipped; flips to Accepted on darkroom validation) |
 | ADR-093 | Camera-aware parametric `temperature` semantics (identity = camera WB; deltas in coefficient space); closes RFC-039 | Draft (impl shipped; flips to Accepted on darkroom validation) |
+| ADR-094 | Camera-aware `denoiseprofile` threshold scaling (log2 ISO above reference ISO 200); follow-up sibling under ADR-091 | Draft (impl shipped; flips to Accepted on darkroom validation) |
+| ADR-095 | Camera-aware `filmicrgb` auto-tuned tone points (1st/50th/99th percentile from raw histogram); follow-up sibling under ADR-091 | Draft (impl shipped; flips to Accepted on darkroom validation) |
+| ADR-096 | Camera-aware `lens` correction (per-body lensfun identifier from EXIF camera + lens + focal length); follow-up sibling under ADR-091 | Draft (impl shipped; flips to Accepted on darkroom validation) |
 
 ## Conventions
 

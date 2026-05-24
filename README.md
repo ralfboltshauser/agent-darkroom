@@ -26,8 +26,14 @@ the Lightroom-Sync analog). v1.9.0 closed the **mask + retouch
 architecture trilogy**: spatial masks (RFC-029 / ADR-084),
 parametric range filters (RFC-024 / ADR-085), LLM-vision
 content-derived masks (RFC-026 / ADR-086), spot heal/clone
-(RFC-025 / ADR-087). 1849 tests, real-darktable e2e suite, **114
-vocabulary entries** (2 starter + 112 expressive-baseline). Not a
+(RFC-025 / ADR-087). v1.10.0 shipped 6-genre photographer-workflow
+expansion (RFC-035/036/037 → ADR-088/089/090). v1.11.0 (in flight)
+ships RFC-039 → ADR-091/092/093 — raw-derived parameters in L2
+composition (camera-aware WB / denoise / filmic / lens), cross-camera
+verification fixtures (#142), formalized visual-proof audit (#141),
+and cross-pack composition stress coverage (#145). 2200+ tests,
+real-darktable e2e suite, **114 vocabulary entries** (3 starter + 111
+expressive-baseline). Not a
 Lightroom replacement. Not a digital asset manager. A probe into
 where photographic taste lives and how it transmits through
 language and feedback.

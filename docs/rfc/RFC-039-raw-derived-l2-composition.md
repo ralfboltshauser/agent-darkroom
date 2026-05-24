@@ -134,13 +134,16 @@ Source new visual-proof fixtures from the camera the dtstyles were authored on, 
 
 ## How this closes
 
-This RFC closes into at least 3 ADRs:
+This RFC closed into 6 ADRs (3 architectural + 3 per-module follow-ups):
 
-- **ADR-NNN-engine-raw-metadata-aware-apply**: documents the engine API change (`raw_path` parameter on `apply_entry`; per-module `requires_raw_metadata` declaration; lazy cached reader; fallback semantics). Closes the engine-API question.
-- **ADR-NNN-manifest-composes-field**: documents the `composes` field on L2 entries (depth-1 only; load-time validation; backwards compat). Closes the manifest-schema question.
-- **ADR-NNN-camera-aware-temperature-semantics**: documents the specific behavior of `chemigram.core.parameterize.temperature` post-RFC (identity preserves EXIF; deltas apply in coefficient space). Closes the per-module semantics question for the FIRST raw-derived parameter.
+- **ADR-091** — Engine raw-metadata-aware apply API. `raw_path` threads through `apply_entry`; per-module decoders declare raw-metadata needs; lazy cached reader; identity-skip fallback for non-raw fixtures. Closes the engine-API question.
+- **ADR-092** — Manifest `composes` field for L2 composition by reference. Depth-1 only (L2 composes L3); load-time validation; cross-pack resolution. Backwards compatible — entries without `composes` work unchanged. Closes the manifest-schema question.
+- **ADR-093** — Camera-aware parametric `temperature` semantics. Identity preserves the raw's camera-default WB (not 1.0/1.0/1.0); kelvin/tint deltas apply in coefficient space. Cross-camera verified across Sony / Canon / Nikon (#142). Closes the per-module semantics question for the FIRST raw-derived parameter.
+- **ADR-094** — Camera-aware `denoiseprofile` threshold scaling. Log2 ISO above reference (ISO 200 → 1×, 400 → 2×, 800 → 4×). Follow-up sibling under ADR-091's machinery.
+- **ADR-095** — Camera-aware `filmicrgb` auto-tuned tone points. Black/grey/white points derived from 1st/50th/99th percentile of the raw's luma histogram. Follow-up sibling under ADR-091's machinery.
+- **ADR-096** — Camera-aware `lens` correction (per-body lensfun identifier). EXIF camera + lens + focal length populate the lensfun lookup fields. Follow-up sibling under ADR-091's machinery.
 
-Future raw-derived parameters (denoise, filmic, lens) each get their own follow-up sibling ADR for their per-module semantics, all under the same engine machinery established by the first two ADRs.
+All six ship Draft pending darkroom-session validation (#100); they flip to Accepted when the photographer's empirical session signs off.
 
 The RFC stays as the rationale anchor for the whole pattern — when a photographer or contributor asks "why do these vocabulary entries reference primitives instead of inlining ops?", they read RFC-039.
 

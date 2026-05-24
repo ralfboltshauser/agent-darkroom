@@ -13,7 +13,7 @@
 
 A craft-research project. The agent reads your taste, you describe intent, the agent edits via a vocabulary of named moves on top of darktable. Sessions accumulate; the project gets richer over time.
 
-**v1.10.0 shipped May 2026** — Phase 1 closed at v1.0.0; v1.6–v1.8 closed Lightroom daily-use parity (51/52, 98%); v1.9.0 closed the mask + retouch architecture trilogy (RFC-024/025/026/029 + ADR-084..087); v1.10.0 added photographer-workflow vocabulary (29 new L2 looks across 6 genres + bw_convert v2) plus three workflow primitives — parametric L2 strength (RFC-035 / ADR-088), mixed-op `apply_per_region` (RFC-036 / ADR-089), `propagate_state` LR-Sync analog (RFC-037 / ADR-090). Phase 2 (use-driven vocabulary maturation) in progress; **114 vocabulary entries** shipped.
+**v1.10.0 shipped May 2026; v1.11.0 in flight.** Phase 1 closed at v1.0.0; v1.6–v1.8 closed Lightroom daily-use parity (51/52, 98%); v1.9.0 closed the mask + retouch architecture trilogy (RFC-024/025/026/029 + ADR-084..087); v1.10.0 added photographer-workflow vocabulary (29 new L2 looks across 6 genres + bw_convert v2) plus three workflow primitives (RFC-035/036/037 + ADR-088/089/090). **v1.11.0** (in flight) closes RFC-039 → ADR-091/092/093 + sibling ADR-094/095/096 — raw-derived parameters in L2 composition (camera-aware WB / denoise / filmic / lens). The vocabulary now ports across camera bodies via per-raw EXIF substitution. Visual-proofs gallery trust gap closed (#129/#130/#138/#139); formal audit wired to CI (#141, 114 ok / 0 warn / 0 fail); cross-camera verification fixtures from 4 manufacturers (#142). Phase 2 (use-driven vocabulary maturation) in progress; **114 vocabulary entries** shipped (3 starter + 111 expressive-baseline).
 
 ---
 

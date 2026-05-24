@@ -6,7 +6,198 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 per ADR-041.
 
-## [Unreleased]
+## [Unreleased] — v1.11.0 in flight
+
+**Vocabulary maturation, honest visual proofs, camera-aware apply.**
+
+v1.11.0's headline is **RFC-039**: raw-derived parameters in L2
+composition. The vocabulary now ports across photographers AND across
+camera bodies — an L2 look that says "warm by +1500K" produces three
+different op_params on Sony, Canon, and Nikon raws, because the
+substitution reads each body's EXIF WB at apply time. Same pattern
+extends to denoise (per-ISO threshold scaling), filmic (per-histogram
+tone points), and lens correction (per-body lensfun identifier).
+Vocabulary entries are reauthored to compose parametric primitives
+instead of inlining camera-specific bytes.
+
+The visual-proofs gallery's trust gap (rendered the wrong fixture for
+21 entries pre-v1.11.0) was closed in three steps: a chart-verifiable
+discriminator (#129), real-raw landscape + portrait fixtures via Git
+LFS (#130), and content-aware fixture routing for sky / skin / food /
+foliage / landscape / water entries (#138). A formal audit script
+(#141) wired to CI now catches direction-of-effect regressions in the
+gallery before they reach a release.
+
+### Stats
+
+- 114 vocabulary entries (3 starter + 111 expressive-baseline)
+- 2200+ tests; lab-grade direction-of-change for 88 entries
+- Cross-camera fixtures: Sony DSC-RX10M4 + Sony ZV-E10 + Canon EOS R6
+  + Nikon D70 (4 manufacturers, 3 raw formats: ARW / CR3 / NEF)
+- Visual-proof audit: 114 ok / 0 warn / 0 fail
+
+### RFC-039 / ADR-091/092/093 — Raw-derived parameters in L2 composition
+
+The architectural shift: a vocabulary entry's claim is portability
+across photographers AND across raws. Before v1.11.0, WB-touching
+entries carried hardcoded raw-domain coefficients from their authoring
+camera — they LOOKED portable but produced foreign-WB casts on any
+other body. RFC-039 makes the vocabulary architecturally honest by
+computing the WB coefficients per-raw at apply time.
+
+- **ADR-091** — Engine raw-metadata-aware apply API. `apply_entry()`
+  gains a `raw_path` parameter; parametric decoders that need raw
+  metadata declare it; a lazy rawpy reader caches the EXIF WB +
+  daylight matrix per workspace. Fallback semantics for non-raw
+  fixtures: identity-skip (the temperature op drops from the
+  rendered output entirely, so darktable applies its own camera
+  default).
+- **ADR-092** — Manifest `composes` field for L2 composition by
+  reference. L2 looks gain an optional `composes: [{primitive, params}]`
+  field; the synthesizer resolves references at apply time, splicing
+  the parametric primitive's output into the L2 dtstyle's history at
+  the correct iop_order. Depth-1 only (L2 composes L3); cross-pack
+  resolution works.
+- **ADR-093** — Camera-aware parametric `temperature` semantics.
+  Identity preserves the camera's EXIF WB (not 1.0/1.0/1.0); deltas
+  apply in coefficient space (red ∝ 1+0.0001·kelvin_delta, blue
+  inverse). Empirically verified against three manufacturers
+  (#142).
+
+Same RFC-039 engine machinery extends to:
+
+- **denoise** (#134) — log2 ISO scaling above reference (ISO 200 →
+  1×, ISO 400 → 2×, ISO 800 → 4×). New ADR-094.
+- **filmic** (#135) — black/white points auto-tuned per raw
+  histogram percentiles. New ADR-095.
+- **lens correction** (#136) — EXIF camera + lens identifiers
+  populate the lensfun fields. New ADR-096.
+
+### Visual-proof gallery — three trust-gap closures
+
+- **#129** — Chart-verifiable discriminator. Every entry routes to
+  one of four modes (`chart` / `real_raw` / `not_yet_portable` /
+  `manual`) by the modules it touches. 38 entries route to real-raw
+  fixtures; the rest stay on the synthetic colorchecker / grayscale
+  ramp where those are honest fixtures.
+- **#130** — Real-raw fixtures via Git LFS. Sony DSC-RX10M4
+  landscape ARW + Sony ZV-E10 portrait ARW, both CC BY-SA 4.0 from
+  discuss.pixls.us. Per-entry routing landscape / portrait based on
+  touches + content.
+- **#138** — Content-aware fixture routing. `requires_content`
+  manifest tag (sky / water / foliage / landscape / food / skin)
+  picks the matching fixture for entries whose effect needs scene
+  content the chart doesn't have.
+- **#139** — Clipped-gradient routing for `blacks_lifted` /
+  `blacks_crushed`. The sigmoid `target_black` effect is below noise
+  on the colorchecker but visible on the synthetic clipped fixture.
+
+### #141 — Formalized visual-proof audit
+
+`scripts/audit_visual_proofs.py` (wired to CI on every push) compares
+each rendered after-image to its baseline via pixel-stat signatures
+(mean R/G/B, luma, std-luma, mean chroma, clip counts) and emits a
+per-entry verdict by subtype-specific direction-of-effect heuristics.
+Current state: 114 ok / 0 warn / 0 fail across the 114-entry
+vocabulary. 17 smoke tests verify the heuristics themselves can't
+silently break. The audit knows about parametric identity-default
+entries, `requires_content`-tagged content-aware masks, and chroma-
+shift entries (different metric from R/B mean).
+
+### #142 — Cross-camera RFC-039 verification
+
+Two new CC0 fixtures via Git LFS (Canon EOS R6 CR3, Nikon D70 NEF;
+~10 MB total, from raw.pixls.us). 7-test integration suite at
+`tests/integration/core/test_cross_camera_wb.py` asserts:
+
+- Per-body daylight WB probe returns plausible values (Sony 2.39/1.0/
+  1.71, Canon 1.81/1.0/1.63, Nikon 2.17/1.0/1.52)
+- +1500K shift anchors on each camera's WB (R ≈ camera_R × 1.15;
+  B ≈ camera_B × 0.85)
+- Same logical operation produces 3 distinct op_params across 3
+  bodies — the load-bearing portability assertion
+
+### #143 — Strengthened parametric assertions
+
+Three `_check_render_completes` entries upgraded to direction-of-
+change:
+
+- `grain_strength` — new `_check_pixel_std_increase` LabCheck;
+  `PatchSample.std_luma_8bit` field reads pixel-level luma std.
+  grain_strength=50 lifts std by +1.57; grain_strength=8 by +0.12.
+- `highlights_clip_threshold` — parametrized
+  `test_clipped_fixture_validation.py` to cover clip_0.85 (≥5%
+  clipped reduction) AND clip_0.95 (≥1%).
+- `toneequalizer` — stays at render-completes after empirical
+  finding that band centers don't align with linear grayscale ramp
+  indices; direction-of-bytes is exhaustively covered by
+  `test_toneequal.py`. Documented in the entry's inline comment.
+
+Side-cleanup: `wb_warm_subtle` moved to `SKIP_REASONS` — the
+RFC-039 composed entry can't substitute on a non-raw chart;
+direction asserted by #142's cross-body suite and the byte-level
+kelvin-delta test.
+
+### #144 — Inline CI-assertion annotations in the gallery
+
+Every gallery entry now surfaces what CI mechanically verifies for
+it alongside the photographic-intent description. Four cases:
+
+- `EXPECTED_EFFECTS` direct coverage → `check_name(threshold)` +
+  fixture name
+- `PARAMETERIZED_EFFECTS` → one bullet per (label, params)
+- `SKIP_REASONS` → the documented skip reason inline
+- L2 composite (auto-skipped by structural rule) → "verified by
+  visual review" inline
+
+53 entries get direct assertions; 14 get skip reasons; 47 get the
+L2-composite line. Reader never wonders.
+
+### #145 — Cross-pack composition stress test
+
+Three synthetic test packs at `tests/fixtures/vocabulary/` exercise
+N=3-pack scenarios that the v1.10.0 [starter, expressive-baseline]
+default didn't cover:
+
+- Cross-pack `composes` reference (a 3rd pack composes starter's
+  primitive)
+- Cross-pack name collision (ManifestError naming both source
+  packs)
+- Modversion drift warning fires per `emit_drift_signals`
+- 3-pack-together load (starter + compose + drift) in one
+  VocabularyIndex construction
+
+RFC-028 (deferred to v1.12.0) will be the architectural answer to
+N-pack semantics; #145 is the engineering safety net under the
+v1.11.0 loader.
+
+### Other engineering changes
+
+- **#100** — Darkroom-session umbrella opened with structured
+  checklist (Sub-tasks A-D: tone-curve baselines #94, EXIF probes,
+  curves #96, colorzones #98). Estimated ~3-4 hours.
+- **#119** — Hypothesis property-based fuzz tests for 18
+  parameterize decoders (round-trip, idempotence, size-invariance).
+- **#129–#140** — Visual-proofs trust-gap closures, content-aware
+  routing, AGENTS.md inversion (now canonical; CLAUDE.md +
+  .cursorrules are thin pointers).
+- **Post-push CI verification** — codified in AGENTS.md as a
+  workflow rule (never walk away from a red CI).
+
+### Carryover from v1.10.0 release
+
+The ADR-088/089/090 trio shipped Draft pending darkroom validation
+in v1.10.0; they remain Draft. The new ADR-091/092/093 (RFC-039)
+and ADR-094/095/096 (RFC-039 follow-ups) ship the same way.
+
+### What's next (v1.12.0)
+
+- RFC-027 — Multi-photographer review phase plan
+- RFC-028 — Pack management / multi-pack composition / vendor packs
+- Possibly: the deferred darkroom-session work (tonecurve mv5
+  decoder #94, colorzones spline fallback #98, EXIF baselines)
+  promoted from #100 — depending on whether you sit down with the
+  GUI.
 
 ## [1.10.0] — 2026-05-10
 
