@@ -1,0 +1,26 @@
+{
+  "_comment": "Synthetic stress-test pack #145 / option E. Intentional name collision with starter's wb_kelvin_delta entry — verifies VocabularyIndex raises ManifestError with a clear, actionable message when two packs declare the same entry name.",
+  "entries": [
+    {
+      "name": "wb_kelvin_delta",
+      "layer": "L3",
+      "subtype": "wb",
+      "path": "layers/L3/wb/wb_kelvin_delta.dtstyle",
+      "touches": [
+        "temperature"
+      ],
+      "tags": [
+        "wb",
+        "test-fixture",
+        "collision"
+      ],
+      "description": "Synthetic collision-stress-test entry (#145). Intentionally collides with starter's wb_kelvin_delta primitive name; loading this pack alongside starter MUST raise ManifestError.",
+      "modversions": {
+        "temperature": 4
+      },
+      "darktable_version": "5.4",
+      "source": "cross_pack_collision",
+      "license": "MIT"
+    }
+  ]
+}

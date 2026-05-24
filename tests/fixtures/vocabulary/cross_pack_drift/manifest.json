@@ -1,0 +1,26 @@
+{
+  "_comment": "Synthetic stress-test pack #145 / option E. Entry declares modversions['temperature']=99 — intentionally drifted from the engine's pinned modversion (currently 4). Loading the pack should fire the modversion-drift signal (warning in normal mode, ManifestError in CHEMIGRAM_STRICT_MODVERSIONS=1).",
+  "entries": [
+    {
+      "name": "cross_pack_drift_entry",
+      "layer": "L3",
+      "subtype": "wb",
+      "path": "layers/L3/temperature/cross_pack_drift_entry.dtstyle",
+      "touches": [
+        "temperature"
+      ],
+      "tags": [
+        "wb",
+        "test-fixture",
+        "modversion-drift"
+      ],
+      "description": "Synthetic modversion-drift stress-test entry (#145). modversions.temperature=99 forces a drift signal during load.",
+      "modversions": {
+        "temperature": 99
+      },
+      "darktable_version": "5.4",
+      "source": "cross_pack_drift",
+      "license": "MIT"
+    }
+  ]
+}

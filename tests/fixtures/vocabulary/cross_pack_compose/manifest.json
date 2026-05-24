@@ -1,0 +1,32 @@
+{
+  "_comment": "Synthetic stress-test pack #145 / option E. One L2 entry that composes the starter pack's wb_kelvin_delta primitive — verifies cross-pack composition resolves when a non-starter, non-expressive-baseline pack references the starter's parametric primitive. RFC-018 + RFC-039 (#137) machinery.",
+  "entries": [
+    {
+      "name": "cross_pack_warm_subtle",
+      "layer": "L2",
+      "subtype": "look",
+      "path": "layers/L2/look/cross_pack_warm_subtle.dtstyle",
+      "touches": [
+        "temperature"
+      ],
+      "tags": [
+        "look",
+        "warm",
+        "test-fixture"
+      ],
+      "description": "Synthetic cross-pack compose-test entry — composes starter's wb_kelvin_delta with kelvin_delta=+400. Used by tests/integration/core/vocab/test_cross_pack_composition.py (#145).",
+      "modversions": {},
+      "darktable_version": "5.4",
+      "source": "cross_pack_compose",
+      "license": "MIT",
+      "composes": [
+        {
+          "primitive": "wb_kelvin_delta",
+          "parameter_values": {
+            "kelvin_delta": 400.0
+          }
+        }
+      ]
+    }
+  ]
+}
