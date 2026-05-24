@@ -115,6 +115,30 @@ def _near_baseline(d: dict[str, float]) -> bool:
     )
 
 
+def _is_parametric_identity_default(entry: Any) -> bool:
+    """True when every parameter's default is identity (0.0 or 1.0). At
+    identity the main-row render is no-op by design; near-baseline
+    signature is expected, not a regression. Mirrors the same-named
+    heuristic in scripts/generate-visual-proofs.py."""
+    params = getattr(entry, "parameters", None)
+    if not params:
+        return False
+    for spec in params:
+        default = getattr(spec, "default", 0.0)
+        if abs(default) > 1e-6 and abs(default - 1.0) > 1e-6:
+            return False
+    return True
+
+
+def _requires_content(entry: Any) -> bool:
+    """True when the entry's effect targets specific scene content (sky,
+    skin, food, etc.) via a content-aware mask. On the synthetic chart
+    those masks resolve to nothing — near-baseline is structural, not
+    a regression. The content-fixture render below the main row shows
+    the actual effect."""
+    return bool(getattr(entry, "requires_content", ()))
+
+
 @dataclass(frozen=True)
 class Verdict:
     status: str  # "ok" | "warn" | "fail"
@@ -136,6 +160,20 @@ def _verdict_chart(entry: Any, d: dict[str, float]) -> Verdict:  # noqa: C901
             "ok",
             "chart isn't the verifying fixture for this entry "
             "(see SKIP_REASONS in tests/e2e/_lab_grade_deltas.py)",
+        )
+
+    if _is_parametric_identity_default(entry):
+        return Verdict(
+            "ok",
+            "parametric identity-default — main row is no-op by design; "
+            "see parameter sweep for the entry's effect at non-default values",
+        )
+
+    if _requires_content(entry):
+        return Verdict(
+            "ok",
+            "content-aware mask doesn't fire on the chart — see the "
+            "content-fixture render row for the entry's actual effect",
         )
 
     # Universal clip checks first — blown / crushed channels are a
@@ -206,6 +244,13 @@ def _verdict_chart(entry: Any, d: dict[str, float]) -> Verdict:  # noqa: C901
         return Verdict("ok", f"chroma_delta={d['mean_chroma']:+.1f}")
 
     if sub in ("colorbalancergb", "warmth", "warm", "hue"):
+        # Chroma-shift entries (chroma_boost_*, etc.) increase per-patch
+        # chroma magnitude without moving R/B mean — check mean_chroma
+        # instead so the heuristic uses the right metric.
+        if "chroma" in name:
+            if d["mean_chroma"] < 1.0:
+                return Verdict("warn", f"chroma delta {d['mean_chroma']:+.1f} below threshold")
+            return Verdict("ok", f"chroma_delta={d['mean_chroma']:+.1f}")
         if abs(d["mean_r"]) + abs(d["mean_b"]) < 1.0:
             return Verdict(
                 "warn",
@@ -247,6 +292,12 @@ def _verdict_real_raw(entry: Any, d: dict[str, float]) -> Verdict:
         return Verdict("fail", f"clip_lo={d['clip_lo']:.2f} — looks crushed")
 
     if _near_baseline(d):
+        if _is_parametric_identity_default(entry):
+            return Verdict(
+                "ok",
+                "parametric identity-default — main row is no-op by design; "
+                "see parameter sweep for the entry's effect at non-default values",
+            )
         return Verdict(
             "warn",
             "near-baseline mean signature — render may be a no-op vs the fixture",
