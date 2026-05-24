@@ -1013,6 +1013,16 @@ def _assertion_md(entry) -> str | None:
     # Documented skip
     if entry.name in SKIP_REASONS:
         return f"> 🔬 **CI**: skipped — {SKIP_REASONS[entry.name]}"
+    # Structural L2 auto-skip — every L2 composite skips the lab-grade
+    # slot per the rule in test_lab_grade_primitives.py. Surface this so
+    # readers don't wonder why a multi-module look has no assertion.
+    if entry.layer == "L2":
+        return (
+            "> 🔬 **CI**: L2 composite — auto-skipped by structural rule "
+            "in test_lab_grade_primitives.py. Direction-of-effect is "
+            "verified at the L3 primitive layer; this L2 look's "
+            "composition is verified by visual review."
+        )
     return None
 
 

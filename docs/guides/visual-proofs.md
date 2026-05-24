@@ -71,6 +71,8 @@ _Warm white balance, subtle. Reauthored RFC-039 / #137 to compose wb_kelvin_delt
 
 _Neutral L2 look — exposure + warm-subtle WB baseline. Reauthored RFC-039 / #137 to compose wb_kelvin_delta (no shift at default); camera-portable._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -719,6 +721,8 @@ _Dim -0.3 EV in a horizontal mid-band rectangle (de-emphasize a horizon line)._
 
 _L2 look — gentle skin-protective composition. exposure +0.2 EV, sigmoid_contrast 1.2 (soft s-curve), colorbalancergb saturation_global=-0.1 + vibrance=+0.2 (mild chroma push that protects saturated pixels). Targets portraiture; avoid stacking with aggressive contrast or clarity._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/look_portrait-colorchecker.jpg" alt="look_portrait ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_portrait-grayscale.jpg" alt="look_portrait grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_portrait-colorchecker-masked.jpg" alt="look_portrait ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/look_portrait-grayscale-masked.jpg" alt="look_portrait grayscale masked" width="180"> |
@@ -726,6 +730,8 @@ _L2 look — gentle skin-protective composition. exposure +0.2 EV, sigmoid_contr
 ### `look_landscape`
 
 _L2 look — vibrant dramatic landscape composition. sigmoid_contrast 2.0 (strong s-curve), colorbalancergb saturation_global=+0.3 + vibrance=+0.2, bilat_clarity_strength 1.0 (definite local-contrast pop). Aggressive — pull back via sigmoid to ~1.5 if it feels harsh._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -735,6 +741,8 @@ _L2 look — vibrant dramatic landscape composition. sigmoid_contrast 2.0 (stron
 
 _L2 look — Hollywood blockbuster teal-and-orange grade (#104). sigmoid_contrast 1.4 + colorbalancergb hue_shadows=210 deg / saturation_shadows=+0.3 (teal) + hue_highlights=30 deg / saturation_highlights=+0.2 (orange) + saturation_global=+0.1._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/look_cinematic_teal_orange-colorchecker.jpg" alt="look_cinematic_teal_orange ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_cinematic_teal_orange-grayscale.jpg" alt="look_cinematic_teal_orange grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_cinematic_teal_orange-colorchecker-masked.jpg" alt="look_cinematic_teal_orange ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/look_cinematic_teal_orange-grayscale-masked.jpg" alt="look_cinematic_teal_orange grayscale masked" width="180"> |
@@ -742,6 +750,8 @@ _L2 look — Hollywood blockbuster teal-and-orange grade (#104). sigmoid_contras
 ### `look_high_key_portrait`
 
 _L2 look — high-key portrait (Adler-style fashion / commercial). exposure +0.3 EV + sigmoid_contrast 0.8 (soft s-curve) + colorbalancergb brilliance_highlights=+0.2 + saturation_global=-0.05 (retains skin saturation while reducing global). For magazine / beauty work where bright skin tones drive the look. Compose with skin_uniformity for a complete editorial pass._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -751,6 +761,8 @@ _L2 look — high-key portrait (Adler-style fashion / commercial). exposure +0.3
 
 _L2 look — low-key portrait (Tucker / chiaroscuro voice). exposure -0.2 EV + sigmoid_contrast 1.8 (strong s-curve) + colorbalancergb brilliance_shadows=-0.3 + saturation_global=-0.10. For dramatic editorial / character portraits where deep shadows carry the mood. Compose with look_portrait_split_tone_moody for a more cinematic grade._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/look_low_key_portrait-colorchecker.jpg" alt="look_low_key_portrait ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_low_key_portrait-grayscale.jpg" alt="look_low_key_portrait grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_low_key_portrait-colorchecker-masked.jpg" alt="look_low_key_portrait ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/look_low_key_portrait-grayscale-masked.jpg" alt="look_low_key_portrait grayscale masked" width="180"> |
@@ -758,6 +770,8 @@ _L2 look — low-key portrait (Tucker / chiaroscuro voice). exposure -0.2 EV + s
 ### `look_moody_dramatic`
 
 _L2 look — moody / dramatic editorial (#104). sigmoid_contrast 2.0 (strong s-curve) + colorbalancergb saturation_global=-0.3 + vibrance=+0.1 + grain_strength=25._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -767,6 +781,8 @@ _L2 look — moody / dramatic editorial (#104). sigmoid_contrast 2.0 (strong s-c
 
 _L2 look — lift only the *dark pixels* in a centered subject region. Drawn ellipse around the subject + luminance shadows filter. Composes RFC-029 drawn mask + RFC-024 range_filter. The user's mental model: 'in this drawn mask, only affect the dark pixels.'_
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_subject_lift_dark_only-colorchecker.jpg" alt="look_subject_lift_dark_only ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_subject_lift_dark_only-grayscale.jpg" alt="look_subject_lift_dark_only grayscale" width="180"> |
@@ -774,6 +790,8 @@ _L2 look — lift only the *dark pixels* in a centered subject region. Drawn ell
 ### `look_sky_blue_deepen` 🟦 mask-bound
 
 _L2 look — deepen sky blues in the upper half. Drawn gradient (top half) + color_h filter on cyan-blue range. Composes RFC-029 + RFC-024. Real-world workflow: dramatic sky without affecting foreground or non-blue elements above the horizon._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 | ColorChecker | Grayscale ramp |
 |-|-|
@@ -789,6 +807,8 @@ _L2 look — deepen sky blues in the upper half. Drawn gradient (top half) + col
 
 _L2 look — lift warm tones near the horizon. Horizontal gradient anchored at midline + color_h filter on warm tones (orange/red). Sunset / golden-hour enhancement without affecting cool tones._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_horizon_warm_glow-colorchecker.jpg" alt="look_horizon_warm_glow ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_horizon_warm_glow-grayscale.jpg" alt="look_horizon_warm_glow grayscale" width="180"> |
@@ -797,6 +817,8 @@ _L2 look — lift warm tones near the horizon. Horizontal gradient anchored at m
 
 _L2 look — brighten only the bright pixels in the subject region. Drawn ellipse + luminance highlights filter. Catchlights, skin highlights, sparkle without blowing out midtones._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_subject_brighten_highlights-colorchecker.jpg" alt="look_subject_brighten_highlights ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_subject_brighten_highlights-grayscale.jpg" alt="look_subject_brighten_highlights grayscale" width="180"> |
@@ -804,6 +826,8 @@ _L2 look — brighten only the bright pixels in the subject region. Drawn ellips
 ### `look_dark_pixels_global_lift` 🟦 mask-bound
 
 _L2 look — lift dark pixels globally (no spatial mask). Pure parametric range_filter — luminance shadows. Useful when the intent is purely tonal: 'open up all the dark areas in the image, regardless of where they are.' Demonstrates the parametric-only path of RFC-024 / ADR-085._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 | ColorChecker | Grayscale ramp |
 |-|-|
@@ -823,6 +847,8 @@ _Approximate frequency separation for skin smoothing (Portrait Gap #4, cheap var
 
 _Magazine / fashion editorial grade. Punchier sigmoid contrast (1.6), global saturation pull-back (-0.10) — counterintuitive but the move Adler/Woloszynowicz reach for; reduced overall sat lets the split-tone read. Cool-shadows + warm-highlights split (hue_shadows=210, hue_highlights=45). Compose with skin_uniformity if skin patches fight the grade._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/look_portrait_editorial-colorchecker.jpg" alt="look_portrait_editorial ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_portrait_editorial-grayscale.jpg" alt="look_portrait_editorial grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_portrait_editorial-colorchecker-masked.jpg" alt="look_portrait_editorial ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/look_portrait_editorial-grayscale-masked.jpg" alt="look_portrait_editorial grayscale masked" width="180"> |
@@ -830,6 +856,8 @@ _Magazine / fashion editorial grade. Punchier sigmoid contrast (1.6), global sat
 ### `look_portrait_background_dim` 🟦 mask-bound
 
 _Dim and de-saturate the background to push the subject forward. Exposure -0.4 EV + saturation_global -0.15. Pre-baked with mask_subject + invert: true (RFC-034) — the photographer doesn't have to construct an inverse-subject mask manually. The parametric fallback for mask_subject is coarse (midtone luminance + center-bias); for clean subject vs. background separation override the mask_spec at apply time with a manually-drawn inverted ellipse, or escalate via render_preview + LLM-vision construction (llm-vision-for-masks.md Pattern 7) for a path-form subject mask._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 | ColorChecker | Grayscale ramp |
 |-|-|
@@ -839,6 +867,8 @@ _Dim and de-saturate the background to push the subject forward. Exposure -0.4 E
 
 _Cinematic split-tone portrait — cool blue shadows (hue 210, sat 0.30) + warm orange highlights (hue 45, sat 0.20), sigmoid contrast 1.4. Stronger split than look_portrait_editorial; some photographers (Adler) consider this 'fashion-only' rather than a general portrait move. Borderline survey candidate — ships, but exercise judgment._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/look_portrait_split_tone_moody-colorchecker.jpg" alt="look_portrait_split_tone_moody ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_portrait_split_tone_moody-grayscale.jpg" alt="look_portrait_split_tone_moody grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_portrait_split_tone_moody-colorchecker-masked.jpg" alt="look_portrait_split_tone_moody ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/look_portrait_split_tone_moody-grayscale-masked.jpg" alt="look_portrait_split_tone_moody grayscale masked" width="180"> |
@@ -846,6 +876,8 @@ _Cinematic split-tone portrait — cool blue shadows (hue 210, sat 0.30) + warm 
 ### `look_landscape_grand_vista`
 
 _Heaton/PureRAW-style grand vista. Sigmoid contrast 1.4, mildly warm shadows (hue 30, sat 0.10), vibrance +0.10, bilat clarity_strength 0.5. The chemigram shape of LR's adaptive sky + foreground lift workflow rendered globally; for sky-specific work compose with look_landscape_sky_enhance instead._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -861,6 +893,8 @@ _Heaton/PureRAW-style grand vista. Sigmoid contrast 1.4, mildly warm shadows (hu
 
 _Marino-style intimate / small-scene restraint. Very gentle sigmoid contrast (1.05), saturation pulled back (-0.10), bilat softened (clarity_strength -0.3 — opposite of clarity boost). The defining stylistic choice for forest interiors, abstract details, and any scene where drama would betray the subject. Applies LESS than the baseline does, deliberately._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/look_landscape_intimate_quiet-colorchecker.jpg" alt="look_landscape_intimate_quiet ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_intimate_quiet-grayscale.jpg" alt="look_landscape_intimate_quiet grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_intimate_quiet-colorchecker-masked.jpg" alt="look_landscape_intimate_quiet ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_intimate_quiet-grayscale-masked.jpg" alt="look_landscape_intimate_quiet grayscale masked" width="180"> |
@@ -875,6 +909,8 @@ _Marino-style intimate / small-scene restraint. Very gentle sigmoid contrast (1.
 
 _Page/Adamus-style dramatic atmospheric. Sigmoid contrast 1.7 (strong), cool shadows (hue 210, sat 0.20) + warm highlights (hue 30, sat 0.15), bilat clarity_strength 0.6. The dramatic counterpart to intimate_quiet — for stormy skies, rugged terrain, and weather drama. Pair with mask_luminosity_brightest_quartile darkening for stormy-cloud emphasis._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
 | <img src="../visual-proofs/expressive-baseline/look_landscape_dramatic_moody-colorchecker.jpg" alt="look_landscape_dramatic_moody ColorChecker global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_dramatic_moody-grayscale.jpg" alt="look_landscape_dramatic_moody grayscale global" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_dramatic_moody-colorchecker-masked.jpg" alt="look_landscape_dramatic_moody ColorChecker masked" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_dramatic_moody-grayscale-masked.jpg" alt="look_landscape_dramatic_moody grayscale masked" width="180"> |
@@ -882,6 +918,8 @@ _Page/Adamus-style dramatic atmospheric. Sigmoid contrast 1.7 (strong), cool sha
 ### `look_landscape_sky_enhance` 🟦 mask-bound
 
 _Sky-targeted enhancement (Heaton 'adaptive sky' shape). Cool-tone highlights shift (hue 200, sat 0.15) + slight vibrance (+0.05). Pre-baked with mask_sky (RFC-032) so the move scopes to the sky region automatically. **Compose, don't replace** — this is a focused enhancement to stack on top of any landscape look. For complex skies (sunsets, partial clouds, trees protruding into sky), override mask_spec with a constructed path mask via render_preview + LLM-vision (llm-vision-for-masks.md Pattern 7)._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 | ColorChecker | Grayscale ramp |
 |-|-|
@@ -897,6 +935,8 @@ _Sky-targeted enhancement (Heaton 'adaptive sky' shape). Cool-tone highlights sh
 
 _Water surfaces — silky water in long-exposure work, glassy lakes. Bilat clarity_strength -0.4 (smooths the texture, OPPOSITE of clarity), cool-tone shadows (hue 200, sat 0.10), vibrance +0.05. Pre-baked with mask_water_blue_cyan so the smoothing scopes to water without affecting rocks, foliage, or sky. Reduces clarity selectively to enhance the smoothness photographers spent shutter-time creating._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_landscape_water_silk-colorchecker.jpg" alt="look_landscape_water_silk ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_landscape_water_silk-grayscale.jpg" alt="look_landscape_water_silk grayscale" width="180"> |
@@ -911,6 +951,8 @@ _Water surfaces — silky water in long-exposure work, glassy lakes. Bilat clari
 
 _Subject-isolated wildlife sharpening — feather / fur / scale detail lifted ON THE SUBJECT only via mask_subject (RFC-032). Sharpen amount 2.0 + bilat clarity 0.3. The chemigram realization of LR's Subject-mask + Sharpening + selective Texture pattern (Sweileh, Matiash, Dale, Gardner all reach for this). Compose with mask_subject in the manifest; pair with look_wildlife_background_blur for compositional subject emphasis._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_wildlife_subject_sharpen-colorchecker.jpg" alt="look_wildlife_subject_sharpen ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_wildlife_subject_sharpen-grayscale.jpg" alt="look_wildlife_subject_sharpen grayscale" width="180"> |
@@ -918,6 +960,8 @@ _Subject-isolated wildlife sharpening — feather / fur / scale detail lifted ON
 ### `look_wildlife_background_blur` 🟦 mask-bound
 
 _Background softening for wildlife — bilat clarity_strength -0.5 (the softening direction; opposite of clarity boost). Pre-baked with mask_subject + invert: true (RFC-034) so the softening scopes to everything-except-subject. Mimics longer-lens / shallower-DOF rendering at edit time. Pair with look_wildlife_subject_sharpen for complete subject emphasis. Marc/Bushcrafter darktable-discipline made portable._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 | ColorChecker | Grayscale ramp |
 |-|-|
@@ -927,6 +971,8 @@ _Background softening for wildlife — bilat clarity_strength -0.5 (the softenin
 
 _Catchlight emphasis on the wildlife subject's eye — exposure +0.3 EV + sharpen amount 1.5, scoped to mask_eye_region (RFC-032). The eye becomes the brightest, sharpest point in the frame; gives the bird / animal its 'life.' Cross-genre echo of Portrait Move 7 (eye-detail lift). For close-up wildlife where the subject's gaze is the picture._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 | ColorChecker | Grayscale ramp |
 |-|-|
 | <img src="../visual-proofs/expressive-baseline/look_wildlife_eye_lift-colorchecker.jpg" alt="look_wildlife_eye_lift ColorChecker" width="180"> | <img src="../visual-proofs/expressive-baseline/look_wildlife_eye_lift-grayscale.jpg" alt="look_wildlife_eye_lift grayscale" width="180"> |
@@ -934,6 +980,8 @@ _Catchlight emphasis on the wildlife subject's eye — exposure +0.3 EV + sharpe
 ### `look_food_texture_subtle` 🟦 mask-bound
 
 _Subtle texture lift for food — bread crust, pastry layers, meat fibers, fruit skin texture. Bilat clarity_strength +0.20 — explicit ceiling matching the food-photography-academy 'never overdone' discipline (Kopcok: 'overdoing clarity makes food look dry and unappealing'). Pre-baked with mask_subject so the texture lift scopes to the food, not the table / plate. Compose with look_food_appetizing_warm._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 | ColorChecker | Grayscale ramp |
 |-|-|
@@ -948,6 +996,8 @@ _Subtle texture lift for food — bread crust, pastry layers, meat fibers, fruit
 ### `look_product_packshot_clean`
 
 _Commercial packshot baseline — gentle sigmoid 1.10 (avoids the punch-the-product look), subtle vignette -0.10 (-10% brightness edges; pulls the eye to the centered product). Karl Taylor / Zoe Noble's commercial-product clean-on-white starting point. Assumes WB has been gray-card-corrected (use wb_from_gray_card MCP tool / CLI before this look applies)._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 | ColorChecker (global) | Grayscale (global) | ColorChecker (centered ellipse mask) | Grayscale (centered ellipse mask) |
 |-|-|-|-|
@@ -1135,6 +1185,8 @@ _Parameterized white balance (RFC-021; first multi-parameter ship). Three axes: 
 
 _L2 look — nostalgia / faded film aesthetic. sigmoid_contrast 1.2 (gentle s-curve), colorbalancergb saturation_global=-0.2 (slight desaturation), grain_strength 25 (medium film grain), temperature warm shift (red 2.148 / blue 1.209). Pairs well with grade_shadows_warm._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -1145,6 +1197,8 @@ _L2 look — nostalgia / faded film aesthetic. sigmoid_contrast 1.2 (gentle s-cu
 ### `look_film_kodachrome` 📷 landscape raw
 
 _L2 look — Kodachrome film simulation (#104). sigmoid_contrast 1.4 + temperature warm (red 2.148 / blue 1.209 = wb_warm_subtle) + saturation_global=+0.2 + grain_strength=8._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -1157,6 +1211,8 @@ _L2 look — Kodachrome film simulation (#104). sigmoid_contrast 1.4 + temperatu
 
 _L2 look — Kodak Portra 400 portrait film (#104). sigmoid_contrast 0.9 (soft s-curve) + temperature subtle warm (red 1.5 / blue 1.3) + saturation_global=-0.1 + grain_strength=15. Compose with hsl_saturation --param sat_orange=+0.05 if you want the canonical Portra skin-warmth boost on real raws._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -1167,6 +1223,8 @@ _L2 look — Kodak Portra 400 portrait film (#104). sigmoid_contrast 0.9 (soft s
 ### `look_70s_film` 📷 landscape raw
 
 _L2 look — 1970s film aesthetic (#104). temperature warm (red 2.0 / blue 1.4) + sigmoid_contrast 1.1 (gentle s-curve) + saturation_global=-0.1 + grain_strength=35 (medium grain)._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -1179,6 +1237,8 @@ _L2 look — 1970s film aesthetic (#104). temperature warm (red 2.0 / blue 1.4) 
 
 _L2 look — 1990s film aesthetic (#104). sigmoid_contrast 1.6 + temperature subtle cool (red 1.2 / blue 2.0) + grain_strength=50 (heavy grain)._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -1189,6 +1249,8 @@ _L2 look — 1990s film aesthetic (#104). sigmoid_contrast 1.6 + temperature sub
 ### `look_2000s_digital` 📷 landscape raw
 
 _L2 look — early-2000s digital camera aesthetic (#104). sigmoid_contrast 1.3 + temperature subtle cool (red 1.1 / blue 1.6) + saturation_global=+0.4 (oversaturated digital signature)._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -1214,6 +1276,8 @@ _Skin-tone uniformity (RFC-033). Compresses skin-band saturation variance toward
 
 _Restraint-first portrait foundation — Tucker/Marino-aligned. Slight warm temperature (+0.03 red), exposure +0.1 EV, sigmoid contrast 1.2 (gentle s-curve), saturation_global -0.05 + vibrance +0.1 (mild chroma shaping that protects skin tones). The starting point for portrait work that doesn't push contrast or saturation as a stylistic choice._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `portrait.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the portrait fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Portrait raw |
@@ -1224,6 +1288,8 @@ _Restraint-first portrait foundation — Tucker/Marino-aligned. Slight warm temp
 ### `look_portrait_skin_warm_lift` 📷 portrait raw
 
 _Subject-region warm + brighten. Slight warm temperature (+0.04 red) + exposure +0.2 EV. Pre-baked with mask_skin_region so the lift scopes to skin without affecting clothing or background. Pairs with skin_uniformity for a complete portrait skin pass._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 > 📷 **Real-raw rendering** (fixture: `portrait.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the portrait fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -1236,6 +1302,8 @@ _Subject-region warm + brighten. Slight warm temperature (+0.04 red) + exposure 
 
 _Sunset / sunrise mood. Warm temperature shift (+0.07 red), sigmoid contrast 1.3, warm shadows (hue 30, sat 0.20) + amber highlights (hue 50, sat 0.15), vibrance +0.10. Pushes the warmth that golden-hour light almost has and amplifies it without breaking color credibility. For scenes already on the warm side, apply at lower strength via opacity — not authored as parametric (look-not-primitive)._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -1246,6 +1314,8 @@ _Sunset / sunrise mood. Warm temperature shift (+0.07 red), sigmoid contrast 1.3
 ### `look_landscape_blue_hour_cool` 📷 landscape raw
 
 _Twilight / pre-dawn / blue-hour mood. Cool temperature shift (+0.07 blue), sigmoid contrast 1.3, cool shadows (hue 210, sat 0.20) + neutral-cool highlights (hue 200, sat 0.10), saturation_global -0.05. Opposite mood from golden_hour; equally valid genre signature. Composes with sigmoid_contrast for stronger drama if needed._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -1258,6 +1328,8 @@ _Twilight / pre-dawn / blue-hour mood. Cool temperature shift (+0.07 blue), sigm
 
 _Misty / hazy / fog-as-subject mood. Hazeremoval strength 0.5 (lift visibility while preserving the moody atmosphere), bilat clarity 0.3, warm shadows (hue 30, sat 0.10) + vibrance +0.05. The trick: lift JUST enough to read details, not enough to flatten the atmosphere. Strong hazeremoval values (>1.0) produce 'no atmosphere' results that defeat the intent — keep restrained._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -1268,6 +1340,8 @@ _Misty / hazy / fog-as-subject mood. Hazeremoval strength 0.5 (lift visibility w
 ### `look_landscape_autumn_pop` 📷 landscape raw
 
 _Autumn foliage / fall color. Slight warm temperature (+0.04 red), colorequal sat_orange +0.30 + sat_red +0.20 (lift autumn colors) + sat_blue -0.10 (compensating to keep skies natural — without this, skies turn cartoonish). Bilat clarity_strength 0.4 for foliage definition. A targeted seasonal grade; not for non-foliage scenes._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -1293,6 +1367,8 @@ _B&W conversion (RFC-033 follow-up; survey Gap #1). Single colorequal plugin wit
 
 _Classic B&W foundation — neutral channel weighting (no filter), mid contrast (sigmoid 1.3), mild structure (clarity 0.3). The starting point for any B&W work; compose with split-tone or chiaroscuro variants for stylistic direction. Per RFC-033 / survey Gap #1._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -1303,6 +1379,8 @@ _Classic B&W foundation — neutral channel weighting (no filter), mid contrast 
 ### `look_bw_high_contrast_chiaroscuro` 📷 landscape raw
 
 _Tucker/Thompson-style chiaroscuro B&W — strong sigmoid contrast (1.7), deep shadow brilliance (-0.20), lifted highlight brilliance (+0.10). For street/portrait B&W where dramatic light-shadow interplay defines the image. Compose with mask_subject for directional facial sculpting (Tucker portrait discipline)._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -1315,6 +1393,8 @@ _Tucker/Thompson-style chiaroscuro B&W — strong sigmoid contrast (1.7), deep s
 
 _Page/Adamus dramatic B&W landscape — red-filter-emulated conversion (bright_red +0.20 lightens land; bright_blue -0.30 darkens skies — the classic Adams-school red filter for storm-cloud drama). Sigmoid contrast 1.6 + clarity 0.5. For stormy skies, rugged terrain, weather drama. The B&W counterpart of look_landscape_dramatic_moody._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -1325,6 +1405,8 @@ _Page/Adamus dramatic B&W landscape — red-filter-emulated conversion (bright_r
 ### `look_bw_split_tone_warm_shadows` 📷 landscape raw
 
 _Subtle warm-shadows toned B&W — sepia / selenium print evocation. Neutral B&W conversion + mid-strong sigmoid contrast (1.35) + warm-tone shadows (hue 30, sat 0.05) + cool-tone highlights (hue 210, sat 0.03). The split-tone tinting reads as 'toned print' rather than pure neutral B&W._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -1337,6 +1419,8 @@ _Subtle warm-shadows toned B&W — sepia / selenium print evocation. Neutral B&W
 
 _Whalley/Boutwell zone-system-aware balanced B&W — the restraint discipline applied to monochrome. Neutral conversion + gentle sigmoid contrast (1.15) + subtle clarity (0.15). The defining stylistic position for B&W work that doesn't push contrast or structure as a dramatic move; reads as 'measured tonal development' (Adams-school)._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -1347,6 +1431,8 @@ _Whalley/Boutwell zone-system-aware balanced B&W — the restraint discipline ap
 ### `look_wildlife_high_iso_recovery` 📷 landscape raw
 
 _High-ISO wildlife recovery (low-light dance-floor, late dusk owl, early-dawn bird-burst). Manual denoiseprofile (nbhood 7, strength 1.2, scattering 2.0) + gentle sigmoid 1.25 + subtle clarity 0.2. **Note:** for ISO ≥ 1600 most surveyed wildlife photographers ROUTE THROUGH a sibling AI-NR tool (Topaz DeNoise / DxO PureRAW / LR AI Denoise) BEFORE this look applies; document the BYOA pattern in vocabulary-patterns.md. This look is the chemigram-only manual fallback when sibling tooling isn't configured._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -1359,6 +1445,8 @@ _High-ISO wildlife recovery (low-light dance-floor, late dusk owl, early-dawn bi
 
 _Warm golden-hour wildlife default — temperature +0.05 red shift + sigmoid 1.25 + vibrance +0.10 with slight saturation_global pull (-0.03 to keep the warmth credible, not cartoonish). The starting point for early-morning / late-afternoon wildlife where natural warmth IS the subject. Compose with look_wildlife_subject_sharpen for full effect._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -1369,6 +1457,8 @@ _Warm golden-hour wildlife default — temperature +0.05 red shift + sigmoid 1.2
 ### `look_food_appetizing_warm` 📷 landscape raw
 
 _Default food editorial — warm WB (+0.04 red), gentle sigmoid 1.25, vibrance +0.15 + lifted midtone brilliance +0.08. Lauren C. Short / Darina Kopcok / Joanie Simon's foundational starting point for food blog and editorial work. Pre-WB-foundation (gray card recommended); downstream HSL color shaping per look_food_orange_pop / look_food_green_natural compose orthogonally._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
@@ -1381,6 +1471,8 @@ _Default food editorial — warm WB (+0.04 red), gentle sigmoid 1.25, vibrance +
 
 _Lift the orange / red food band — tomato, carrot, salmon, paprika, peach. Colorequal sat_orange +0.30 + sat_red +0.20 (saturation lift on warm food colors) + slight brightness lifts. The HSL-per-color discipline that food photographers use INSTEAD of global saturation (which would destroy whites and greens). Compose on top of look_food_appetizing_warm._
 
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
+
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
 | Landscape raw |
@@ -1391,6 +1483,8 @@ _Lift the orange / red food band — tomato, carrot, salmon, paprika, peach. Col
 ### `look_food_green_natural` 📷 landscape raw
 
 _Lift greens — fresh herbs, salad, parsley, basil — without crossing into the cartoonish lime-green that over-edited food photography shows. Colorequal sat_green +0.20 + sat_yellow +0.10 + bright_green +0.05. The restraint discipline applied to color shaping (Tucker / Marino voice in food work). Compose on top of look_food_appetizing_warm._
+
+> 🔬 **CI**: L2 composite — auto-skipped by structural rule in test_lab_grade_primitives.py. Direction-of-effect is verified at the L3 primitive layer; this L2 look's composition is verified by visual review.
 
 > 📷 **Real-raw rendering** (fixture: `landscape.ARW`, CC BY-SA 4.0). This entry touches a raw-domain darktable module that needs the full input-profile chain. Rendered against the landscape fixture so the after-image is honest. Apply-path correctness is independently verified by the unit + integration + e2e test coverage. See `tests/fixtures/raws/README.md` for provenance and attribution.
 
