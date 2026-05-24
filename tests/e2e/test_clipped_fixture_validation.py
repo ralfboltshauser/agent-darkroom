@@ -91,27 +91,45 @@ def vocab() -> VocabularyIndex:
     return load_packs(["expressive-baseline"])
 
 
-def test_highlights_clip_threshold_strong_reduces_clipped_pixels_on_clipped_fixture(
+# (clip_threshold, min_reduction_pct) — empirical min thresholds. Aggressive
+# recovery at 0.85 drops more pixels; mild recovery at 0.95 still measurable
+# but with a smaller floor. The display-referred fixture limits how much
+# clipping the module can actually unrecover; thresholds are deliberately
+# conservative to stay robust to render-size variation while still detecting
+# "module silently no-ops" regressions.
+_CLIP_DIRECTION_CASES: tuple[tuple[float, float], ...] = (
+    (0.85, 5.0),
+    (0.95, 1.0),
+)
+
+
+@pytest.mark.parametrize(
+    "clip_threshold, min_reduction_pct",
+    _CLIP_DIRECTION_CASES,
+    ids=[f"clip_{c[0]}" for c in _CLIP_DIRECTION_CASES],
+)
+def test_highlights_clip_threshold_reduces_clipped_pixels_on_clipped_fixture(
+    clip_threshold: float,
+    min_reduction_pct: float,
     vocab: VocabularyIndex,
     configdir: Path,
     tmp_path_factory: pytest.TempPathFactory,
     darktable_binary: str,
 ) -> None:
     """Render the clipped fixture twice — empty baseline vs through
-    ``highlights_clip_threshold`` at 0.85 (strong-recovery equivalent) —
-    and assert the clipped-pixel count in the white band drops.
+    ``highlights_clip_threshold`` at the parametrized clip value — and
+    assert the clipped-pixel count in the white band drops by at least
+    the floor for that value.
 
-    Threshold for pass: at least 5% reduction in clipped pixels. Real
-    highlight recovery on actual blown raw data drops clipping much
-    more aggressively (often 30-80%); the modest 5% threshold here is
-    deliberately conservative because the synthetic fixture is sRGB
-    PNG (display-referred), not raw — recovery only has the limited
-    headroom darktable's display-referred path provides.
+    Strengthens #143 / option C: prior coverage exercised only the
+    aggressive 0.85 value, leaving milder 0.95 in PARAMETERIZED_EFFECTS
+    with render-completes-only. This pair verifies the recovery module
+    is directionally engaged across the parametric range.
     """
     _ = darktable_binary
     from chemigram.core.helpers import apply_entry
 
-    out_dir = tmp_path_factory.mktemp("clipped_recovery")
+    out_dir = tmp_path_factory.mktemp(f"clipped_recovery_{clip_threshold}")
     baseline_xmp = _empty_baseline()
 
     # Baseline render
@@ -134,7 +152,9 @@ def test_highlights_clip_threshold_strong_reduces_clipped_pixels_on_clipped_fixt
     entry = vocab.lookup_by_name("highlights_clip_threshold")
     if entry is None:
         pytest.fail("highlights_clip_threshold not found in expressive-baseline pack")
-    recovery_xmp = apply_entry(baseline_xmp, entry, parameter_values={"clip_threshold": 0.85})
+    recovery_xmp = apply_entry(
+        baseline_xmp, entry, parameter_values={"clip_threshold": clip_threshold}
+    )
     recovery_xmp_path = out_dir / "recovery.xmp"
     recovery_out = out_dir / "recovery.jpg"
     write_xmp(recovery_xmp, recovery_xmp_path)
@@ -161,11 +181,12 @@ def test_highlights_clip_threshold_strong_reduces_clipped_pixels_on_clipped_fixt
         )
 
     reduction_pct = (base_clipped - recovery_clipped) / base_clipped * 100
-    if reduction_pct < 5.0:
+    if reduction_pct < min_reduction_pct:
         pytest.fail(
-            f"highlights_clip_threshold at 0.85 reduced clipped pixels by only "
-            f"{reduction_pct:.2f}% (baseline {base_clipped} -> recovery "
-            f"{recovery_clipped}); expected >= 5% reduction. The clipped "
-            f"fixture is sRGB display-referred so recovery is limited, but "
-            f"any reduction below 5% suggests the module isn't engaging."
+            f"highlights_clip_threshold at {clip_threshold} reduced clipped "
+            f"pixels by only {reduction_pct:.2f}% (baseline {base_clipped} -> "
+            f"recovery {recovery_clipped}); expected >= {min_reduction_pct}% "
+            f"reduction. The clipped fixture is sRGB display-referred so "
+            f"recovery is limited, but a reduction below the floor suggests "
+            f"the module isn't engaging at this value."
         )

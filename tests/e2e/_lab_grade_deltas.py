@@ -341,6 +341,55 @@ def _check_render_completes() -> LabCheck:
     return check
 
 
+def _check_pixel_std_increase(
+    min_increase: float = 2.0, indices: list[int] | None = None
+) -> LabCheck:
+    """Pixel-level luma std on flat patches should INCREASE measurably.
+
+    Patch-mean averaging blanks out high-frequency noise signal — grain
+    on a flat patch shifts mean ≈ 0 but lifts per-pixel std. This check
+    asserts the average per-patch std (on the 0..255 scale) rises by at
+    least ``min_increase``, averaged across ``indices`` (default: all
+    24 grayscale patches).
+
+    Used by grain_strength and adjacent texture primitives to convert
+    a render-completes-only assertion into a signal-shape assertion.
+    """
+    target_indices = indices if indices is not None else list(range(24))
+
+    def check(before: list[PatchSample], after: list[PatchSample]) -> AssertionResult:
+        before_by_idx = {s.index: s for s in before}
+        after_by_idx = {s.index: s for s in after}
+        deltas = [
+            after_by_idx[i].std_luma_8bit - before_by_idx[i].std_luma_8bit
+            for i in target_indices
+            if i in before_by_idx and i in after_by_idx
+        ]
+        if not deltas:
+            return AssertionResult(
+                passed=False,
+                failures=["no overlapping patches between before/after"],
+                measurements={},
+            )
+        avg_delta = sum(deltas) / len(deltas)
+        passed = avg_delta > min_increase
+        failures = (
+            []
+            if passed
+            else [
+                f"avg pixel-std delta {avg_delta:+.2f} on {len(deltas)} patches, "
+                f"expected > +{min_increase:.2f}"
+            ]
+        )
+        return AssertionResult(
+            passed=passed,
+            failures=failures,
+            measurements={"avg_std_luma_delta": avg_delta},
+        )
+
+    return check
+
+
 # ---------------------------------------------------------------------------
 # Spatial checks (mask-bound primitives — effect varies by patch position)
 # ---------------------------------------------------------------------------
@@ -506,7 +555,13 @@ EXPECTED_EFFECTS: dict[str, tuple[str, LabCheck]] = {
     "chroma_boost_midtones": ("colorchecker", _check_chroma_increase(min_delta=0.3)),
     "chroma_boost_highlights": ("colorchecker", _check_chroma_increase(min_delta=0.3)),
     # --- Direction of change: white balance (a*/b* shifts on gray ramp) ---
-    "wb_warm_subtle": ("grayscale", _check_lab_a_shift("positive", min_magnitude=0.5)),
+    # wb_warm_subtle was reauthored under RFC-039 / #137 to compose
+    # wb_kelvin_delta with kelvin_delta=+500. The composed primitive's
+    # apply path is camera-aware: it reads the raw's EXIF WB at apply
+    # time. The synthetic grayscale fixture isn't a raw — no EXIF — so
+    # the parametric apply returns identity-skip and the temperature
+    # op is dropped. No a* shift fires. See SKIP_REASONS for the entry's
+    # actual direction-of-effect coverage path.
     # --- Direction of change: color grading (a*/b* shifts) ---
     "grade_shadows_warm": ("grayscale", _check_lab_b_shift("positive", min_magnitude=0.5)),
     "grade_shadows_cool": ("grayscale", _check_lab_b_shift("negative", min_magnitude=0.5)),
@@ -573,6 +628,8 @@ SKIP_REASONS: dict[str, str] = {
     # --- Skin entries that don't fit the structural L2 rule ---
     "skin_smooth_painterly": "Skin-specific bilat shaping; covered by parameterized bilat_clarity_strength entry.",  # noqa: E501
     "skin_uniformity": "Skin-uniformity primitive (RFC-033); needs visual review per the darkroom-session checkpoint, not flat-patch isolation.",  # noqa: E501
+    # --- RFC-039 / #137 composed entries with camera-aware apply ---
+    "wb_warm_subtle": "Reauthored under RFC-039 / #137 to compose wb_kelvin_delta with kelvin_delta=+500. The composed primitive's apply path is camera-aware (reads raw EXIF WB at apply time); the synthetic grayscale fixture isn't a raw — no EXIF — so the parametric apply returns identity-skip and the temperature op is dropped. Direction-of-effect is asserted on real raws by tests/integration/core/test_cross_camera_wb.py (#142, across 3 camera bodies) and at the byte level by tests/unit/core/parameterize/test_temperature.py (kelvin_delta scaling).",  # noqa: E501
 }
 
 # Parameterized entries (RFC-021): one entry, multiple values exercised
@@ -676,24 +733,35 @@ PARAMETERIZED_EFFECTS: dict[tuple[str, str], tuple[str, LabCheck, dict[str, floa
     ),
     # grain_strength: replaces v1.5.x grain_fine / grain_medium / grain_heavy
     # (RFC-021 / Phase 4). Grain is per-pixel high-frequency noise — flat
-    # patches show no per-patch deterministic mean signal. Std-dev based
-    # measurement is future work; the lab-grade global slot just verifies
-    # the parameterized apply path completes at multiple strengths.
+    # patches show no per-patch deterministic mean signal. Strengthened
+    # by #143: the new ``_check_pixel_std_increase`` helper samples the
+    # per-patch pixel-level luma std on the 0..255 scale; a flat baseline
+    # patch reads std ~0. At the 400x400 chart render size the empirical
+    # std bump is ~+1.57 at strength 50 and ~+0.12 at strength 8.
+    # Thresholds are set just above the noise floor to catch "grain
+    # silently no-ops" while staying robust to small render-size /
+    # JPEG-quantization variation.
     ("grain_strength", "grain_strength_50"): (
         "grayscale",
-        _check_render_completes(),
+        _check_pixel_std_increase(min_increase=1.0),
         {"grain_strength": 50.0},
     ),
     ("grain_strength", "grain_strength_8"): (
         "grayscale",
-        _check_render_completes(),
+        _check_pixel_std_increase(min_increase=0.05),
         {"grain_strength": 8.0},
     ),
     # highlights_clip_threshold: replaces v1.5.x highlights_recovery_subtle
     # / highlights_recovery_strong (RFC-021 / Phase 4). Highlight recovery
     # only matters where input has clipping; the synthetic ColorChecker
-    # fixture has no blown highlights, so direction-of-change isn't
-    # measurable — covered by direction-of-change e2e tests on real raws.
+    # and grayscale fixtures have no blown highlights, so direction-of-
+    # change isn't measurable in this framework slot. The
+    # render-completes-only entries below verify the parametric apply
+    # path patches at multiple values; direction-of-change at clip_0.85
+    # AND clip_0.95 is asserted by
+    # tests/e2e/test_clipped_fixture_validation.py — parametrized in
+    # #143 (option C) to cover both values, against the clipped-gradient
+    # fixture that DOES have a pure-white band to recover.
     ("highlights_clip_threshold", "clip_0.85"): (
         "grayscale",
         _check_render_completes(),
@@ -1110,11 +1178,25 @@ PARAMETERIZED_EFFECTS: dict[tuple[str, str], tuple[str, LabCheck, dict[str, floa
     # multi-parameter ship). Each node shifts a luminance band ±2 EV.
     # The lab-grade global slot exercises 2 representative invocations:
     # a "shadows up + highlights down" compression curve and a single-
-    # node midtones shift. Direction-of-change on the grayscale ramp
-    # tracks the per-band luma deltas, but the chart's discrete-patch
-    # quantization makes per-band assertions noisy — _check_render_completes
-    # confirms the apply path runs end-to-end at the multi-parameter
-    # extreme.
+    # node midtones shift.
+    #
+    # #143 (option C) attempted direction-of-pixel assertions against
+    # the grayscale ramp's dark/mid/bright zone indices and found the
+    # mapping doesn't work: empirically, `midtones=+0.5` DARKENS mid
+    # patches (-0.01 luma) while LIFTING dark+bright patches (+0.02),
+    # and `compress_curve` (shadows=+1.0, highlights=-1.0) DARKENS dark
+    # patches and BRIGHTENS bright patches. The 9 toneequalizer bands
+    # are defined in a working-profile luminance space that doesn't
+    # align with the synthetic linear grayscale ramp's index zones —
+    # the band labels (shadows/midtones/highlights) refer to EV ranges,
+    # not direct grayscale-ramp positions.
+    #
+    # Direction-of-bytes for the parametric patch path is exhaustively
+    # covered in tests/unit/core/parameterize/test_toneequal.py
+    # (test_patch_sets_single_node parametrizes over all 9 nodes). The
+    # lab-grade slot stays render-completes — it verifies the apply
+    # path runs end-to-end at the multi-parameter extreme, which is its
+    # real value, not pixel-direction.
     ("toneequalizer", "compress_curve"): (
         "grayscale",
         _check_render_completes(),

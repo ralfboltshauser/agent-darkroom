@@ -43,7 +43,8 @@ _GRAYSCALE_PATCHES = 24
 
 @dataclass(frozen=True)
 class PatchSample:
-    """One patch's mean values in three useful color spaces.
+    """One patch's mean values in three useful color spaces, plus
+    pixel-level luma std within the sampled crop.
 
     Attributes:
         index: 0..23, matching the patch order in
@@ -51,16 +52,25 @@ class PatchSample:
         srgb: Mean sRGB triple (0.0..1.0 floats).
         linear: Mean linear-RGB triple (0.0..1.0 floats).
         lab: Mean CIE Lab D50 triple (L 0..100, a/b roughly -128..127).
+        std_luma_8bit: Per-pixel std of Rec.601 luma (0..255 scale) over
+            the patch's center-50% crop. Flat patches before any noise
+            primitive have near-zero std; grain / sharpening should
+            elevate this without shifting the mean. Defaults to 0.0 for
+            backward compatibility with callers that don't probe it.
     """
 
     index: int
     srgb: tuple[float, float, float]
     linear: tuple[float, float, float]
     lab: tuple[float, float, float]
+    std_luma_8bit: float = 0.0
 
 
-def _patch_to_sample(idx: int, mean_srgb_8bit: tuple[float, float, float]) -> PatchSample:
-    """Convert mean 0..255 sRGB to PatchSample with linear + Lab attached."""
+def _patch_to_sample(
+    idx: int, mean_srgb_8bit: tuple[float, float, float], std_luma_8bit: float
+) -> PatchSample:
+    """Convert mean 0..255 sRGB + per-pixel luma std to PatchSample with
+    linear + Lab derived from the mean."""
     srgb = (mean_srgb_8bit[0] / 255.0, mean_srgb_8bit[1] / 255.0, mean_srgb_8bit[2] / 255.0)
     linear = (
         _srgb_to_linear(srgb[0]),
@@ -69,13 +79,18 @@ def _patch_to_sample(idx: int, mean_srgb_8bit: tuple[float, float, float]) -> Pa
     )
     xyz = _matmul3(_M_SRGB_TO_XYZ_D50, linear)
     lab = _xyz_to_lab(*xyz)
-    return PatchSample(index=idx, srgb=srgb, linear=linear, lab=lab)
+    return PatchSample(index=idx, srgb=srgb, linear=linear, lab=lab, std_luma_8bit=std_luma_8bit)
 
 
-def _sample_region_mean(
+def _sample_region_stats(
     img: Image.Image, x0: int, y0: int, x1: int, y1: int
-) -> tuple[float, float, float]:
-    """Return mean R/G/B (0..255 floats) over an axis-aligned crop."""
+) -> tuple[tuple[float, float, float], float]:
+    """Return ``(mean_rgb, std_luma)`` over the axis-aligned crop.
+
+    ``mean_rgb`` is the per-channel mean on the 0..255 scale; ``std_luma``
+    is the population std of Rec.601 luma (``0.299 R + 0.587 G + 0.114 B``)
+    across pixels in the crop, also on the 0..255 scale.
+    """
     crop = img.crop((x0, y0, x1, y1)).convert("RGB")
     pixels = list(crop.getdata())
     n = len(pixels)
@@ -84,7 +99,14 @@ def _sample_region_mean(
     rs = sum(p[0] for p in pixels)
     gs = sum(p[1] for p in pixels)
     bs = sum(p[2] for p in pixels)
-    return rs / n, gs / n, bs / n
+    mean_rgb = (rs / n, gs / n, bs / n)
+
+    lumas = [0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2] for p in pixels]
+    mean_luma = sum(lumas) / n
+    var_luma = sum((luma - mean_luma) ** 2 for luma in lumas) / n
+    std_luma = var_luma**0.5
+
+    return mean_rgb, std_luma
 
 
 def read_colorchecker(image_path: Path) -> list[PatchSample]:
@@ -110,8 +132,8 @@ def read_colorchecker(image_path: Path) -> list[PatchSample]:
             y0 = int(row * ph + margin_y)
             x1 = int((col + 1) * pw - margin_x)
             y1 = int((row + 1) * ph - margin_y)
-            mean = _sample_region_mean(img, x0, y0, x1, y1)
-            out.append(_patch_to_sample(idx, mean))
+            mean, std_luma = _sample_region_stats(img, x0, y0, x1, y1)
+            out.append(_patch_to_sample(idx, mean, std_luma))
         return out
     finally:
         img.close()
@@ -138,8 +160,8 @@ def read_grayscale_ramp(image_path: Path) -> list[PatchSample]:
             y0 = int(margin_y)
             x1 = int((idx + 1) * pw - margin_x)
             y1 = int(H - margin_y)
-            mean = _sample_region_mean(img, x0, y0, x1, y1)
-            out.append(_patch_to_sample(idx, mean))
+            mean, std_luma = _sample_region_stats(img, x0, y0, x1, y1)
+            out.append(_patch_to_sample(idx, mean, std_luma))
         return out
     finally:
         img.close()
