@@ -22,6 +22,8 @@ git lfs pull                  # fetch the actual bytes for these fixtures
 |---|---|---|---|
 | `landscape.ARW` | Sony DSC-RX10M4 (RX10 IV) | ~20 MB | Sky / foliage / horizon / haze / lens / WB / filmic entries |
 | `portrait.ARW` | Sony ZV-E10 | ~24 MB | Skin / eye / subject mask / retouch / portrait-look entries |
+| `cross_camera_canon.CR3` | Canon EOS R6 | ~5 MB | Cross-body verification of the RFC-039 raw-aware apply path (#142) |
+| `cross_camera_nikon.NEF` | Nikon D70 | ~5 MB | Cross-body verification of the RFC-039 raw-aware apply path (#142) |
 
 The generator routes each real-raw vocabulary entry to one of the two
 fixtures based on which terrain the entry needs:
@@ -62,6 +64,31 @@ Both files are **CC BY-SA 4.0** — Creative Commons Attribution-ShareAlike
   me your version"
   (https://discuss.pixls.us/t/home-portrait-give-me-your-version/54329),
   licensed CC BY-SA 4.0.
+
+### cross_camera_canon.CR3
+
+- **Source**: https://raw.pixls.us/ (curated CC0 raw sample repository)
+- **Direct URL**: https://raw.pixls.us/getfile.php/4659/nice/Canon%20-%20EOS%20R6%20-%203%3A2.CR3
+- **License**: CC0 / Public Domain — the raw.pixls.us upload form requires
+  contributors to release their submissions under CC0. Per-file license is
+  recorded in the site's JSON index (`getrepository.php?set=all`).
+- **Attribution line** (not required under CC0, but recorded for
+  traceability): raw.pixls.us community sample collection.
+- **Content**: photographic ("nice"-path curation, not a colorchart). Used
+  by #142's cross-body integration test to verify the RFC-039 camera-aware
+  apply path produces directionally-correct WB shifts on a Canon body's
+  EXIF coefficients (different from Sony / Nikon).
+
+### cross_camera_nikon.NEF
+
+- **Source**: https://raw.pixls.us/ (curated CC0 raw sample repository)
+- **Direct URL**: https://raw.pixls.us/getfile.php/2060/nice/Nikon%20-%20D70%20-%2012bit%2012bit%20compressed%20(Lossy%20(type%201))%20(3%3A2).NEF
+- **License**: CC0 / Public Domain — see notes under cross_camera_canon.
+- **Attribution line** (not required under CC0): raw.pixls.us community
+  sample collection.
+- **Content**: photographic ("nice"-path curation). Used by #142's
+  cross-body integration test against the Nikon D70's 12-bit compressed
+  NEF — a third manufacturer's EXIF WB layout and Bayer pattern.
 - **Content**: indoor single subject, face and eyes visible, neutral-cool
   capture, background visually separable from subject. Exercises skin
   `colorequal`, `retouch` heal/clone, skin / eye / subject masks.
@@ -81,9 +108,12 @@ Both files are **CC BY-SA 4.0** — Creative Commons Attribution-ShareAlike
 - **Short-URL drift** — the `discuss.pixls.us/uploads/short-url/...` paths
   occasionally rotate. The source thread URLs are stable; if a re-import
   is needed, navigate to the thread and grab the current attachment URL.
-- **Camera bodies** — both Sony. DSC-RX10M4 (1-inch sensor bridge, 20 MP)
-  for landscape; ZV-E10 (APS-C, 24 MP) for portrait. Both well-supported
-  by darktable 5.x and by lensfun for lens-correction tests.
+- **Camera bodies** — primary gallery fixtures are both Sony. DSC-RX10M4
+  (1-inch sensor bridge, 20 MP) for landscape; ZV-E10 (APS-C, 24 MP) for
+  portrait. Both well-supported by darktable 5.x and by lensfun for
+  lens-correction tests. The `cross_camera_*` fixtures (Canon EOS R6,
+  Nikon D70) are used by #142's cross-body integration test, not by the
+  gallery generator.
 
 ## Why ARW (and not JPEG or DNG)
 
