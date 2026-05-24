@@ -1,0 +1,5 @@
+# Cursor Rules — Chemigram
+
+Chemigram's agent-operational handbook lives in `AGENTS.md` at the repo root. Read that first for project conventions: the three foundational disciplines, doc system, voice rules, code conventions, workflow conventions including the post-push CI check.
+
+Cursor-specific addenda would live below this line. Today there are none — the canonical AGENTS.md covers everything.
