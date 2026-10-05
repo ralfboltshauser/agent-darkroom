@@ -69,3 +69,7 @@ site/
 
 # Local tool caches (lean-ctx indexer, etc.) — not part of the project
 .lean-ctx/
+
+# Local backend probes and agent grading runs
+.scratch/
+evaluation/runs/

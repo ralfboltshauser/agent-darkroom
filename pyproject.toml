@@ -3,14 +3,15 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "chemigram"
-version = "1.11.0"
-description = "Agent-driven photo editing on darktable, via MCP."
+name = "agent-darkroom-cli"
+version = "0.1.0"
+description = "A headless RAW grading CLI for coding agents, built on Chemigram and darktable."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
     { name = "Marko Mrdjenovic" },
+    { name = "Ralf Boltshauser" },
 ]
 keywords = ["darktable", "photography", "mcp", "agentic", "raw-processing"]
 classifiers = [
@@ -80,11 +81,12 @@ docs = [
 [project.scripts]
 chemigram-mcp = "chemigram.mcp.server:main"
 chemigram = "chemigram.cli.main:app"
+agent-darkroom = "chemigram.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/chipi/chemigram"
-Repository = "https://github.com/chipi/chemigram"
-Issues = "https://github.com/chipi/chemigram/issues"
+Homepage = "https://github.com/ralfboltshauser/agent-darkroom"
+Repository = "https://github.com/ralfboltshauser/agent-darkroom"
+Issues = "https://github.com/ralfboltshauser/agent-darkroom/issues"
 
 # ---------------------------------------------------------------------------
 # Hatchling build config (ADR-034, ADR-049)
@@ -97,6 +99,7 @@ packages = ["src/chemigram"]
 # `pip install chemigram` ships with a working starter pack out of the box.
 [tool.hatch.build.targets.wheel.force-include]
 "vocabulary/starter" = "chemigram/_starter_vocabulary"
+"vocabulary/packs/expressive-baseline" = "chemigram/_expressive_vocabulary"
 
 [tool.hatch.build.targets.sdist]
 include = [

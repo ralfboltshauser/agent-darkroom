@@ -119,8 +119,7 @@ def resolve_workspace_or_fail(ctx: typer.Context, image_id: str) -> Workspace:
             workspace_root=str(workspace_root),
         )
         raise typer.Exit(code=ExitCode.NOT_FOUND.value)
-    # Inject the global --configdir into the workspace so render verbs
-    # (and any future verbs that need it) pick it up via workspace.configdir.
-    if obj["configdir"] is not None:
-        workspace.configdir = obj["configdir"]
+    # Keep darktable state inside this CLI workspace. A fresh directory is
+    # initialized by darktable-cli on supported builds, without a GUI.
+    workspace.configdir = obj["configdir"] or workspace_root / ".darktable-config"
     return workspace

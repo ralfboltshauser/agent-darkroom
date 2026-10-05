@@ -2,15 +2,15 @@
 
 Per ADR-005, only one ``darktable-cli`` runs per configdir at a time;
 darktable holds an exclusive lock on ``library.db`` inside the
-configdir. This stage uses a class-level lock dict keyed by configdir
-to enforce single-process serialization. Cross-process coordination is
-out of scope — a caller bug if violated.
+configdir. This stage uses a class-level lock and a filesystem lock keyed
+by configdir to serialize renders across processes.
 
 Per CLAUDE.md "darktable-cli invocation form", every invocation uses::
 
     darktable-cli <raw> <xmp> <output> \\
       --width N --height N --hq <bool> \\
       --apply-custom-presets false \\
+      --icc-type SRGB \\
       --core --configdir <isolated>
 
 **Binary path resolution:**
@@ -26,6 +26,7 @@ from the binary's invocation path. Either install a thin exec wrapper
 on PATH or set ``DARKTABLE_CLI`` to the absolute path.
 """
 
+import fcntl
 import os
 import subprocess
 import threading
@@ -96,6 +97,8 @@ class DarktableCliStage:
             "true" if context.high_quality else "false",
             "--apply-custom-presets",
             "false",
+            "--icc-type",
+            "SRGB",
             "--core",
             "--configdir",
             str(context.configdir),
@@ -110,7 +113,14 @@ class DarktableCliStage:
         """
         lock = self._lock_for_configdir(context.configdir)
         with lock:
-            return self._run_locked(context)
+            context.configdir.parent.mkdir(parents=True, exist_ok=True)
+            lock_path = context.configdir.parent / f".{context.configdir.name}.lock"
+            with lock_path.open("a+b") as lock_file:
+                fcntl.flock(lock_file, fcntl.LOCK_EX)
+                try:
+                    return self._run_locked(context)
+                finally:
+                    fcntl.flock(lock_file, fcntl.LOCK_UN)
 
     def _run_locked(self, context: StageContext) -> StageResult:
         argv = self._build_argv(context)

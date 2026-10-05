@@ -20,7 +20,7 @@ $PY - "${PACK_ROOT}" <<'PY'
 import sys
 from pathlib import Path
 
-from chemigram.core.vocab import ManifestError, VocabularyIndex
+from chemigram.core.vocab import ManifestError, VocabularyIndex, load_packs
 
 pack = Path(sys.argv[1])
 if not (pack / "manifest.json").exists():
@@ -32,7 +32,7 @@ if not (pack / "manifest.json").exists():
     sys.exit(0)
 
 try:
-    index = VocabularyIndex(pack)
+    index = load_packs([pack.name]) if pack.parent.name == "packs" else VocabularyIndex(pack)
 except ManifestError as exc:
     print(f"verify-vocab: FAILED — {exc}", file=sys.stderr)
     sys.exit(2)

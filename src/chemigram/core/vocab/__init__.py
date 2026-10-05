@@ -1002,6 +1002,11 @@ def _resolve_pack_path(name: str) -> Path:
     if (home / "manifest.json").exists():
         return home
 
+    if name == "expressive-baseline":
+        bundled = Path(cast(Any, resource_files("chemigram") / "_expressive_vocabulary"))
+        if (bundled / "manifest.json").exists():
+            return bundled
+
     repo_pack = Path(__file__).resolve().parents[4] / "vocabulary" / "packs" / name
     if (repo_pack / "manifest.json").exists():
         return repo_pack

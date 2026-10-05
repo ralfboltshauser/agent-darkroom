@@ -544,7 +544,7 @@ async def _get_state(args: dict[str, Any], ctx: ToolContext) -> ToolResult[dict[
                 "head_hash": None,
                 "entry_count": 0,
                 "enabled_count": 0,
-                "layers_present": {"L1": False, "L2": False, "L3": False},
+                "operations": {},
                 "note": "no snapshot yet on this workspace",
             }
         )

@@ -74,6 +74,10 @@ CLI_ONLY_PARAMS: set[tuple[str, str]] = {
     # --param NAME=VALUE: shorthand for the MCP `value` dict shape;
     # CLI offers both --value (scalar) and --param (dict-like via repeated flags)
     ("apply-primitive", "param"),
+    ("apply-primitive", "mask_spec_file"),  # shell-safe JSON file input
+    ("apply-primitive", "expect_head"),  # optimistic concurrency for subprocess agents
+    ("compare", "difference"),  # optional visual feedback artifact
+    ("checkout", "branch_name"),  # create editable branch from a snapshot in one call
     # --label: snapshot label override (CLI exposes; MCP synthesizes from kind)
     ("apply-spot", "label"),
     # --pack -p: per-invocation pack loading (CLI loads packs per call;
@@ -81,6 +85,8 @@ CLI_ONLY_PARAMS: set[tuple[str, str]] = {
     ("apply-primitive", "pack"),
     ("ingest", "pack"),
     ("vocab list", "pack"),
+    ("vocab list", "query"),  # local substring search over bundled entries
+    ("vocab list", "names_only"),  # compact discovery output for coding agents
     ("vocab list-masks", "pack"),
     ("bind-layers", "pack"),
     # apply-per-region accepts a JSON string on the CLI; MCP accepts the

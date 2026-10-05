@@ -52,7 +52,7 @@ listing; this section captures the same content.
 |-|-|-|
 | `--json` | — | Emit NDJSON to stdout instead of human-readable text. |
 | `--workspace <path>` | `CHEMIGRAM_WORKSPACE` | Workspace root (default `~/Pictures/Chemigram`). |
-| `--configdir <path>` | `CHEMIGRAM_DT_CONFIGDIR` | darktable-cli configdir (must be pre-bootstrapped per ADR-005). |
+| `--configdir <path>` | `CHEMIGRAM_DT_CONFIGDIR` | darktable-cli configdir (defaults to an automatically created directory under the workspace). |
 | `--quiet`, `-q` | — | Suppress informational events; errors still surface. |
 | `--verbose`, `-v` | — | Increase log verbosity (stackable: `-v`, `-vv`). |
 | `--dry-run` | — | Describe what would happen without writing. (No-op for v1.3.0; verbs honor it incrementally.) |
@@ -78,18 +78,19 @@ listing; this section captures the same content.
 ### `chemigram status`
 
 ```
-Usage: chemigram status [OPTIONS]
+Usage: python -m chemigram.cli.main status [OPTIONS]
 
  Print runtime diagnostics: chemigram + darktable-cli versions, configured
  packs, workspace root, prompt store version, output schema.
 
- --help          Show this message and exit.
+ --probe        FILE  Render this image in a fresh headless config.
+ --help               Show this message and exit.
 ```
 
 ### `chemigram ingest`
 
 ```
-Usage: chemigram ingest [OPTIONS] RAW_PATH
+Usage: python -m chemigram.cli.main ingest [OPTIONS] RAW_PATH
 
  Bootstrap a per-image workspace from a raw file.
 
@@ -104,45 +105,51 @@ Usage: chemigram ingest [OPTIONS] RAW_PATH
 ### `chemigram apply-primitive`
 
 ```
-Usage: chemigram apply-primitive [OPTIONS] [IMAGE_ID]
+Usage: python -m chemigram.cli.main apply-primitive [OPTIONS] [IMAGE_ID]
 
  Apply a vocabulary entry; snapshot the result.
 
    image_id      [IMAGE_ID]  Image ID (or '-' with --stdin for batch).
- *  --entry              TEXT   Vocabulary entry name. [required]
-    --pack       -p      TEXT   Vocabulary pack(s). Defaults to ['starter'].
-    --mask-spec          TEXT   Optional JSON mask spec to apply this
-                                primitive through a drawn mask region.
-                                Schema:
-                                '{"dt_form":"gradient|ellipse|rectangle","dt…
-                                Overrides the entry's manifest mask_spec when
-                                both are present. See
-                                docs/guides/mask-applicable-controls.md for
-                                parameter semantics and the per-module
-                                compatibility matrix.
-    --value              TEXT   Single-parameter shorthand for parameterized
-                                entries (e.g. 'exposure --value 0.7'). For
-                                multi-parameter entries, use --param NAME=V
-                                instead. See docs/guides/recipes.md.
-    --param              TEXT   Repeatable NAME=VALUE for multi-parameter
-                                entries (e.g. '--param temp=+0.4 --param
-                                tint=-0.1'). May be combined with --value if
-                                values agree.
-    --strength           FLOAT  RFC-035 Path B — interpolate the entry's
-                                authored parameterized fields toward identity
-                                by this factor [0.0, 1.0]. 1.0 preserves
-                                authored (default); 0.0 = identity / no-op;
-                                0.5 = halfway. Useful for L2 looks:
-                                '--strength 0.5' produces a softer variant.
-    --stdin                     Read image_ids from stdin (one per line);
-                                same entry applied to each.
-    --help                      Show this message and exit.
+ *  --entry                   TEXT   Vocabulary entry name. [required]
+    --pack            -p      TEXT   Vocabulary pack(s). Defaults to
+                                     ['starter'].
+    --mask-spec               TEXT   Optional JSON mask spec to apply this
+                                     primitive through a drawn mask region.
+                                     Schema:
+                                     '{"dt_form":"gradient|ellipse|rectangle…
+                                     Overrides the entry's manifest mask_spec
+                                     when both are present. See
+                                     docs/guides/mask-applicable-controls.md
+                                     for parameter semantics and the
+                                     per-module compatibility matrix.
+    --mask-spec-file          PATH   Read the drawn mask JSON from a file.
+    --expect-head             TEXT   Reject the edit if HEAD differs from
+                                     this full hash.
+    --value                   TEXT   Single-parameter shorthand for
+                                     parameterized entries (e.g. 'exposure
+                                     --value 0.7'). For multi-parameter
+                                     entries, use --param NAME=V instead. See
+                                     docs/guides/recipes.md.
+    --param                   TEXT   Repeatable NAME=VALUE for
+                                     multi-parameter entries (e.g. '--param
+                                     temp=+0.4 --param tint=-0.1'). May be
+                                     combined with --value if values agree.
+    --strength                FLOAT  RFC-035 Path B — interpolate the entry's
+                                     authored parameterized fields toward
+                                     identity by this factor [0.0, 1.0]. 1.0
+                                     preserves authored (default); 0.0 =
+                                     identity / no-op; 0.5 = halfway. Useful
+                                     for L2 looks: '--strength 0.5' produces
+                                     a softer variant.
+    --stdin                          Read image_ids from stdin (one per
+                                     line); same entry applied to each.
+    --help                           Show this message and exit.
 ```
 
 ### `chemigram apply-per-region`
 
 ```
-Usage: chemigram apply-per-region [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main apply-per-region [OPTIONS] IMAGE_ID
 
  Apply one primitive to N mask-bound regions atomically (RFC-031).
 
@@ -166,7 +173,7 @@ Usage: chemigram apply-per-region [OPTIONS] IMAGE_ID
 ### `chemigram apply-spot`
 
 ```
-Usage: chemigram apply-spot [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main apply-spot [OPTIONS] IMAGE_ID
 
  Apply a spot retouch (heal/clone) at the given coordinate (RFC-025 / ADR-087).
 
@@ -196,7 +203,7 @@ Usage: chemigram apply-spot [OPTIONS] IMAGE_ID
 ### `chemigram wb-from-gray-card`
 
 ```
-Usage: chemigram wb-from-gray-card [OPTIONS] IMAGE_PATH
+Usage: python -m chemigram.cli.main wb-from-gray-card [OPTIONS] IMAGE_PATH
 
  Sample a gray-card region; return temperature coefficients (survey Gap #20).
 
@@ -216,7 +223,7 @@ Usage: chemigram wb-from-gray-card [OPTIONS] IMAGE_PATH
 ### `chemigram propagate-state`
 
 ```
-Usage: chemigram propagate-state [OPTIONS] SOURCE_IMAGE_ID
+Usage: python -m chemigram.cli.main propagate-state [OPTIONS] SOURCE_IMAGE_ID
 
  Sync edit state from one anchor to N targets atomically (RFC-037).
 
@@ -237,7 +244,7 @@ Usage: chemigram propagate-state [OPTIONS] SOURCE_IMAGE_ID
 ### `chemigram remove-module`
 
 ```
-Usage: chemigram remove-module [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main remove-module [OPTIONS] IMAGE_ID
 
  Strip all history entries for an operation.
 
@@ -251,7 +258,7 @@ Usage: chemigram remove-module [OPTIONS] IMAGE_ID
 ### `chemigram reset`
 
 ```
-Usage: chemigram reset [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main reset [OPTIONS] IMAGE_ID
 
  Rewind the current branch to baseline (ADR-062).
 
@@ -262,7 +269,7 @@ Usage: chemigram reset [OPTIONS] IMAGE_ID
 ### `chemigram get-state`
 
 ```
-Usage: chemigram get-state [OPTIONS] [IMAGE_ID]
+Usage: python -m chemigram.cli.main get-state [OPTIONS] [IMAGE_ID]
 
  Print a summary of the workspace's current XMP.
 
@@ -272,10 +279,24 @@ Usage: chemigram get-state [OPTIONS] [IMAGE_ID]
  --help           Show this message and exit.
 ```
 
+### `chemigram inspect`
+
+```
+Usage: python -m chemigram.cli.main inspect [OPTIONS] IMAGE_ID
+
+ Measure a rendered preview and report camera metadata.
+
+ *    image_id      TEXT  Image ID. [required]
+ --ref         TEXT                         Revision to inspect.
+                                            [default: HEAD]
+ --size        INTEGER RANGE [64<=x<=8192]  [default: 1024]
+ --help                                     Show this message and exit.
+```
+
 ### `chemigram snapshot`
 
 ```
-Usage: chemigram snapshot [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main snapshot [OPTIONS] IMAGE_ID
 
  Snapshot the current XMP; return the new content hash.
 
@@ -287,7 +308,7 @@ Usage: chemigram snapshot [OPTIONS] IMAGE_ID
 ### `chemigram branch`
 
 ```
-Usage: chemigram branch [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main branch [OPTIONS] IMAGE_ID
 
  Create a branch at HEAD (or --from <ref>).
 
@@ -301,7 +322,7 @@ Usage: chemigram branch [OPTIONS] IMAGE_ID
 ### `chemigram tag`
 
 ```
-Usage: chemigram tag [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main tag [OPTIONS] IMAGE_ID
 
  Create an immutable tag at HEAD (or --hash <h>).
 
@@ -314,7 +335,7 @@ Usage: chemigram tag [OPTIONS] IMAGE_ID
 ### `chemigram checkout`
 
 ```
-Usage: chemigram checkout [OPTIONS] IMAGE_ID REF_OR_HASH
+Usage: python -m chemigram.cli.main checkout [OPTIONS] IMAGE_ID REF_OR_HASH
 
  Move HEAD to a ref or hash.
 
@@ -322,13 +343,14 @@ Usage: chemigram checkout [OPTIONS] IMAGE_ID REF_OR_HASH
  *    ref_or_hash      TEXT  Branch name, tag name, or snapshot hash to check
                              out.
                              [required]
- --help          Show this message and exit.
+ --branch        TEXT  Create and switch to a new branch at this snapshot.
+ --help                Show this message and exit.
 ```
 
 ### `chemigram log`
 
 ```
-Usage: chemigram log [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main log [OPTIONS] IMAGE_ID
 
  Print the operation log (newest first).
 
@@ -342,7 +364,7 @@ Usage: chemigram log [OPTIONS] IMAGE_ID
 ### `chemigram diff`
 
 ```
-Usage: chemigram diff [OPTIONS] IMAGE_ID HASH_A HASH_B
+Usage: python -m chemigram.cli.main diff [OPTIONS] IMAGE_ID HASH_A HASH_B
 
  Diff two snapshots — added/removed/changed primitives.
 
@@ -355,7 +377,7 @@ Usage: chemigram diff [OPTIONS] IMAGE_ID HASH_A HASH_B
 ### `chemigram bind-layers`
 
 ```
-Usage: chemigram bind-layers [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main bind-layers [OPTIONS] IMAGE_ID
 
  Apply L1/L2 vocabulary templates onto the current XMP.
 
@@ -369,7 +391,7 @@ Usage: chemigram bind-layers [OPTIONS] IMAGE_ID
 ### `chemigram render-preview`
 
 ```
-Usage: chemigram render-preview [OPTIONS] [IMAGE_ID]
+Usage: python -m chemigram.cli.main render-preview [OPTIONS] [IMAGE_ID]
 
  Render a snapshot to a JPEG preview.
 
@@ -387,22 +409,24 @@ Usage: chemigram render-preview [OPTIONS] [IMAGE_ID]
 ### `chemigram compare`
 
 ```
-Usage: chemigram compare [OPTIONS] IMAGE_ID HASH_A HASH_B
+Usage: python -m chemigram.cli.main compare [OPTIONS] IMAGE_ID HASH_A HASH_B
 
  Render two snapshots and stitch them side-by-side.
 
  *    image_id      TEXT  Image ID. [required]
  *    hash_a        TEXT  First ref or hash. [required]
  *    hash_b        TEXT  Second ref or hash. [required]
- --size        INTEGER RANGE [64<=x<=8192]  Max width/height per side.
-                                            [default: 1024]
- --help                                     Show this message and exit.
+ --size              INTEGER RANGE [64<=x<=8192]  Max width/height per side.
+                                                  [default: 1024]
+ --difference                                     Also produce a pixel
+                                                  difference image.
+ --help                                           Show this message and exit.
 ```
 
 ### `chemigram export-final`
 
 ```
-Usage: chemigram export-final [OPTIONS] [IMAGE_ID]
+Usage: python -m chemigram.cli.main export-final [OPTIONS] [IMAGE_ID]
 
  High-quality export to the workspace's exports/ dir.
 
@@ -422,7 +446,7 @@ Usage: chemigram export-final [OPTIONS] [IMAGE_ID]
 ### `chemigram read-context`
 
 ```
-Usage: chemigram read-context [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main read-context [OPTIONS] IMAGE_ID
 
  Print the agent's first-turn context (RFC-011).
 
@@ -433,7 +457,7 @@ Usage: chemigram read-context [OPTIONS] IMAGE_ID
 ### `chemigram log-vocabulary-gap`
 
 ```
-Usage: chemigram log-vocabulary-gap [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main log-vocabulary-gap [OPTIONS] IMAGE_ID
 
  Append a gap record to vocabulary_gaps.jsonl.
 
@@ -461,7 +485,7 @@ Usage: chemigram log-vocabulary-gap [OPTIONS] IMAGE_ID
 ### `chemigram apply-taste-update`
 
 ```
-Usage: chemigram apply-taste-update [OPTIONS]
+Usage: python -m chemigram.cli.main apply-taste-update [OPTIONS]
 
  Append directly to a taste file (CLI-only; MCP uses propose/confirm).
 
@@ -479,7 +503,7 @@ Usage: chemigram apply-taste-update [OPTIONS]
 ### `chemigram apply-notes-update`
 
 ```
-Usage: chemigram apply-notes-update [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main apply-notes-update [OPTIONS] IMAGE_ID
 
  Append directly to per-image notes (CLI-only; MCP uses propose/confirm).
 
@@ -491,33 +515,37 @@ Usage: chemigram apply-notes-update [OPTIONS] IMAGE_ID
 ### `chemigram vocab list`
 
 ```
-Usage: chemigram vocab list [OPTIONS]
+Usage: python -m chemigram.cli.main vocab list [OPTIONS]
 
  List vocabulary entries across the loaded packs.
 
- --pack   -p      TEXT  Pack name (repeatable). Defaults to ['starter'].
- --layer          TEXT  Filter by layer (L1/L2/L3).
- --tag            TEXT  Filter by tag (repeatable; OR-matched). Mirrors the
-                        MCP `tags` arg.
- --help                 Show this message and exit.
+ --pack        -p      TEXT  Pack name (repeatable). Defaults to
+                             ['expressive-baseline'] plus starter.
+ --layer               TEXT  Filter by layer (L1/L2/L3).
+ --tag                 TEXT  Filter by tag (repeatable; OR-matched). Mirrors
+                             the MCP `tags` arg.
+ --query               TEXT  Find entries by name, description, or tag.
+ --names-only                Emit only names and parameter names.
+ --help                      Show this message and exit.
 ```
 
 ### `chemigram vocab show`
 
 ```
-Usage: chemigram vocab show [OPTIONS] NAME
+Usage: python -m chemigram.cli.main vocab show [OPTIONS] NAME
 
  Print one entry's manifest fields + .dtstyle path.
 
  *    name      TEXT  Vocabulary entry name (e.g. expo_+0.5). [required]
- --pack  -p      TEXT  Pack name (repeatable). Defaults to ['starter'].
+ --pack  -p      TEXT  Pack name (repeatable). Defaults to
+                       ['expressive-baseline'] plus starter.
  --help                Show this message and exit.
 ```
 
 ### `chemigram vocab list-masks`
 
 ```
-Usage: chemigram vocab list-masks [OPTIONS]
+Usage: python -m chemigram.cli.main vocab list-masks [OPTIONS]
 
  List named masks (RFC-032) across the loaded packs.
 
@@ -530,7 +558,7 @@ Usage: chemigram vocab list-masks [OPTIONS]
 ### `chemigram vocab show-mask`
 
 ```
-Usage: chemigram vocab show-mask [OPTIONS] NAME
+Usage: python -m chemigram.cli.main vocab show-mask [OPTIONS] NAME
 
  Print one maskdef's manifest fields + spec (RFC-032).
 
@@ -542,7 +570,7 @@ Usage: chemigram vocab show-mask [OPTIONS] NAME
 ### `chemigram vocab validate`
 
 ```
-Usage: chemigram vocab validate [OPTIONS] NAME
+Usage: python -m chemigram.cli.main vocab validate [OPTIONS] NAME
 
  Run consistency checks on a vocabulary entry.
 
@@ -562,7 +590,7 @@ Usage: chemigram vocab validate [OPTIONS] NAME
 ### `chemigram gap-log list`
 
 ```
-Usage: chemigram gap-log list [OPTIONS]
+Usage: python -m chemigram.cli.main gap-log list [OPTIONS]
 
  List vocabulary-gap entries across the workspace, filterable.
 
@@ -582,7 +610,7 @@ Usage: chemigram gap-log list [OPTIONS]
 ### `chemigram gap-log rank`
 
 ```
-Usage: chemigram gap-log rank [OPTIONS]
+Usage: python -m chemigram.cli.main gap-log rank [OPTIONS]
 
  Rank vocabulary gaps by frequency.
 
@@ -603,7 +631,7 @@ Usage: chemigram gap-log rank [OPTIONS]
 ### `chemigram gap-log show`
 
 ```
-Usage: chemigram gap-log show [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main gap-log show [OPTIONS] IMAGE_ID
 
  Show all gap entries for one image, chronological (oldest first).
 
@@ -614,7 +642,7 @@ Usage: chemigram gap-log show [OPTIONS] IMAGE_ID
 ### `chemigram gap-log clear`
 
 ```
-Usage: chemigram gap-log clear [OPTIONS] IMAGE_ID
+Usage: python -m chemigram.cli.main gap-log clear [OPTIONS] IMAGE_ID
 
  Delete the vocabulary_gaps.jsonl for one image (opt-in cleanup).
 
@@ -632,7 +660,7 @@ Usage: chemigram gap-log clear [OPTIONS] IMAGE_ID
 ### `chemigram session-log list`
 
 ```
-Usage: chemigram session-log list [OPTIONS]
+Usage: python -m chemigram.cli.main session-log list [OPTIONS]
 
  List session transcripts across the workspace, newest-first.
 
@@ -645,7 +673,7 @@ Usage: chemigram session-log list [OPTIONS]
 ### `chemigram session-log show`
 
 ```
-Usage: chemigram session-log show [OPTIONS] SESSION_ID
+Usage: python -m chemigram.cli.main session-log show [OPTIONS] SESSION_ID
 
  Show all entries from one session, chronological.
 
@@ -658,7 +686,7 @@ Usage: chemigram session-log show [OPTIONS] SESSION_ID
 ### `chemigram session-log find`
 
 ```
-Usage: chemigram session-log find [OPTIONS]
+Usage: python -m chemigram.cli.main session-log find [OPTIONS]
 
  Find entries across all session transcripts matching the query.
 
@@ -675,7 +703,7 @@ Usage: chemigram session-log find [OPTIONS]
 ### `chemigram session-log replay`
 
 ```
-Usage: chemigram session-log replay [OPTIONS] SESSION_ID
+Usage: python -m chemigram.cli.main session-log replay [OPTIONS] SESSION_ID
 
  Re-emit a session's tool calls as CLI invocation hints.
 
@@ -691,7 +719,7 @@ Usage: chemigram session-log replay [OPTIONS] SESSION_ID
 ### `chemigram cache list`
 
 ```
-Usage: chemigram cache list [OPTIONS]
+Usage: python -m chemigram.cli.main cache list [OPTIONS]
 
  List cached preview JPEGs newest-first across the workspace.
 
@@ -707,7 +735,7 @@ Usage: chemigram cache list [OPTIONS]
 ### `chemigram cache size`
 
 ```
-Usage: chemigram cache size [OPTIONS]
+Usage: python -m chemigram.cli.main cache size [OPTIONS]
 
  Aggregate cache size: total bytes + per-image breakdown.
 
@@ -718,7 +746,7 @@ Usage: chemigram cache size [OPTIONS]
 ### `chemigram cache clear`
 
 ```
-Usage: chemigram cache clear [OPTIONS]
+Usage: python -m chemigram.cli.main cache clear [OPTIONS]
 
  Remove cached preview JPEGs.
 

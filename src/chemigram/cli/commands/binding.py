@@ -41,7 +41,7 @@ def bind_layers(
     """
     obj = cast(CliContext, ctx.obj)
     writer = obj["writer"]
-    pack_names = pack if pack else ["starter"]
+    pack_names = pack if pack else ["expressive-baseline"]
 
     workspace_root = obj["workspace"] or default_workspace_root()
     workspace = load_workspace(workspace_root, image_id)

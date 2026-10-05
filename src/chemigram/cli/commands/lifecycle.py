@@ -6,6 +6,7 @@ directly (per ADR-071 — CLI does not go through the MCP tool handler).
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import cast
 
@@ -44,7 +45,7 @@ def ingest(
     obj = cast(CliContext, ctx.obj)
     writer = obj["writer"]
     workspace_root = obj["workspace"] or default_workspace_root()
-    pack_names = pack if pack else ["starter"]
+    pack_names = pack if pack else ["expressive-baseline"]
 
     try:
         vocabulary = load_packs(pack_names)
@@ -87,6 +88,10 @@ def ingest(
         message=f"ingested {workspace.image_id}",
         image_id=workspace.image_id,
         root=str(workspace.root),
+        source_sha256=json.loads((workspace.root / "source.json").read_text(encoding="utf-8"))[
+            "sha256"
+        ],
+        snapshot_hash=workspace.repo.resolve_ref("HEAD"),
         exif_summary=exif_summary,
         suggested_bindings=[
             {"name": entry.name, "description": entry.description or ""}

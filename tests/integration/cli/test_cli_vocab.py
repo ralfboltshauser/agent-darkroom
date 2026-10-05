@@ -24,7 +24,7 @@ def test_vocab_list_returns_starter_entries(runner: CliRunner) -> None:
     ``look_neutral``. The discrete ``expo_+0.5`` / ``expo_-0.5`` entries
     were removed in favor of the parameterized ``exposure`` entry that
     lives in ``expressive-baseline`` (RFC-021)."""
-    result = runner.invoke(app, ["vocab", "list"])
+    result = runner.invoke(app, ["vocab", "list", "--pack", "starter"])
     assert result.exit_code == ExitCode.SUCCESS.value, result.stdout + result.stderr
     out = result.stdout
     assert "wb_warm_subtle" in out
@@ -34,7 +34,7 @@ def test_vocab_list_returns_starter_entries(runner: CliRunner) -> None:
 
 
 def test_vocab_list_json_emits_one_line_per_entry_plus_summary(runner: CliRunner) -> None:
-    result = runner.invoke(app, ["--json", "vocab", "list"])
+    result = runner.invoke(app, ["--json", "vocab", "list", "--pack", "starter"])
     assert result.exit_code == ExitCode.SUCCESS.value
     lines = [line for line in result.stdout.splitlines() if line.strip()]
     payloads = [json.loads(line) for line in lines]

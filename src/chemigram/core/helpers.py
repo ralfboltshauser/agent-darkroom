@@ -56,20 +56,18 @@ from chemigram.core.xmp import Xmp, parse_xmp_from_bytes
 def summarize_state(xmp: Xmp) -> dict[str, Any]:
     """Compact ``state_after`` summary returned by mutating tools.
 
-    Per RFC-010 (closing in v0.3.0): head_hash + entry_count + per-layer
-    presence flags. Agents call ``get_state`` for full detail; this is
-    the cheap return-value shape for mutating tools.
+    XMP records operations and instance priorities, but it does not retain
+    which vocabulary layer authored an edit. Report only facts it carries.
     """
-    layers = {p.multi_priority for p in xmp.history if p.enabled}
+    operations: dict[str, list[int]] = {}
+    for entry in xmp.history:
+        if entry.enabled:
+            operations.setdefault(entry.operation, []).append(entry.multi_priority)
     return {
         "head_hash": xmp_hash(xmp),
         "entry_count": len(xmp.history),
         "enabled_count": sum(1 for p in xmp.history if p.enabled),
-        "layers_present": {
-            "L1": 0 in layers,
-            "L2": 1 in layers,
-            "L3": any(level >= 2 for level in layers),
-        },
+        "operations": {name: sorted(priorities) for name, priorities in sorted(operations.items())},
     }
 
 
@@ -419,6 +417,46 @@ def apply_entry(  # noqa: C901
 # ---------------------------------------------------------------------------
 
 
+def _with_instance_order(xmp: Xmp, baseline: Xmp, plugins: tuple[Any, ...]) -> Xmp:
+    """Include an explicit darktable order list for new module instances."""
+    import dataclasses
+
+    from chemigram.core.iop_order import DEFAULT_RAW_ORDER
+
+    existing_order = next(
+        (
+            value
+            for kind, name, value in baseline.raw_extra_fields
+            if kind == "attr" and name == "darktable:iop_order_list"
+        ),
+        None,
+    )
+    if existing_order:
+        tokens = existing_order.split(",")
+        if len(tokens) % 2:
+            raise ValueError("darktable:iop_order_list has an odd token count")
+        pairs = list(zip(tokens[::2], tokens[1::2], strict=True))
+    else:
+        pairs = [(op, "0") for op in DEFAULT_RAW_ORDER]
+    for plugin in plugins:
+        instance = (plugin.operation, str(plugin.multi_priority))
+        if instance in pairs:
+            continue
+        prior = [i for i, pair in enumerate(pairs) if pair[0] == plugin.operation]
+        if not prior:
+            raise ValueError(f"darktable order has no slot for {plugin.operation!r}")
+        pairs.insert(prior[-1] + 1, instance)
+    order = ",".join(value for pair in pairs for value in pair)
+    extras = tuple(
+        field
+        for field in xmp.raw_extra_fields
+        if not (field[0] == "attr" and field[1] == "darktable:iop_order_list")
+    )
+    return dataclasses.replace(
+        xmp, raw_extra_fields=(*extras, ("attr", "darktable:iop_order_list", order))
+    )
+
+
 def apply_with_mask(
     baseline: Xmp,
     dtstyle: Any,  # DtstyleEntry — unannotated to avoid circular import
@@ -501,7 +539,10 @@ def apply_with_mask(
     if has_drawn and mask_id_seed is None:
         from hashlib import blake2b
 
-        h = blake2b(repr(sorted(mask_spec.items())).encode(), digest_size=4).digest()
+        # Reusing a shape in a later edit must allocate a distinct form ID.
+        h = blake2b(
+            repr((sorted(mask_spec.items()), len(baseline.history))).encode(), digest_size=4
+        ).digest()
         mask_id_seed = 0x10000000 | int.from_bytes(h, "big")
 
     # ---------------------------------------------------------------
@@ -534,13 +575,29 @@ def apply_with_mask(
             )
         return _encode_blendop_blob(patched)
 
+    # A local adjustment needs its own darktable instance. Replacing the
+    # existing global instance silently discards the global correction.
+    next_priority = {
+        p.operation: max(
+            (h.multi_priority for h in baseline.history if h.operation == p.operation),
+            default=-1,
+        )
+        + 1
+        for p in dtstyle.plugins
+    }
     patched_plugins = tuple(
-        dataclasses.replace(p, blendop_params=_patch_plugin_blendop(p.blendop_params))
+        dataclasses.replace(
+            p,
+            multi_priority=max(p.multi_priority, next_priority[p.operation]),
+            blendop_params=_patch_plugin_blendop(p.blendop_params),
+        )
         for p in dtstyle.plugins
     )
     patched_dtstyle = dataclasses.replace(dtstyle, plugins=patched_plugins)
 
     new_xmp = synthesize_xmp(baseline, [patched_dtstyle])
+    if any(p.multi_priority > 0 for p in patched_plugins):
+        new_xmp = _with_instance_order(new_xmp, baseline, patched_plugins)
 
     # ---------------------------------------------------------------
     # Inject masks_history (drawn-form path only; parametric carries
@@ -580,7 +637,20 @@ def _inject_masks_history_for_drawn(
     replaced = False
     for kind, qname, value in new_xmp.raw_extra_fields:
         if kind == "elem" and qname == "darktable:masks_history":
-            new_extra.append((kind, qname, masks_history_xml))
+            from xml.etree import ElementTree
+
+            from defusedxml import ElementTree as SafeElementTree
+
+            rdf_li = "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}li"
+            dt_mask_num = "{http://darktable.sf.net/}mask_num"
+            existing = SafeElementTree.fromstring(value)
+            incoming = SafeElementTree.fromstring(masks_history_xml)
+            existing_seq = next(iter(existing))
+            incoming_li = next(iter(next(iter(incoming))))
+            incoming_li.set(dt_mask_num, str(len(existing_seq) + 1))
+            existing_seq.append(incoming_li)
+            assert all(node.tag == rdf_li for node in existing_seq)
+            new_extra.append((kind, qname, ElementTree.tostring(existing, encoding="unicode")))
             replaced = True
         else:
             new_extra.append((kind, qname, value))

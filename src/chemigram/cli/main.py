@@ -19,6 +19,7 @@ from chemigram.cli.commands import (
     edit,
     export,
     gap_log,
+    inspect,
     lifecycle,
     render,
     session_log,
@@ -93,6 +94,9 @@ app.command(name="reset", help="Rewind the current branch to baseline (ADR-062).
 app.command(name="get-state", help="Print a summary of the workspace's current XMP.")(
     edit.get_state
 )
+app.command(name="inspect", help="Measure a rendered preview and report camera metadata.")(
+    inspect.inspect
+)
 
 # Versioning
 app.command(name="snapshot", help="Snapshot the current XMP; return the new content hash.")(
@@ -159,8 +163,8 @@ def _global_options(
     configdir: Path | None = typer.Option(
         None,
         "--configdir",
-        help="darktable-cli configdir for renders (must be pre-bootstrapped per ADR-005). "
-        "When omitted, a temp dir is created per render — only useful for non-render verbs.",
+        help="darktable-cli configdir for renders. Defaults to an isolated directory "
+        "under the workspace root, created automatically.",
         envvar="CHEMIGRAM_DT_CONFIGDIR",
     ),
     quiet: bool = typer.Option(

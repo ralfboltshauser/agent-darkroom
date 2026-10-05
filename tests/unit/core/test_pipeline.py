@@ -137,6 +137,8 @@ def test_invocation_form_locked(tmp_path: Path) -> None:
         "true",
         "--apply-custom-presets",
         "false",
+        "--icc-type",
+        "SRGB",
         "--core",
         "--configdir",
         "/cfg",

@@ -1,7 +1,7 @@
 """Per-image workspace orchestrator.
 
 A :class:`Workspace` is the runtime object that ties one image's pieces
-together: the per-image ``ImageRepo`` (objects/refs/HEAD/log), the symlinked
+together: the per-image ``ImageRepo`` (objects/refs/HEAD/log), the copied
 raw, the rendered preview/export caches, and references to shared
 resources (configdir, vocabulary). Owns the directory layout from
 ``contracts/per-image-repo``.
@@ -10,14 +10,17 @@ Public surface:
     - :class:`Workspace` — runtime handle
     - :func:`init_workspace_root` — directory bootstrap
     - :func:`workspace_id_for` — derive a stable ``image_id`` from a raw path
-    - :func:`Workspace.ingest` — full bootstrap (symlinks raw, extracts EXIF,
+    - :func:`Workspace.ingest` — full bootstrap (copies raw, extracts EXIF,
       creates ``ImageRepo``, writes a baseline XMP, snapshots it, tags
       ``baseline``)
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
+import shutil
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -27,9 +30,7 @@ from chemigram.core.dtstyle import DtstyleEntry
 from chemigram.core.exif import ExifData, read_exif
 from chemigram.core.versioning import ImageRepo
 from chemigram.core.versioning.ops import snapshot, tag
-from chemigram.core.xmp import Xmp, parse_xmp, synthesize_xmp
-
-_BASELINE_FIXTURE = Path(__file__).resolve().parent / "_baseline_v1.xmp"
+from chemigram.core.xmp import HistoryEntry, Xmp
 
 
 @dataclass
@@ -41,8 +42,8 @@ class Workspace:
             without extension, plus a disambiguator if needed).
         root: Workspace directory, one level above the per-image repo.
         repo: :class:`ImageRepo` rooted at ``root``.
-        raw_path: Absolute path to the original raw on disk. Stored as a
-            symlink at ``root / "raw" / <basename>``.
+        raw_path: Absolute path to the copied original at
+            ``root / "raw" / <basename>``.
         baseline_ref: Tag (or branch) name marking the session's baseline
             snapshot. Bare name — versioning's ``_resolve_input`` searches
             ``refs/heads/<name>`` then ``refs/tags/<name>``. Defaults to
@@ -125,20 +126,42 @@ def workspace_id_for(raw_path: Path, *, suffix: str | None = None) -> str:
 
 
 def _baseline_xmp(exif: ExifData, suggested_l1: list[DtstyleEntry]) -> Xmp:
-    """Build a fresh baseline XMP for a newly-ingested raw.
+    """Pin the initial exposure module so the first edit has a stable base.
 
-    v0.3.0 uses the bundled ``_baseline_v1.xmp`` fixture (the calibrated
-    darktable 5.4.1 reference) as a stand-in for darktable-cli's own
-    initial pipeline state. A future slice will replace this with a real
-    ``darktable-cli`` invocation that exports the actual XMP for the raw;
-    the stand-in keeps the seam stable so vocabulary primitives can SET-
-    replace against a known set of baseline operations (Path A) instead
-    of falling into Path B (new-instance add), which RFC-001 still owns.
+    The historical fixture contains camera-specific processing and creator
+    metadata from another photograph. An empty history changes its automatic
+    exposure when the first explicit edit is added, making unmasked regions
+    change during a local edit. This zero-EV module pins that behavior.
+    The params and blend blob come from darktable 5.4's exposure style and
+    were rendered on 5.6.2 as well. New module versions require rechecking.
     """
-    baseline = parse_xmp(_BASELINE_FIXTURE)
-    if suggested_l1:
-        return synthesize_xmp(baseline, suggested_l1)
-    return baseline
+    return Xmp(
+        rating=0,
+        label="",
+        auto_presets_applied=False,
+        history_end=1,
+        iop_order_version=4,
+        history=(
+            HistoryEntry(
+                num=0,
+                operation="exposure",
+                enabled=True,
+                modversion=7,
+                params="00000000000080b90000000000004842000080c00100000001000000",
+                multi_name="",
+                multi_name_hand_edited=False,
+                multi_priority=0,
+                blendop_version=14,
+                blendop_params=(
+                    "gz08eJxjYGBgYAFiCQYYOOHEgAZY0QWAgBGLGANDgz0Ej1Q+dlAx68oBEMbFxwX+AwGIBgCbGCeh"
+                ),
+            ),
+        ),
+        raw_extra_fields=(
+            ("attr", "darktable:xmp_version", "5"),
+            ("attr", "darktable:raw_params", "0"),
+        ),
+    )
 
 
 def ingest_workspace(
@@ -154,9 +177,9 @@ def ingest_workspace(
         1. Resolve ``image_id`` (caller-provided or derived from raw stem).
         2. Create the per-image directory layout under ``workspace_root /
            image_id`` and initialize the :class:`ImageRepo`.
-        3. Symlink the raw into ``raw/<basename>`` (relative if possible).
+        3. Copy the raw into ``raw/<basename>`` and record its hash.
         4. Read EXIF, suggest L1 bindings via :func:`bind_l1`.
-        5. Build a baseline :class:`Xmp` (with L1 applied if any), snapshot
+        5. Build a neutral baseline :class:`Xmp`, snapshot
            it, and tag the snapshot ``baseline``.
 
     Idempotent on the per-image directory: re-ingesting the same image_id
@@ -176,8 +199,14 @@ def ingest_workspace(
     repo = ImageRepo.init(root)
 
     raw_link = root / "raw" / raw_path.name
-    if not raw_link.exists():
-        raw_link.symlink_to(raw_path.resolve())
+    shutil.copy2(raw_path, raw_link)
+    with raw_link.open("rb") as source_file:
+        source_hash = hashlib.file_digest(source_file, "sha256").hexdigest()
+    (root / "source.json").write_text(
+        json.dumps({"original_path": str(raw_path.resolve()), "sha256": source_hash}, indent=2)
+        + "\n",
+        encoding="utf-8",
+    )
 
     exif = read_exif(raw_path)
     suggested = bind_l1(exif, vocabulary) if vocabulary is not None else []

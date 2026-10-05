@@ -18,6 +18,7 @@ Pattern for checkout:
 
 from __future__ import annotations
 
+import fcntl
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -140,6 +141,7 @@ def snapshot(
     label: str | None = None,
     parent: str = "HEAD",
     metadata: dict[str, Any] | None = None,
+    expected_head: str | None = None,
 ) -> str:
     """Write the canonical bytes of ``xmp`` to the object store and
     advance HEAD's branch (or create the branch if HEAD is symbolic
@@ -151,6 +153,38 @@ def snapshot(
         VersioningError: HEAD is detached (literal hash). Caller must
             ``checkout`` a branch first.
     """
+    lock_path = repo.root / ".edit.lock"
+    with lock_path.open("a+b") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            return _snapshot_locked(
+                repo,
+                xmp,
+                label=label,
+                parent=parent,
+                metadata=metadata,
+                expected_head=expected_head,
+            )
+        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
+
+
+def _snapshot_locked(
+    repo: ImageRepo,
+    xmp: Xmp,
+    *,
+    label: str | None,
+    parent: str,
+    metadata: dict[str, Any] | None,
+    expected_head: str | None,
+) -> str:
+    if expected_head is not None:
+        actual_head = repo.resolve_ref("HEAD")
+        if actual_head != expected_head:
+            raise VersioningError(
+                f"HEAD moved: expected {expected_head}, found {actual_head}; "
+                "inspect state and retry"
+            )
     head_raw = repo.read_ref_raw("HEAD")
     if not head_raw.startswith("ref: "):
         raise VersioningError(

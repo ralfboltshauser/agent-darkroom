@@ -69,7 +69,7 @@ listing; this section captures the same content.
 |-|-|-|
 | `--json` | — | Emit NDJSON to stdout instead of human-readable text. |
 | `--workspace <path>` | `CHEMIGRAM_WORKSPACE` | Workspace root (default `~/Pictures/Chemigram`). |
-| `--configdir <path>` | `CHEMIGRAM_DT_CONFIGDIR` | darktable-cli configdir (must be pre-bootstrapped per ADR-005). |
+| `--configdir <path>` | `CHEMIGRAM_DT_CONFIGDIR` | darktable-cli configdir (defaults to an automatically created directory under the workspace). |
 | `--quiet`, `-q` | — | Suppress informational events; errors still surface. |
 | `--verbose`, `-v` | — | Increase log verbosity (stackable: `-v`, `-vv`). |
 | `--dry-run` | — | Describe what would happen without writing. (No-op for v1.3.0; verbs honor it incrementally.) |
@@ -181,6 +181,7 @@ _VERBS: tuple[tuple[str, list[str]], ...] = (
     ("remove-module", ["remove-module"]),
     ("reset", ["reset"]),
     ("get-state", ["get-state"]),
+    ("inspect", ["inspect"]),
     # Versioning
     ("snapshot", ["snapshot"]),
     ("branch", ["branch"]),

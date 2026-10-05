@@ -1,338 +1,89 @@
-# Chemigram
+# Agent Darkroom
 
-[![CI](https://github.com/chipi/chemigram/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/chipi/chemigram/actions/workflows/ci.yml)
-[![docs](https://github.com/chipi/chemigram/actions/workflows/docs.yml/badge.svg?branch=main)](https://chipi.github.io/chemigram/)
-[![release](https://img.shields.io/github/v/release/chipi/chemigram?display_name=tag&sort=semver&color=blue)](https://github.com/chipi/chemigram/releases)
-[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](docs/LICENSING.md)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org)
-[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+A headless RAW photo editor that a coding agent can drive through a CLI. The agent loads a photo, inspects a preview, applies a reversible adjustment, renders again, checks the change, and exports. [darktable](https://www.darktable.org/) does the pixel processing; this tool manages edits as versioned XMP sidecars and gives agents predictable JSON responses.
 
-> Chemigram is to photos what Claude Code is to code.
-
-A craft-research project for agent-driven photo editing. The agent reads
-your taste, you describe intent, the agent edits via a vocabulary of
-named moves on top of darktable. Sessions accumulate; the project gets
-richer over time.
-
-**Status:** Phase 1 closed at v1.0.0 (minimum viable loop). v1.10.0
-shipped May 2026; **v1.11.0 in flight** — RFC-039 makes the vocabulary
-port across camera bodies (raw-aware WB / denoise / filmic / lens via
-per-raw EXIF substitution). **114 vocabulary entries** (3 starter +
-111 expressive-baseline); 2200+ tests; real-darktable e2e suite; full
-release history in [`CHANGELOG.md`](CHANGELOG.md).
-
-Not a Lightroom replacement. Not a digital asset manager. A probe into
-where photographic taste lives and how it transmits through language
-and feedback.
-
-## What this is
-
-A photo is a project, structured the way a code project is. The agent
-reads your context (`taste.md`, the brief, accumulated notes), drives
-darktable headlessly through composable vocabulary primitives, manages
-masks and snapshots, and learns across sessions. Two modes:
-
-- **Mode A (the journey)** — collaborative editing where you and the
-  agent work through one photo together, conversationally. Ships
-  today.
-- **Mode B (autonomous fine-tuning)** — agent runs alone, branching to
-  explore variants, self-evaluating against criteria you provide.
-  Drafted (RFC-038); not yet shipped.
-
-## Built on darktable
-
-Every pixel decision in chemigram is made by [**darktable**](https://www.darktable.org/) —
-the open-source raw photography workflow that has quietly become one
-of the best photo processing engines in the world. Scene-referred
-pipeline, perceptually accurate color science, sigmoid + filmic tone
-mapping, the colorequal HSL panel, lens correction via lensfun,
-denoising profiles per-camera, drawn-form masks with feathered blendif,
-parametric range masks, retouch heal/clone — all of it ships in
-darktable, written by a community of brilliant photographers and
-engineers over more than a decade. The work is uncompromising. The
-output, in our experience, exceeds what most commercial alternatives
-produce.
-
-**chemigram does no photography.** It contributes orchestration:
-vocabulary, an agent loop, versioning, session capture, and the
-discipline that wraps darktable into something an LLM can drive with
-intent. Strip chemigram away and darktable still produces the same
-beautiful renders; strip darktable away and chemigram is a pile of
-JSON. The architectural commitment is explicit and load-bearing — see
-[AGENTS.md § "darktable does the photography, Chemigram does the loop"](AGENTS.md).
-
-If you're new to darktable: **try it**. It's free, it's MIT-spirited
-(GPLv3), it runs natively on macOS / Linux / Windows, and the
-[user manual](https://docs.darktable.org/usermanual/) is one of the
-most thorough pieces of open-source documentation we've ever read.
-The [darktable GitHub repository](https://github.com/darktable-org/darktable)
-is where the work happens. If you ship raw work, this is the engine
-you want; chemigram or no chemigram, the darktable team has earned
-your attention.
-
-## What makes it different
-
-- **Vocabulary, not sliders.** The agent's action space is a finite
-  set of named moves you (or the community) author as `.dtstyle`
-  files. Articulating the vocabulary is part of the experiment.
-- **Three foundational disciplines** in the architecture:
-  - *darktable does the photography, Chemigram does the loop*
-  - *Bring Your Own AI* — maskers, evaluators, the photo agent itself
-    are all configurable via MCP
-  - *Agent is the only writer* — full library isolation, replace
-    semantics, predictable action space
-- **Mini git for photos.** Content-addressed DAG of edit snapshots
-  per image. Branches, tags, the works.
-- **Compounding context.** Each session reads your `taste.md` and
-  per-image notes; agent proposes additions; you confirm. Future
-  sessions are faster and more aligned because context accumulates.
-
-## Status and roadmap
-
-| Phase | What | Status |
-|-|-|-|
-| 0 | Hands-on validation of darktable composition story | ✅ Closed green |
-| Doc system | Concept package + PRDs/RFCs/ADRs | ✅ Complete |
-| 1 | Core engine + MCP server + starter vocabulary | ✅ Closed (v1.0.0) — Slices 1–6 shipped (ADR-050..061). |
-| 1.1 | Comprehensive validation — capability matrix + real-darktable e2e | ✅ Closed (v1.1.0) — 3 engine bugs fixed (ADR-062). |
-| 1.2 | Engine unblock + reference-image validation infrastructure | ✅ Closed (v1.2.0) — Path B synthesizer + assertion library + Mode A v3 (ADR-063..068). |
-| 1.3 | Command-line interface | ✅ Closed (v1.3.0) — 22 verbs mirroring MCP; ADR-069..072 closed RFC-020. |
-| 1.4 | `expressive-baseline` vocabulary authoring | ✅ Closed (v1.4.0) — 35 entries authored programmatically (Path C) + 4 drawn-mask-bound entries. |
-| 1.5 | Mask architecture cleanup (drawn-only) | ✅ Closed (v1.5.0) — ADR-076 retired the PNG-based mask infrastructure that turned out to be a silent no-op. |
-| 1.6 | Parameterized vocabulary (Path C as default) | ✅ Closed (v1.6.0) — RFC-021 / ADR-077..080. 18 parameterized entries across 11 modules. |
-| 1.7 | Tier 2 expansion + Lightroom-parity Bucket A | ✅ Closed (v1.7.0) — RFC-022 / ADR-081 tiering policy; A.1–A.7 buckets shipped. |
-| 1.8 | HSL via colorequal + denoise + lens + filmic v6 | ✅ Closed (v1.8.0) — RFC-023 / ADR-083; #95–#97 visual proofs verified. Lightroom daily-use parity 51/52 (98%). |
-| 1.9 | Mask + retouch architecture trilogy | ✅ Closed (v1.9.0) — RFC-024/025/026/029 → ADR-084..087. RFC-030 deferred (deployed sibling-provider precision tier). |
-| 1.10 | Photographer-workflow vocabulary expansion + workflow primitives | ✅ Closed (v1.10.0) — RFC-035/036/037 → ADR-088/089/090. 29 new L2 looks across 6 genres + bw_convert v2. |
-| 1.11 | Raw-derived parameters in L2 composition + visual-proof trust closure | In flight (v1.11.0) — RFC-039 → ADR-091/092/093 + sibling ADR-094/095/096. Camera-aware WB / denoise / filmic / lens; cross-camera verification (#142); formal audit (#141). |
-| 2 | Vocabulary maturation — grow vocab from session evidence | In progress (use-driven; intermittent). 114 entries shipped (3 starter + 111 expressive-baseline). |
-| 3+ | Multi-photographer review / pack management / AI provider scaffolding | Conditional / future — RFC-027, RFC-028, RFC-030. |
-
-For the canonical phase plan and current status, see `docs/IMPLEMENTATION.md`.
-
-## Quickstart — conversational (MCP)
-
-For interactive editing through Claude Desktop, Claude Code, and other MCP clients.
-
-```bash
-# 1. install
-pip install chemigram
-
-# 2. set up your taste (cross-image preferences)
-mkdir -p ~/.chemigram/tastes
-$EDITOR ~/.chemigram/tastes/_default.md   # what you generally like
-
-# 3. point your AI client at chemigram-mcp.  e.g. for Claude Code, drop this
-#    into .mcp.json (project) or ~/.claude/mcp.json (global):
-#
-#    {"mcpServers": {"chemigram": {"command": "chemigram-mcp"}}}
-
-# 4. start a conversation in your client:
-#    "Ingest /path/to/photo.NEF.  Read context.  Render a preview."
-```
-
-For the full flow — darktable setup, MCP-client matrix (Claude Code / Desktop, Cursor, Continue, Cline, Zed, OpenAI), 10-turn worked session, troubleshooting — read **[`docs/getting-started.md`](docs/getting-started.md)**.
-
-## Quickstart — scripts and agent loops (CLI, v1.3.0+)
-
-For batch processing, shell scripts, and agent loops where MCP's session model is the wrong shape. The CLI mirrors the MCP tool surface verb-for-verb (`chemigram apply-primitive` ↔ MCP `apply_primitive`) — 28 verbs total; see PRD-005 / RFC-020 for the design.
-
-```bash
-# 1. install — same as above
-pip install chemigram   # also lands `chemigram` on $PATH
-
-# 2. inspect the runtime
-chemigram status
-
-# 3. ingest a raw + apply a vocabulary entry
-export CHEMIGRAM_DT_CONFIGDIR=~/chemigram-phase0/dt-config   # see getting-started for setup
-chemigram ingest ~/Pictures/raw/iguana.NEF
-chemigram apply-primitive iguana --entry exposure --value 0.5 --pack expressive-baseline
-chemigram render-preview iguana --size 1024
-chemigram export-final iguana --format jpeg
-
-# 4. machine-readable output for scripts and agents (NDJSON)
-chemigram --json apply-primitive iguana --entry wb_warm_subtle
-# {"event":"result","status":"ok","image_id":"iguana", ...}
-```
-
-The CLI is stateless per invocation — parallel calls against different images are safe. The image_id derives from the raw filename's stem (case-preserving): `iguana.NEF` → `iguana`, `IMG_2041.ARW` → `IMG_2041`. **Concurrent calls against the same image are not tested**; the engine writes refs without an explicit fcntl lock, so serialize at the caller level if a single image is touched by multiple subprocesses simultaneously. For the full verb surface, see [`docs/guides/cli-reference.md`](docs/guides/cli-reference.md). For driving Chemigram from a custom agent loop, see the "Agent loops" section of [`docs/getting-started.md`](docs/getting-started.md).
-
-## How it works
-
-```mermaid
-flowchart LR
-    subgraph CLIENT["AI client"]
-        CC[Claude Code / Desktop /<br/>Cursor / Continue / ...]
-    end
-    subgraph ADAPTERS["adapters"]
-        MCP[chemigram-mcp<br/>28 tools]
-        CLI[chemigram CLI<br/>28 verbs]
-    end
-    subgraph CORE["chemigram.core"]
-        ENGINE[vocab / versioning /<br/>masking / context /<br/>pipeline / session]
-    end
-    DT[darktable-cli]
-    FS["~/Pictures/Chemigram/&lt;image_id&gt;/<br/>snapshots/ exports/ sessions/ previews/"]
-    TASTES["~/.chemigram/<br/>tastes/ vocabulary/personal/"]
-
-    CC -.stdio.-> MCP
-    CLI --> CORE
-    MCP --> CORE
-    CORE --> ENGINE
-    ENGINE -- spawns --> DT
-    ENGINE -- writes --> FS
-    ENGINE -- reads / proposes --> TASTES
-```
-
-For the full architecture (subsystem breakdown, mask trilogy, vocabulary
-layers, release timeline) see [`docs/diagrams/`](docs/diagrams/index.md).
-
-The agent reads your context and the brief, drives darktable through a vocabulary of named moves, manages snapshots, binds drawn-form masks where the vocabulary calls for them, and proposes updates to your taste files at session end. Every tool call is recorded to a JSONL transcript so sessions are auditable and replayable.
-
-A typical 6-turn opening:
-
-```
-You:    Ingest /tmp/manta.NEF.  Read context.
-
-Agent:  Ingested as image_id "manta".  Tastes loaded:
-        natural tone curves, lifted shadows, restrained colors.
-        EOS R5, no L1 templates yet.  Notes empty.
-
-You:    Render preview.  The water feels too cyan and the top
-        of the frame is blown by sun glare.
-
-Agent:  [render → wb_warm_subtle → render]  Slate-blue now.
-        For the glare, I'd reach for gradient_top_dampen_highlights —
-        binds a -0.5 EV exposure through a top-bright drawn gradient.
-        Try it?
-
-You:    Yes.  And lift the foreground where the manta sits.
-
-Agent:  [apply gradient_top_dampen_highlights →
-         apply gradient_bottom_lift_shadows → render]  Top dampened,
-        foreground lifted +0.4 EV.  Manta reads with more presence.
-
-You:    Tag v1-export and run a full-res JPEG.
-
-Agent:  [tag → export_final]  Done.  Two propose-and-confirms before
-        we wrap?
-```
-
-See **[`docs/getting-started.md`](docs/getting-started.md#your-first-session)** for a full 10-turn walkthrough.
-
-## Growing your vocabulary
-
-The starter vocabulary that ships with `chemigram` is deliberately small — three entries (a parametric WB primitive, a warm-WB sugar, an L2 neutral look). The companion `expressive-baseline` pack adds 111 entries: parameterized L3 primitives across the major darktable modules (Path C; RFC-021), L2 looks across 6 genres (cinematic / portrait / landscape / wildlife / food / product + B&W variants), and mask-bound primitives. Plus the **`apply_spot` MCP tool** (RFC-025 / ADR-087) for blemish removal / cloning. Phase 2 grows the vocabulary from real session evidence: the agent logs gaps when it reaches for moves you don't have; you open darktable periodically, capture the missing primitives as `.dtstyle` files, and drop them into `~/.chemigram/vocabulary/personal/`. The personal pack grows at whatever cadence the photographer's actual work demands — there's no target. The vocabulary becomes an articulation of *your* craft.
-
-Full procedure in **[`docs/getting-started.md`](docs/getting-started.md#growing-your-vocabulary)** and **[`vocabulary/starter/README.md`](vocabulary/starter/README.md)**.
-
-## Documentation
-
-### Three doors in
-
-The doc tree is dense; these three docs are the right entry points depending on your intent:
-
-| If you want to... | Start here | Time |
-|-|-|-|
-| **Run chemigram on a real photo** | [`docs/getting-started.md`](docs/getting-started.md) — install, MCP-client config, first session | 30–60 min |
-| **Know "I want X look — how?"** | [`docs/guides/cookbook.md`](docs/guides/cookbook.md) — ~60 intent-driven recipes grouped by genre | browse as needed |
-| **Understand chemigram deeply** | [`docs/onboarding.md`](docs/onboarding.md) — opinionated reading order through the doc tree | 2.5–3 hours |
-
-Visual companion: [`docs/diagrams/`](docs/diagrams/index.md) — four Mermaid one-pagers (stack / mask trilogy / vocabulary layers / Phase 1 timeline) that render inline on GitHub and MkDocs.
-
-### Full doc tree
-
-For users (everyday):
-
-- **[`docs/guides/cookbook.md`](docs/guides/cookbook.md)** — "I want X look → here's the recipe." ~60 worked examples (cinematic / portrait / landscape / B&W / wildlife / food / mask-driven / workflow primitives). First stop for "how do I do X."
-- **[`docs/guides/tastes-quickstart.md`](docs/guides/tastes-quickstart.md)** — your first taste file in 5 minutes
-- **[`docs/guides/vocabulary-patterns.md`](docs/guides/vocabulary-patterns.md)** — recipes for combining primitives ("for *X* intent, reach for *Y* composition")
-- **[`docs/guides/recipes.md`](docs/guides/recipes.md)** — common "how do I" patterns at the verb layer: reset to baseline, find by tag, export multiple sizes, replay a session
-- **[`docs/guides/visual-proofs.md`](docs/guides/visual-proofs.md)** — auto-generated before/after gallery for every vocabulary entry against the synthetic chart fixture
-- **[`docs/guides/lightroom-to-chemigram.md`](docs/guides/lightroom-to-chemigram.md)** — "where do I find X" mapping for Lightroom users
-- **[`docs/guides/mask-shapes-from-words.md`](docs/guides/mask-shapes-from-words.md)** — spatial English → `mask_spec` ("bottom third" → gradient)
-- **[`docs/guides/llm-vision-for-masks.md`](docs/guides/llm-vision-for-masks.md)** — vision-constructed precision masks (RFC-026 / ADR-086 Pattern 7)
-- **[`docs/guides/cli-reference.md`](docs/guides/cli-reference.md)** — every verb, every flag, every exit code (auto-generated; CI-checked)
-- **[`docs/guides/cli-output-schema.md`](docs/guides/cli-output-schema.md)** — NDJSON event format for `--json` output
-- **[`docs/guides/cli-env-vars.md`](docs/guides/cli-env-vars.md)** — env var reference
-- **[`docs/guides/config-toml.md`](docs/guides/config-toml.md)** — `~/.chemigram/config.toml` schema
-- **[`vocabulary/starter/README.md`](vocabulary/starter/README.md)** + **[`vocabulary/packs/expressive-baseline/README.md`](vocabulary/packs/expressive-baseline/README.md)** — what ships in each pack
-- **[`examples/iguana-galapagos.md`](examples/iguana-galapagos.md)** — a worked Mode A session, prose form
-- **[`examples/cli-agent-loop.py`](examples/cli-agent-loop.py)** + **[`examples/cli-batch-watch.sh`](examples/cli-batch-watch.sh)** — runnable CLI examples
-
-For contributors (project-deep):
-
-- **[`docs/onboarding.md`](docs/onboarding.md)** — opinionated 2.5–3h reading order through concept package, mask architecture, cookbook
-- **[`docs/diagrams/`](docs/diagrams/index.md)** — four Mermaid one-pagers (stack / mask trilogy / vocabulary layers / Phase 1 timeline)
-- **[`docs/guides/authoring-vocabulary-entries.md`](docs/guides/authoring-vocabulary-entries.md)** — Phase 2 daily-use authoring flow
-- **[`docs/guides/expressive-baseline-authoring.md`](docs/guides/expressive-baseline-authoring.md)** — programmatic struct-RE methodology (Path C)
-- **`docs/concept/`** — six numbered concept documents (read end-to-end, ~2h):
-  `00-introduction.md`, `01-vision.md`, `02-project-concept.md`,
-  `03-data-catalog.md`, `04-architecture.md`, `05-design-system.md`
-- **`docs/prd/`**, **`docs/rfc/`**, **`docs/adr/`** — definition documents (PRDs argue user-value; RFCs argue open technical questions; ADRs commit to settled decisions). Anchored by `docs/prd/PA.md` and `docs/adr/TA.md`.
-- **`docs/IMPLEMENTATION.md`** — canonical phase plan
-- **`docs/CONTRIBUTING.md`** — code + vocabulary contribution flows
-- **`docs/LICENSING.md`** — what's MIT, what's separate (incl. darktable's GPLv3 boundary at the subprocess)
-- **`docs/TODO.md`** — research backlog, deferred items
-- **[`docs/guides/index.md`](docs/guides/index.md)** — full guides index, organized by audience
+This project builds on [Chemigram](https://github.com/chipi/chemigram) and preserves its MIT license and attribution. It focuses the existing engine on a reliable CLI feedback loop. No AI model, account, or service is bundled.
 
 ## Requirements
 
-- darktable 5.x (Apple Silicon native build recommended)
-- Python 3.11+
-- An MCP-capable AI client — Claude Code, Claude Desktop, Cursor, Continue, Cline, Zed, or anything that supports MCP stdio servers
-- macOS Apple Silicon for v1; Linux best-effort
+- Python 3.11 or newer
+- `darktable-cli` 5.4 or 5.6 on `PATH`, or set `DARKTABLE_CLI` to its executable path
+- A coding agent that can read command output and inspect local image files
 
-## Contributing
+The current release was exercised with darktable 5.4.1 and 5.6.2 on Ubuntu. The baseline exposure and multi-instance XMP order are calibrated for darktable 5.x; check new major versions with `status --probe` and a test render before relying on them.
 
-If you want to work on the engine itself (not just use it):
+## Install
+
+[uv](https://docs.astral.sh/uv/) provides an isolated install from the public repository:
 
 ```bash
-git clone https://github.com/chipi/chemigram.git
-cd chemigram
-./scripts/setup.sh
+uv tool install git+https://github.com/ralfboltshauser/agent-darkroom.git
+agent-darkroom --json status --probe /path/to/photo.ARW
 ```
 
-That checks prerequisites, creates a venv, and installs everything.
+`chemigram` remains an alias for compatibility. The Python import package is also `chemigram`, so this distribution and upstream Chemigram should be installed in separate Python environments.
 
-**New contributor?** Start with [`docs/onboarding.md`](docs/onboarding.md) — opinionated reading order through the concept package, the operational handbook, the mask architecture, and the cookbook. ~2.5–3 hours end-to-end. Path through the doc tree without guessing.
+For development:
 
-For the contribution flow itself (code review vs vocabulary review — they're meaningfully different): see [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md). For what's being worked on now: see [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md).
+```bash
+git clone https://github.com/ralfboltshauser/agent-darkroom.git
+cd agent-darkroom
+uv sync --extra dev
+uv run agent-darkroom --json status --probe /path/to/photo.ARW
+```
 
-If you want to contribute vocabulary entries (Phase 2 path), see [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) § Vocabulary contributions and [`docs/guides/authoring-vocabulary-entries.md`](docs/guides/authoring-vocabulary-entries.md).
+The installer includes the starter and expressive vocabulary packs. The latter has the primary exposure, tone, color, crop, and look controls. A workspace stores a private copy of the source RAW, content-addressed XMP snapshots, previews, and exports. By default it lives at `~/Pictures/Chemigram`; set `CHEMIGRAM_WORKSPACE` to place it elsewhere. Each workspace root gets its own darktable config directory automatically.
 
-## License
+## Agent loop
 
-MIT. Engine, MCP server, docs, starter vocabulary, and borrowed community
-packs are all permissively licensed. Personal vocabularies are kept in
-separate private repos by photographers' choice. See `docs/LICENSING.md`
-for the full picture.
+All editing commands return one JSON result or error line when `--json` is set. Use the full `snapshot_hash` as the expected HEAD for the next edit. Preview and export paths are tied to that hash, so an old preview never silently becomes the current one.
 
-## Why "Chemigram"?
+```bash
+export CHEMIGRAM_WORKSPACE=/tmp/agent-photos
 
-A chemigram is a cameraless photographic process where an image emerges
-from a chemical reaction on light-sensitive paper — guided by the
-artist, but not fully controlled. The name fits: each edit here emerges
-from a loop between a photographer's intent, an agent's moves, and a
-tool that responds. Authorship is shared and the result is one-of-a-kind.
+agent-darkroom --json ingest /path/to/photo.ARW --image-id portrait
+agent-darkroom --json render-preview portrait --size 1024
+agent-darkroom --json inspect portrait
+agent-darkroom --json vocab list --query exposure --names-only
+agent-darkroom --json vocab show exposure
 
-## Acknowledgments
+agent-darkroom --json apply-primitive portrait --entry exposure --value 1.5 \
+  --expect-head BASELINE_HASH
+agent-darkroom --json render-preview portrait --size 1024
+```
 
-[**darktable**](https://www.darktable.org/) is the foundation chemigram
-stands on. The darktable team — maintainers, contributors, translators,
-documentation writers — has built an open-source raw photography engine
-that competes with and frequently exceeds proprietary alternatives. If
-this project is useful, [donate to darktable](https://www.darktable.org/contact/),
-file good bug reports, contribute translations, or just tell other
-photographers to try it. The work the darktable community has shipped
-makes everything chemigram does possible.
+The agent should open the returned `jpeg_path`, judge the photo, and keep or change the edit. For a local lift, place an ellipse in normalized image coordinates and check its actual footprint:
 
-Other open-source foundations chemigram leans on with gratitude:
-[Python](https://www.python.org/), [Anthropic's MCP](https://modelcontextprotocol.io/),
-[ruff](https://github.com/astral-sh/ruff), [pytest](https://pytest.org/),
-[uv](https://github.com/astral-sh/uv), [defusedxml](https://github.com/tiran/defusedxml),
-[lensfun](https://lensfun.github.io/) (via darktable). And the photo
-agent on the conversational side is whichever frontier LLM the
-photographer chooses — chemigram is built so that piece is yours
-to swap.
+```bash
+agent-darkroom --json apply-primitive portrait --entry exposure --value 0.6 \
+  --mask-spec '{"dt_form":"ellipse","dt_params":{"center_x":0.5,"center_y":0.45,"radius_x":0.3,"radius_y":0.35,"border":0.1}}' \
+  --expect-head GLOBAL_HASH
+agent-darkroom --json compare portrait GLOBAL_HASH LOCAL_HASH --size 1024 --difference
+agent-darkroom --json inspect portrait
+agent-darkroom --json export-final portrait --format jpeg
+```
+
+`compare --difference` returns a side-by-side image and an amplified difference PNG. Open the difference image to catch misplaced masks or unexpected global changes. The `inspect` result reports luminance percentiles, near-black and near-white fractions, dimensions, camera metadata, and whether an ICC profile is embedded. These measurements help diagnose exposure and clipping; visual inspection still decides whether an edit is good.
+
+Use `agent-darkroom --json checkout portrait HASH --branch retry-name` to revisit a snapshot and keep editing from it. `reset portrait` returns the current branch to the baseline. `get-state` lists enabled operations and instance priorities; `log` and `diff` show version history. `--mask-spec-file` accepts a JSON file when shell quoting is inconvenient.
+
+The CLI rejects masked `bilat` clarity: a real darktable 5.6.2 trial showed a large effect outside the requested ellipse. Other module and mask combinations should be checked with `compare --difference` before final export. See [mask controls](docs/guides/mask-applicable-controls.md) for shape parameters.
+
+## Validation
+
+The first independent agent trial and a fresh retry graded the [portrait RAW fixture](tests/fixtures/raws/README.md) through the CLI and exported full resolution JPEGs with embedded ICC profiles. The retry used global exposure, a masked local exposure, a crop, visual preview checks, and a difference image. That trial exposed the same-module stacking bug, which is now covered by a live RAW regression test. The original photographer published the fixture under CC BY-SA 4.0; provenance is recorded with the fixture.
+
+Run tests and checks from a checkout:
+
+```bash
+uv run --extra dev ruff check .
+uv run --extra dev pytest -q
+DARKTABLE_CLI=/path/to/darktable-cli uv run --extra dev pytest -q tests/e2e/test_agent_masked_exposure.py
+uv build
+```
+
+The general test suite skips tests that require optional RAW fixtures or a configured renderer when those are unavailable. The live test above requires the LFS portrait file and darktable-cli.
+
+## Scope and attribution
+
+This is a CLI orchestration layer over darktable, built from Chemigram's XMP, vocabulary, masking, and versioning engine. It supports RAW ingest, named and parameterized edits, drawn masks, snapshots, preview inspection, comparisons, and JPEG or PNG export. Darktable's own license and installation are separate from this repository. The source code is MIT licensed; bundled RAW test photos have their own licenses in [fixture provenance](tests/fixtures/raws/README.md).

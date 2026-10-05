@@ -41,7 +41,7 @@ def test_get_state_json_returns_full_summary(runner: CliRunner, cli_workspace_ro
     assert payload["status"] == "ok"
     assert "head_hash" in payload
     assert payload["head_hash"]  # non-empty (workspace has a baseline snapshot)
-    assert "layers_present" in payload
+    assert "operations" in payload
 
 
 def test_get_state_unknown_image_id(runner: CliRunner, cli_workspace_root: Path) -> None:

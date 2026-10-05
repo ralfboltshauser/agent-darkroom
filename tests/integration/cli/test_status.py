@@ -36,7 +36,7 @@ def test_status_human_output_contains_all_fields(runner: CliRunner) -> None:
     assert result.exit_code == ExitCode.SUCCESS.value
     out = result.stdout
     for key in (
-        "chemigram_version",
+        "tool_version",
         "darktable_cli_path",
         "darktable_cli_version",
         "workspace_root",
@@ -65,7 +65,7 @@ def test_status_json_output_one_summary_line(runner: CliRunner) -> None:
     assert summary["status"] == "ok"
     assert summary["schema_version"] == OUTPUT_SCHEMA_VERSION
     for key in (
-        "chemigram_version",
+        "tool_version",
         "darktable_cli_path",
         "darktable_cli_version",
         "workspace_root",

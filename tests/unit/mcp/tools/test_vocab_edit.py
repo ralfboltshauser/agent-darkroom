@@ -79,7 +79,7 @@ def test_get_state_returns_summary_shape(context: ToolContext) -> None:
         "head_hash",
         "entry_count",
         "enabled_count",
-        "layers_present",
+        "operations",
     }
     assert isinstance(result.data["head_hash"], str)
     assert result.data["entry_count"] > 0

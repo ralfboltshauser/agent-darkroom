@@ -162,6 +162,9 @@ def checkout(
     ref_or_hash: str = typer.Argument(
         ..., help="Branch name, tag name, or snapshot hash to check out."
     ),
+    branch_name: str | None = typer.Option(
+        None, "--branch", help="Create and switch to a new branch at this snapshot."
+    ),
 ) -> None:
     """Move HEAD to ``ref_or_hash``; return the new state summary."""
     obj = cast(CliContext, ctx.obj)
@@ -169,7 +172,9 @@ def checkout(
 
     workspace = resolve_workspace_or_fail(ctx, image_id)
     try:
-        xmp = core_checkout(workspace.repo, ref_or_hash)
+        if branch_name:
+            core_branch(workspace.repo, branch_name, from_=ref_or_hash)
+        xmp = core_checkout(workspace.repo, branch_name or ref_or_hash)
     except (VersioningError, RefNotFoundError, RepoError) as exc:
         # Mirror MCP: unknown ref/hash collapses to VERSIONING_ERROR
         # (chemigram.mcp.tools.versioning._versioning_error).
@@ -179,10 +184,12 @@ def checkout(
         raise typer.Exit(code=ExitCode.VERSIONING_ERROR.value) from exc
 
     summary = summarize_state(xmp)
+    head_ref = workspace.repo.read_ref_raw("HEAD")
     writer.result(
         message=f"checked out {ref_or_hash}",
         image_id=image_id,
         ref_or_hash=ref_or_hash,
+        branch=head_ref.removeprefix("ref: refs/heads/") if head_ref.startswith("ref: ") else None,
         **summary,
     )
 

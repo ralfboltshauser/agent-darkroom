@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from pathlib import Path
 from typing import Any, cast
 
 import typer
@@ -73,7 +74,7 @@ def _do_get_state(ctx: typer.Context, image_id: str) -> int:
             head_hash=None,
             entry_count=0,
             enabled_count=0,
-            layers_present={"L1": False, "L2": False, "L3": False},
+            operations={},
             note="no snapshot yet on this workspace",
         )
         return ExitCode.SUCCESS.value
@@ -126,6 +127,7 @@ def _do_apply_primitive(
     mask_spec_override: dict[str, Any] | None = None,
     parameter_values: dict[str, float] | None = None,
     strength: float | None = None,
+    expected_head: str | None = None,
 ) -> int:
     """Per-image core for apply-primitive; returns exit code."""
     from chemigram.core.vocab import VocabEntry, VocabError, VocabularyIndex
@@ -139,6 +141,20 @@ def _do_apply_primitive(
     except typer.Exit as exc:
         return int(exc.exit_code)
 
+    try:
+        previous_hash = workspace.repo.resolve_ref("HEAD")
+    except (RefNotFoundError, RepoError) as exc:
+        writer.error(str(exc), ExitCode.VERSIONING_ERROR, image_id=image_id)
+        return ExitCode.VERSIONING_ERROR.value
+    if expected_head is not None and previous_hash != expected_head:
+        writer.error(
+            "HEAD moved since the agent last inspected this image",
+            ExitCode.VERSIONING_ERROR,
+            expected_head=expected_head,
+            actual_head=previous_hash,
+            hint="run get-state, then retry from the current revision",
+        )
+        return ExitCode.VERSIONING_ERROR.value
     baseline_xmp = current_xmp(workspace)
     if baseline_xmp is None:
         writer.error(
@@ -149,6 +165,16 @@ def _do_apply_primitive(
         return ExitCode.STATE_ERROR.value
 
     effective_mask = _resolve_effective_mask(vocab_entry, mask_spec_override)
+    if effective_mask is not None and any(
+        plugin.operation == "bilat" for plugin in vocab_entry.dtstyle.plugins
+    ):
+        writer.error(
+            "masked bilat is disabled: a real darktable 5.6.2 trial changed pixels outside "
+            "the requested region; use masked toneequalizer or exposure",
+            ExitCode.INVALID_INPUT,
+            entry=entry_name,
+        )
+        return ExitCode.INVALID_INPUT.value
 
     # RFC-032 named-mask resolution: substitute {"kind": "named", "name": ...}
     # references with the maskdef's spec. No-op for already-resolved specs.
@@ -194,7 +220,12 @@ def _do_apply_primitive(
     else:
         new_xmp = synthesize_xmp(baseline_xmp, [vocab_entry.dtstyle])
     try:
-        new_hash = snapshot(workspace.repo, new_xmp, label=f"apply: {entry_name}")
+        new_hash = snapshot(
+            workspace.repo,
+            new_xmp,
+            label=f"apply: {entry_name}",
+            expected_head=previous_hash,
+        )
     except VersioningError as exc:
         writer.error(str(exc), ExitCode.VERSIONING_ERROR, image_id=image_id)
         return ExitCode.VERSIONING_ERROR.value
@@ -203,6 +234,7 @@ def _do_apply_primitive(
         message=f"applied {entry_name} to {image_id}",
         image_id=image_id,
         entry=entry_name,
+        previous_hash=previous_hash,
         snapshot_hash=new_hash,
         state_after=summarize_state(new_xmp),
     )
@@ -350,7 +382,7 @@ def apply_primitive(
         "-p",
         help="Vocabulary pack(s). Defaults to ['starter'].",
     ),
-    mask_spec: str = typer.Option(
+    mask_spec: str | None = typer.Option(
         None,
         "--mask-spec",
         help=(
@@ -361,6 +393,12 @@ def apply_primitive(
             "See docs/guides/mask-applicable-controls.md for parameter "
             "semantics and the per-module compatibility matrix."
         ),
+    ),
+    mask_spec_file: Path | None = typer.Option(
+        None, "--mask-spec-file", help="Read the drawn mask JSON from a file."
+    ),
+    expect_head: str | None = typer.Option(
+        None, "--expect-head", help="Reject the edit if HEAD differs from this full hash."
     ),
     value: str = typer.Option(
         None,
@@ -399,8 +437,15 @@ def apply_primitive(
     """Apply a vocabulary entry; snapshot the result."""
     obj = cast(CliContext, ctx.obj)
     writer = obj["writer"]
-    pack_names = pack if pack else ["starter"]
+    pack_names = pack if pack else ["expressive-baseline"]
 
+    if mask_spec is not None and mask_spec_file is not None:
+        raise typer.BadParameter("use either --mask-spec or --mask-spec-file")
+    if mask_spec_file is not None:
+        try:
+            mask_spec = mask_spec_file.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise typer.BadParameter(f"cannot read mask file: {exc}") from exc
     mask_spec_override = _parse_mask_spec_flag(mask_spec)
 
     try:
@@ -438,6 +483,7 @@ def apply_primitive(
             mask_spec_override=mask_spec_override,
             parameter_values=parameter_values,
             strength=strength,
+            expected_head=expect_head,
         )
         for img in iter_image_ids(stdin, image_id)
     ]
@@ -495,7 +541,7 @@ def apply_per_region_cli(
 
     obj = cast(CliContext, ctx.obj)
     writer = obj["writer"]
-    pack_names = pack if pack else ["starter"]
+    pack_names = pack if pack else ["expressive-baseline"]
 
     try:
         regions_raw = json.loads(regions_json)

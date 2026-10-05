@@ -20,7 +20,7 @@ app = typer.Typer(no_args_is_help=True)
 
 
 def _packs_or_default(pack: list[str] | None) -> list[str]:
-    return pack if pack else ["starter"]
+    return pack if pack else ["expressive-baseline"]
 
 
 @app.command("list")
@@ -30,13 +30,19 @@ def list_(
         None,
         "--pack",
         "-p",
-        help="Pack name (repeatable). Defaults to ['starter'].",
+        help="Pack name (repeatable). Defaults to ['expressive-baseline'] plus starter.",
     ),
     layer: str | None = typer.Option(None, "--layer", help="Filter by layer (L1/L2/L3)."),
     tag: list[str] = typer.Option(
         None,
         "--tag",
         help="Filter by tag (repeatable; OR-matched). Mirrors the MCP `tags` arg.",
+    ),
+    query: str | None = typer.Option(
+        None, "--query", help="Find entries by name, description, or tag."
+    ),
+    names_only: bool = typer.Option(
+        False, "--names-only", help="Emit only names and parameter names."
     ),
 ) -> None:
     """List vocabulary entries across the loaded packs."""
@@ -55,7 +61,23 @@ def list_(
         raise typer.Exit(code=ExitCode.INVALID_INPUT.value) from exc
 
     entries = list(index.list_all(layer=layer, tags=tag or None))
+    if query:
+        needle = query.casefold()
+        entries = [
+            entry
+            for entry in entries
+            if needle in entry.name.casefold()
+            or needle in entry.description.casefold()
+            or any(needle in value.casefold() for value in entry.tags)
+        ]
     for entry in entries:
+        if names_only:
+            writer.event(
+                "vocabulary_entry",
+                name=entry.name,
+                parameters=[p.name for p in entry.parameters] if entry.parameters else [],
+            )
+            continue
         pack_root = index.pack_for(entry.name)
         writer.event(
             "vocabulary_entry",
@@ -83,7 +105,7 @@ def show(
         None,
         "--pack",
         "-p",
-        help="Pack name (repeatable). Defaults to ['starter'].",
+        help="Pack name (repeatable). Defaults to ['expressive-baseline'] plus starter.",
     ),
 ) -> None:
     """Print one entry's manifest fields + .dtstyle path."""
