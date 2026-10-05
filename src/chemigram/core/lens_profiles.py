@@ -41,17 +41,17 @@ def _database_dirs() -> list[Path]:
     if override:
         path = Path(override).expanduser()
         return [path] if path.is_dir() else []
-    directories = []
-    for base in (
-        Path("/usr/share/lensfun"),
-        Path("/usr/local/share/lensfun"),
-        Path("/opt/homebrew/share/lensfun"),
-        Path.home() / ".local/share/lensfun",
+    for path in (
+        Path.home() / ".local/share/lensfun/updates/version_1",
+        Path("/var/lib/lensfun-updates/version_1"),
+        Path.home() / ".local/share/lensfun/version_1",
+        Path("/usr/share/lensfun/version_1"),
+        Path("/usr/local/share/lensfun/version_1"),
+        Path("/opt/homebrew/share/lensfun/version_1"),
     ):
-        path = base / "version_1"
-        if path.is_dir():
-            directories.append(path)
-    return directories
+        if path.is_dir() and any(path.glob("*.xml")):
+            return [path]
+    return []
 
 
 def find_lens_profile(exif: ExifData) -> LensProfile | None:
