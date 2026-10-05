@@ -169,14 +169,14 @@ Shipped via the `ashift` module (#101).
 
 ## Panel: Lens Corrections
 
-Lens correction shipped via the `lens` module (#95). Photographic effect requires populated lensfun identifier strings — see #100 task B for the EXIF auto-binding follow-up.
+Lens correction uses the installed Lensfun database. On ingest, a matching camera/lens profile is applied to the baseline with focal length and aperture from EXIF. Lensfun computes an output scale to avoid invalid borders. Ingest reports the matched profile and available correction types. If no unambiguous profile is found, it reports `unavailable` and leaves the image uncorrected. Use `remove-module IMAGE_ID --operation lens` to compare or disable the correction.
 
 | Lightroom | chemigram | Notes |
 |---|---|---|
-| Profile-based correction | `apply-primitive lens_correction` | Uses lensfun via `camera`/`lens` strings. Currently empty — populated when EXIF auto-binding lands. |
-| Distortion (manual) | `apply-primitive lens_correction --param lens_cor_distortion=V` | Range [0.0, 1.0]. |
-| Defringe (CA) | `apply-primitive lens_correction --param lens_tca_r=V --param lens_tca_b=V` | Manual TCA shift; 1.0 = no shift. |
-| Vignette correction | `apply-primitive lens_correction --param lens_v_strength=V` | Manual override; range [-1.0, 1.0]. |
+| Profile-based correction | `apply-primitive lens_correction` | Rebinds camera/lens, focal length, aperture, and auto scale from the RAW. |
+| Distortion | Automatic with a matched Lensfun profile | The embedded-metadata `lens_cor_distortion` axis does not change Lensfun corrections. |
+| Lateral chromatic aberration | Automatic when the profile has TCA data | The `lens_tca_r` and `lens_tca_b` axes require darktable's TCA override flag, which the shipped style does not enable. |
+| Vignette correction | Automatic when the profile has vignetting data | `lens_v_strength` can add manual compensation. |
 
 ---
 

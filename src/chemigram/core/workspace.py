@@ -28,8 +28,10 @@ from pathlib import Path
 from chemigram.core.binding import VocabularyIndex, bind_l1
 from chemigram.core.dtstyle import DtstyleEntry
 from chemigram.core.exif import ExifData, read_exif
+from chemigram.core.lens_profiles import find_lens_profile
 from chemigram.core.versioning import ImageRepo
 from chemigram.core.versioning.ops import snapshot, tag
+from chemigram.core.vocab import VocabularyIndex as FullVocabularyIndex
 from chemigram.core.xmp import HistoryEntry, Xmp
 
 
@@ -66,6 +68,7 @@ class Workspace:
     configdir: Path | None = None
     exif: ExifData | None = None
     suggested_bindings: list[DtstyleEntry] = field(default_factory=list)
+    lens_warning: str | None = None
 
     @property
     def previews_dir(self) -> Path:
@@ -211,6 +214,16 @@ def ingest_workspace(
     exif = read_exif(raw_path)
     suggested = bind_l1(exif, vocabulary) if vocabulary is not None else []
     baseline_xmp = _baseline_xmp(exif, suggested)
+    lens_warning = None
+    if isinstance(vocabulary, FullVocabularyIndex) and find_lens_profile(exif) is not None:
+        from chemigram.core.helpers import apply_entry
+
+        lens_entry = vocabulary.lookup_by_name("lens_correction")
+        if lens_entry is not None:
+            try:
+                baseline_xmp = apply_entry(baseline_xmp, lens_entry, raw_path=raw_link)
+            except (RuntimeError, OSError, AttributeError, ValueError, TypeError) as exc:
+                lens_warning = f"Lensfun correction unavailable: {exc}"
     h = snapshot(repo, baseline_xmp, label="baseline", metadata={"ingested_at": _now_iso()})
     tag(repo, "baseline", h)
 
@@ -221,6 +234,7 @@ def ingest_workspace(
         raw_path=raw_link,
         exif=exif,
         suggested_bindings=list(suggested),
+        lens_warning=lens_warning,
     )
 
 

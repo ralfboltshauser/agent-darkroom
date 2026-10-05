@@ -913,7 +913,7 @@
         "parameterized",
         "multi-axis"
       ],
-      "description": "Parameterized lens correction (#95). 10 manual-override magnitude axes via darktable's lens module: --param lens_scale=V (output scaling), --param lens_tca_r=V / lens_tca_b=V (manual TCA shifts; 1.0 = no shift), --param lens_cor_distortion=V / lens_cor_vignette=V / lens_cor_ca_r=V / lens_cor_ca_b=V (per-correction-type strengths for embedded-metadata method), --param lens_v_strength=V / lens_v_radius=V / lens_v_steepness=V (manual vignette correction). NOTE: this entry's photographic effect requires lensfun identifier strings (camera/lens) and shooting metadata (focal/aperture/distance) to be populated. EXIF auto-binding for these is a follow-up; until then, the entry is most useful for overriding strength sliders on a darktable-GUI-authored baseline.",
+      "description": "Lensfun profile correction for distortion, lateral chromatic aberration, and vignetting. Applied automatically at ingest when an unambiguous installed camera/lens profile matches EXIF. lens_scale adjusts output scaling and lens_v_* adds manual vignette compensation. Embedded-method axes and TCA override values are inactive in the shipped Lensfun style. An unmatched profile is reported explicitly.",
       "modversions": {
         "lens": 10
       },

@@ -49,6 +49,8 @@ class ExifData:
     model: str
     lens_model: str
     focal_length_mm: float | None
+    aperture: float | None = None
+    focus_distance_m: float | None = None
 
 
 def _stringify_tag(tag: Any) -> str:
@@ -113,12 +115,16 @@ def read_exif(path: Path) -> ExifData:
         tags.get("MakerNote LensModel")
     )
     focal_length = _focal_length_mm(tags.get("EXIF FocalLength"))
+    aperture = _focal_length_mm(tags.get("EXIF FNumber"))
+    focus_distance = _focal_length_mm(tags.get("EXIF SubjectDistance"))
 
     return ExifData(
         make=make,
         model=model,
         lens_model=lens_model,
         focal_length_mm=focal_length,
+        aperture=aperture,
+        focus_distance_m=focus_distance,
     )
 
 

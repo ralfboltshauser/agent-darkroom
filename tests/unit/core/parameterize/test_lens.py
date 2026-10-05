@@ -192,7 +192,9 @@ def test_axis_offsets_dict_matches_struct_layout() -> None:
 # Camera-aware EXIF binding (#136 / RFC-039)
 
 
-def test_patch_with_raw_path_populates_camera_lens_from_exif() -> None:
+def test_patch_with_raw_path_populates_camera_lens_from_exif(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """When raw_path is supplied AND camera bytes are empty in the
     source, patch() reads EXIF and populates camera/lens/focal length
     on the dtstyle's lens op_params. End-to-end test against the
@@ -204,12 +206,25 @@ def test_patch_with_raw_path_populates_camera_lens_from_exif() -> None:
     from tests._lfs import skip_if_lfs_pointer
 
     skip_if_lfs_pointer(raw_path)
+    from chemigram.core.lens_profiles import LensProfile
     from chemigram.core.parameterize.lens import (
         _CAMERA_FIELD_INDEX,
         _FOCAL_FIELD_INDEX,
         decode,
     )
     from chemigram.core.vocab import load_packs
+
+    monkeypatch.setattr(
+        "chemigram.core.lens_profiles.find_lens_profile",
+        lambda exif: LensProfile(
+            "DSC-RX10M4",
+            "Sony RX10III & compatibles",
+            ("distortion", "tca"),
+            "test database",
+            2.73,
+        ),
+    )
+    monkeypatch.setattr("chemigram.core.lens_profiles.lens_auto_scale", lambda *args: 1.03)
 
     v = load_packs(["starter", "expressive-baseline"])
     entry = v.lookup_by_name("lens_correction")
@@ -220,7 +235,7 @@ def test_patch_with_raw_path_populates_camera_lens_from_exif() -> None:
     out = patch(src, raw_path=raw_path)
     fields = decode(out)
     camera = fields[_CAMERA_FIELD_INDEX].rstrip(b"\x00").decode("utf-8")
-    assert "SONY" in camera.upper() or "Sony" in camera
+    assert camera == "DSC-RX10M4"
     # Landscape fixture's EXIF has focal length present (non-zero)
     assert fields[_FOCAL_FIELD_INDEX] > 0.0
 
@@ -279,12 +294,11 @@ def test_patch_preserves_existing_camera_string(tmp_path: Path) -> None:
     assert out_fields[_CAMERA_FIELD_INDEX].rstrip(b"\x00") == b"Canon EOS R5"
 
 
-def test_patch_unreadable_raw_falls_back(tmp_path: Path) -> None:
-    """If EXIF read fails (corrupt file), patch silently preserves
-    the source bytes (camera stays empty)."""
+def test_patch_unreadable_raw_fails_explicitly(tmp_path: Path) -> None:
+    """A corrupt RAW cannot produce a successful but ineffective lens edit."""
     import struct as _struct
 
-    from chemigram.core.parameterize.lens import _CAMERA_FIELD_INDEX, _STRUCT_FORMAT, decode
+    from chemigram.core.parameterize.lens import _STRUCT_FORMAT
 
     fields: list[int | float | bytes] = [
         0,
@@ -319,6 +333,5 @@ def test_patch_unreadable_raw_falls_back(tmp_path: Path) -> None:
 
     bad_raw = tmp_path / "junk.arw"
     bad_raw.write_bytes(b"not a raw file")
-    out = patch(src, raw_path=bad_raw)
-    out_fields = decode(out)
-    assert out_fields[_CAMERA_FIELD_INDEX].rstrip(b"\x00") == b""
+    with pytest.raises(ValueError, match="no unambiguous Lensfun profile"):
+        patch(src, raw_path=bad_raw)

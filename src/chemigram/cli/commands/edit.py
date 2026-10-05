@@ -202,9 +202,10 @@ def _do_apply_primitive(
                 parameter_values=parameter_values,
                 mask_spec=effective_mask,
                 strength=strength,
+                raw_path=workspace.raw_path,
                 vocab=vocabulary if has_composes else None,
             )
-        except (ValueError, TypeError) as exc:
+        except (ValueError, TypeError, RuntimeError, OSError, AttributeError) as exc:
             writer.error(str(exc), ExitCode.INVALID_INPUT, entry=entry_name)
             return ExitCode.INVALID_INPUT.value
         except PatchError as exc:
@@ -903,7 +904,7 @@ def remove_module(
         )
         raise typer.Exit(code=ExitCode.NOT_FOUND.value)
 
-    new_xmp = replace(baseline_xmp, history=new_history)
+    new_xmp = replace(baseline_xmp, history=new_history, history_end=len(new_history))
     try:
         new_hash = snapshot(workspace.repo, new_xmp, label=f"remove_module: {operation}")
     except VersioningError as exc:

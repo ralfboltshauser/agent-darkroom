@@ -1,28 +1,8 @@
-"""Path C decoder/encoder for darktable's ``lens`` (lens correction) module (mv10).
+"""Path C decoder/encoder for darktable's ``lens`` module (mv10).
 
-Closes #95 (decoder shipped; EXIF auto-binding tracked separately).
-Real workflow gap: every wide-angle / fisheye / telephoto user wants
-distortion + chromatic aberration + correction-vignette work. Lightroom
-auto-detects from lens profiles; chemigram had no equivalent until this
-ship.
-
-**Important note on photographic effect.** This decoder ships the
-parameterized **strength axes** for manual override use cases (manual
-TCA, manual vignette correction, output scaling, per-correction
-strengths). It does NOT yet ship EXIF auto-binding for the lensfun
-identifier strings (``camera[128]`` / ``lens[128]``) and shooting
-metadata (``focal`` / ``aperture`` / ``distance``). Without those
-populated, darktable's lensfun-method correction won't fire — the
-lens-profile lookup needs identifying data.
-
-The shipped baseline is therefore "decoder-correct, photographic-
-effect-pending-EXIF-binding". A photographer who manually authors a
-.dtstyle in darktable's GUI (with the lens auto-detected and the
-strength sliders set) would get a fully-functional preset; this
-decoder lets them override the strength axes after-the-fact via
-parameterized values. The EXIF auto-binding extension is tracked as a
-follow-up issue (the darktable-session verification + ADR-053 extension
-work).
+When a RAW path is supplied, this binds an installed Lensfun profile,
+focal length, aperture, focus distance, and an automatically calculated
+output scale. The module also exposes manual fine-tuning axes.
 
 Struct layout (verified against darktable 5.4.1 ``src/iop/lens.cc``
 ``dt_iop_lens_params_t`` v10):
@@ -32,15 +12,15 @@ Struct layout (verified against darktable 5.4.1 ``src/iop/lens.cc``
     offset 4..7   : enum  modify_flags         (default ALL = 7; distortion+TCA+vignette)
     offset 8..11  : enum  inverse              (default CORRECT = 0)
 
-    Lensfun shooting parameters (preserved; would be EXIF-bound at apply time)
-    offset 12..15  : float scale               ← parameterized (default 0.0; auto)
+    Lensfun shooting parameters (bound from EXIF when a RAW is supplied)
+    offset 12..15  : float scale               ← auto-scaled or parameterized
     offset 16..19  : float crop                (preserved; default 0.0)
-    offset 20..23  : float focal               (preserved; EXIF-bound)
-    offset 24..27  : float aperture            (preserved; EXIF-bound)
-    offset 28..31  : float distance            (preserved; EXIF-bound)
+    offset 20..23  : float focal               (EXIF-bound)
+    offset 24..27  : float aperture            (EXIF-bound)
+    offset 28..31  : float distance            (EXIF or infinity fallback)
     offset 32..35  : enum  target_geom         (preserved; default UNKNOWN = 0)
-    offset 36..163 : char  camera[128]         (preserved; EXIF-bound)
-    offset 164..291: char  lens[128]           (preserved; EXIF-bound)
+    offset 36..163 : char  camera[128]         (Lensfun profile-bound)
+    offset 164..291: char  lens[128]           (Lensfun profile-bound)
 
     Manual TCA override (parameterized)
     offset 292..295: gbool tca_override        (preserved; default FALSE = 0)
@@ -69,7 +49,7 @@ Struct layout (verified against darktable 5.4.1 ``src/iop/lens.cc``
 
 Total size: 356 bytes.
 
-Nine parameterized magnitude axes — the manual-override knobs. Axis names
+Ten parameterized magnitude axes — the manual-override knobs. Axis names
 use the ``lens_`` prefix for disambiguation:
 
 - ``lens_scale`` — output scaling after correction (range [0.0, 4.0])
@@ -90,6 +70,7 @@ through patch() unchanged.
 
 from __future__ import annotations
 
+import math
 import struct
 from pathlib import Path
 
@@ -211,34 +192,44 @@ def patch(
             f"valid axes: {sorted(_AXIS_FIELD_INDICES.keys())}"
         )
     fields = list(decode(op_params))
-    # Camera-aware EXIF binding (#136 / RFC-039): when raw_path is supplied
-    # AND the camera/lens identifier bytes are empty (no override),
-    # populate them from the raw's EXIF. darktable's lensfun-method
-    # correction needs these strings to find the correction profile;
-    # without them the dtstyle's manual-override values are the only
-    # correction. Focal length and aperture also populated for the
-    # distance-aware corrections.
+    # Bind only a verified camera/lens pair. An unmatched profile must be
+    # reported rather than producing a successful edit with no optical effect.
     if raw_path is not None:
-        try:
-            from chemigram.core.exif import read_exif
+        from chemigram.core.exif import read_exif
+        from chemigram.core.lens_profiles import find_lens_profile, lens_auto_scale
 
-            camera_bytes = fields[_CAMERA_FIELD_INDEX]
-            assert isinstance(camera_bytes, bytes)
-            # Only populate when the existing camera string is empty (the
-            # dtstyle hasn't been pre-bound to a specific body).
-            if camera_bytes.rstrip(b"\x00") == b"":
-                exif = read_exif(raw_path)
-                # lensfun uses "Make Model" for camera; "LensModel" for lens.
-                camera_str = f"{exif.make} {exif.model}".strip()
-                lens_str = exif.lens_model.strip()
-                # Truncate / null-pad to fit the 128-byte fields.
-                fields[_CAMERA_FIELD_INDEX] = camera_str.encode("utf-8")[:128].ljust(128, b"\x00")
-                fields[_LENS_FIELD_INDEX] = lens_str.encode("utf-8")[:128].ljust(128, b"\x00")
-                if exif.focal_length_mm is not None:
-                    fields[_FOCAL_FIELD_INDEX] = float(exif.focal_length_mm)
-        except Exception:  # noqa: S110
-            # Robust fallback: any EXIF read failure → keep source bytes.
-            pass
+        camera_bytes = fields[_CAMERA_FIELD_INDEX]
+        assert isinstance(camera_bytes, bytes)
+        if not camera_bytes.rstrip(b"\x00"):
+            exif = read_exif(raw_path)
+            profile = find_lens_profile(exif)
+            if profile is None:
+                raise ValueError(
+                    f"no unambiguous Lensfun profile for {exif.make} {exif.model} / "
+                    f"{exif.lens_model}; lens correction was not applied"
+                )
+            focal, aperture = exif.focal_length_mm, exif.aperture
+            if (
+                focal is None
+                or aperture is None
+                or not math.isfinite(focal)
+                or not math.isfinite(aperture)
+                or focal <= 0
+                or aperture <= 0
+            ):
+                raise ValueError("lens correction requires positive focal length and aperture EXIF")
+            fields[0] = 1  # Lensfun method
+            fields[3] = lens_auto_scale(profile, exif, raw_path)
+            fields[_CAMERA_FIELD_INDEX] = profile.camera.encode("utf-8")[:127].ljust(128, b"\x00")
+            fields[_LENS_FIELD_INDEX] = profile.lens.encode("utf-8")[:127].ljust(128, b"\x00")
+            fields[_FOCAL_FIELD_INDEX] = float(focal)
+            fields[_APERTURE_FIELD_INDEX] = float(aperture)
+            distance = exif.focus_distance_m
+            fields[7] = float(
+                distance if distance and math.isfinite(distance) and distance > 0 else 1000.0
+            )
+            fields[8] = 1  # rectilinear target geometry
+            fields[21] = 1
     for axis_name, value in values.items():
         if value is not None:
             fields[_AXIS_FIELD_INDICES[axis_name]] = float(value)

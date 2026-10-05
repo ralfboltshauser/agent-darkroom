@@ -15,6 +15,8 @@ import typer
 from chemigram.cli._context import CliContext
 from chemigram.cli._workspace import default_workspace_root
 from chemigram.cli.exit_codes import ExitCode
+from chemigram.core.helpers import current_xmp
+from chemigram.core.lens_profiles import find_lens_profile
 from chemigram.core.vocab import load_packs
 from chemigram.core.workspace import ingest_workspace
 
@@ -83,6 +85,11 @@ def ingest(
             "lens_model": workspace.exif.lens_model,
             "focal_length_mm": workspace.exif.focal_length_mm,
         }
+    profile = find_lens_profile(workspace.exif) if workspace.exif else None
+    baseline = current_xmp(workspace)
+    lens_active = bool(
+        baseline and any(h.operation == "lens" and h.enabled for h in baseline.history)
+    )
 
     writer.result(
         message=f"ingested {workspace.image_id}",
@@ -93,6 +100,21 @@ def ingest(
         ],
         snapshot_hash=workspace.repo.resolve_ref("HEAD"),
         exif_summary=exif_summary,
+        lens_correction={
+            "status": "applied" if lens_active else "unavailable",
+            "source": "Lensfun" if profile else None,
+            "profile": profile.lens if profile else None,
+            "available_corrections": list(profile.corrections) if profile else [],
+            "note": (
+                workspace.lens_warning
+                or (
+                    None
+                    if lens_active
+                    else "No unambiguous installed Lensfun profile or lens entry; "
+                    "optical correction was not applied."
+                )
+            ),
+        },
         suggested_bindings=[
             {"name": entry.name, "description": entry.description or ""}
             for entry in workspace.suggested_bindings

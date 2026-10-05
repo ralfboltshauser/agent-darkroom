@@ -8,6 +8,7 @@ This project builds on [Chemigram](https://github.com/chipi/chemigram) and prese
 
 - Python 3.11 or newer
 - `darktable-cli` 5.4 or 5.6 on `PATH`, or set `DARKTABLE_CLI` to its executable path
+- Lensfun shared library and profile database for automatic optical correction
 - A coding agent that can read command output and inspect local image files
 
 The current release was exercised with darktable 5.4.1 and 5.6.2 on Ubuntu. The baseline exposure and multi-instance XMP order are calibrated for darktable 5.x; check new major versions with `status --probe` and a test render before relying on them.
@@ -62,6 +63,8 @@ agent-darkroom --json compare portrait GLOBAL_HASH LOCAL_HASH --size 1024 --diff
 agent-darkroom --json inspect portrait
 agent-darkroom --json export-final portrait --format jpeg
 ```
+
+On ingest, the expressive pack automatically applies a Lensfun correction when camera and lens metadata resolve to one compatible installed profile. The JSON `lens_correction` field says which profile matched and whether distortion, lateral chromatic aberration, and vignetting data are available. Fixed lens cameras can match by their unique mount even when EXIF omits the lens name. Lensfun calculates an output scale to remove invalid borders. If there is no unambiguous profile, the field says `unavailable` and the image remains uncorrected. Set `CHEMIGRAM_LENSFUN_DB_DIR` to use a custom Lensfun `version_1` directory. The tool does not yet apply corrections from embedded RAW metadata or Adobe LCP profiles; coverage depends on the installed Lensfun database. To compare with the uncorrected image, run `agent-darkroom --json remove-module portrait --operation lens`, then render again.
 
 `compare --difference` returns a side-by-side image and an amplified difference PNG. Open the difference image to catch misplaced masks or unexpected global changes. The `inspect` result reports luminance percentiles, near-black and near-white fractions, dimensions, camera metadata, and whether an ICC profile is embedded. These measurements help diagnose exposure and clipping; visual inspection still decides whether an edit is good.
 
